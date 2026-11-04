@@ -122,6 +122,41 @@ theorem contDiffAt_transition (c₁ c₂ : HolChart n X) {z₁ : E n} (hz₁ : z
     c₂.holomorphic.contMDiffAt (c₂.coord.open_source.mem_nhds h₂)
   exact contMDiffAt_iff_contDiffAt.mp (h2.comp z₁ h1)
 
+/-! ### Two charts around a common point -/
+
+section Common
+
+variable (c₁ c₂ : HolChart n X) {p : X} (h₁ : p ∈ c₁.coord.source) (h₂ : p ∈ c₂.coord.source)
+include h₁ h₂
+
+/-- Near `c₁ p`, coordinate points lie in the target of `c₁` and come from the domain of `c₂`. -/
+theorem eventually_transition :
+    ∀ᶠ ζ in 𝓝 (c₁.coord p), ζ ∈ c₁.coord.target ∧ c₁.coord.symm ζ ∈ c₂.coord.source := by
+  have ht : c₁.coord p ∈ c₁.coord.target := c₁.coord.map_source h₁
+  have hA : ∀ᶠ ζ in 𝓝 (c₁.coord p), ζ ∈ c₁.coord.target := c₁.coord.open_target.mem_nhds ht
+  have hB : ∀ᶠ ζ in 𝓝 (c₁.coord p), c₁.coord.symm ζ ∈ c₂.coord.source :=
+    (c₁.coord.continuousAt_symm ht).preimage_mem_nhds
+      (c₂.coord.open_source.mem_nhds (by rw [c₁.coord.left_inv h₁]; exact h₂))
+  exact hA.and hB
+
+omit h₂ in
+/-- The transition `c₂ ∘ c₁⁻¹` sends `c₁ p` to `c₂ p`. -/
+theorem transition_apply_center : (c₂.coord ∘ c₁.coord.symm) (c₁.coord p) = c₂.coord p := by
+  simp only [Function.comp_apply, c₁.coord.left_inv h₁]
+
+/-- `(c₁ ∘ c₂⁻¹) ∘ (c₂ ∘ c₁⁻¹) = id` near `c₁ p`. -/
+theorem eventually_transition_left_inv :
+    ∀ᶠ ζ in 𝓝 (c₁.coord p), (c₁.coord ∘ c₂.coord.symm) ((c₂.coord ∘ c₁.coord.symm) ζ) = ζ := by
+  filter_upwards [c₁.eventually_transition c₂ h₁ h₂] with ζ hζ
+  simp only [Function.comp_apply, c₂.coord.left_inv hζ.2, c₁.coord.right_inv hζ.1]
+
+/-- The transition `c₂ ∘ c₁⁻¹` is holomorphic at `c₁ p`. -/
+theorem contDiffAt_transition_center :
+    ContDiffAt ℂ ∞ (c₂.coord ∘ c₁.coord.symm) (c₁.coord p) :=
+  contDiffAt_transition c₁ c₂ (c₁.coord.map_source h₁) (by rw [c₁.coord.left_inv h₁]; exact h₂)
+
+end Common
+
 variable [IsManifold 𝓘(ℂ, E n) ω X]
 
 theorem contDiffAt_fromChartAt (c : HolChart n X) {y : X} (hy : y ∈ c.coord.source) :

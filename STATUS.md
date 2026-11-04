@@ -5,7 +5,7 @@ Last updated: 2026-11-04.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 656
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 680
 `ConicalKahler.*` declarations depend only on `propext`, `Classical.choice` and `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
 
@@ -41,8 +41,8 @@ The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has 
 | `IsConeAlong` (quasi-isometric only) | `ConeComparableIn`, `IsQuasiIsometricCone`, `IsConeAlong` (abbrev), `isQuasiIsometricCone_iff` (spec's literal form) | `Cone/Comparison` |
 | shrinking, constants, localization | `ConeComparableIn.restrOpen`, `ConeComparableIn.mono`, `IsQuasiIsometricCone.exists_chart_subset`, `coneComparableIn_iff_riemannian` | `Cone/Comparison` |
 | model satisfies the condition | `modelOnHyperplane`, `modelOnHyperplane_isConeAlong` (`C = 1`) | `Cone/Comparison` |
-| **chart invariance, `0 < β ≤ 1`** | `ConeComparableIn.exists_restrOpen_of_le_one`, `IsQuasiIsometricCone.forall_chart_of_le_one` | `Cone/ChartInvariance` |
-| analytic inputs | `exists_hyperplane_estimates`, `fderiv_apply_zero_eq_zero_of_tangent`, `modelConeQuadratic_le_of_le_one`, `exists_model_comparison` | `Analysis/HyperplaneMaps`, `Cone/ChartInvariance` |
+| **chart invariance, `0 < β ≤ 1`** | `ConeComparableIn.exists_restrOpen_of_le_one`, `IsQuasiIsometricCone.forall_chart_of_le_one` (since Milestone 6: the one-label case of the SNC theorem) | `Cone/ChartInvariance` |
+| analytic inputs | `exists_hyperplane_estimates`, `fderiv_apply_zero_eq_zero_of_tangent`, `modelConeQuadratic_le_of_le_one`, `exists_model_comparison` (since Milestone 6: special cases of the general lemmas below) | `Analysis/HyperplaneMaps`, `Cone/ChartInvariance` |
 | **counterexample, `β > 1`** | `shearChart`, `not_coneComparableIn_shear` (fails for every neighbourhood and constant) | `Cone/AngleRestriction` |
 | shear is admissible for `β ≤ 1` | `coneComparableIn_shear_of_le_one` (`C = 2 + 2/β²`) | `Cone/AngleRestriction` |
 | `ConeKahlerForm`, KE equation | `ConeKahlerForm`, `ConeKahlerForm.IsKahlerEinstein`, `isKahlerEinstein_zero_iff`, `ofEq`, `ext` | `Cone/Kahler` |
@@ -57,8 +57,11 @@ condition, with an explicit counterexample to unrestricted invariance. The SNC g
 
 ## Milestone 3: metric geometry of the model (review priority 1): COMPLETE
 
-The standard cone metric is *exactly* a flat cone transversally. All statements below are
-equalities of metric tensors, and they are properties of the model only.
+Transversally, the standard cone metric is *exactly* a flat cone, in the following sense. All
+statements below are equalities of metric tensors on covering coordinates, together with
+equivariance under the deck groups and lengths of explicit curves. They are properties of the
+model only. No metric-space isometry with the quotient cone, and nothing at the vertex, is
+claimed (see outstanding item 4).
 
 | Statement | Lean declaration | File |
 |---|---|---|
@@ -124,6 +127,42 @@ lemmas. `formInAdaptedChart_coordHyperplaneChart` and
 `ConeWeights`, `modelDomain`, `modelWeight`, `modelConeQuadratic` and `modelConeFormOn` are
 reused unchanged. The SNC model *is* `modelConeFormOn (coordSNCWeights hk angle)`.
 
+## Milestone 6: chart invariance of SNC conical metrics (second review): COMPLETE
+
+**Theorem.** Let `Δ` be an SNC divisor with labelled components and cone angles
+`angle : ι → ConeAngle` with `0 < β_i ≤ 1` for all labels. Suppose `ω₀` on `X \ ⋃ᵢ Dᵢ` is
+comparable to the local SNC model in one SNC chart at `p`. Then it is comparable to the local SNC
+model in every SNC chart at `p`, after shrinking that chart around `p`. So
+`IsQuasiIsometricSNCCone` does not depend on the charts used.
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| **SNC chart invariance, all `β_i ≤ 1`** | `SNCConeComparableIn.exists_restrOpen_of_le_one`, `IsQuasiIsometricSNCCone.forall_chart_of_le_one` | `Cone/SNCChartInvariance` |
+| matching of active components **by label** (permutations allowed); local angles `≤ 1` | `SNCChart.weightsMatch`, `SNCChart.localWeights_le_one` | `Cone/SNCChartInvariance` |
+| analytic core: two-sided comparison of arbitrary cone models under a hyperplane-matching biholomorphism, all angles `≤ 1` | `WeightsMatch`, `exists_weighted_term_bound`, `exists_weighted_upper_bound`, `exists_weighted_model_comparison` | `Cone/WeightedComparison` |
+| where `β ≤ 1` enters | `cone_term_le` (one-term inequality), `norm_sq_le_modelConeQuadratic` (the model controls `‖v‖²`), `invWeightBound` | `Cone/WeightedComparison` |
+| estimates for maps sending `{ζ_a = 0}` into `{z_b = 0}` (`a ≠ b` allowed) | `exists_coordHyperplane_estimates`, `fderiv_apply_eq_zero_of_tangent`, `coordHypProj` | `Analysis/HyperplaneMaps` |
+| two charts around a common point | `HolChart.eventually_transition`, `transition_apply_center`, `eventually_transition_left_inv`, `contDiffAt_transition_center` | `Manifold/HolomorphicChart` |
+| smooth and one-label SNC comparisons agree | `coneComparableIn_iff_sncConeComparableIn` | `Cone/SNCComparison` |
+| tests: crossing components with angles `π` and `2π/3` in `ℂ²` (swapped chart) and in `ℂ³` (swap plus shear into the smooth direction); local weights follow labels, not slots | | `ConicalKahlerTest/SNCInvariance` |
+
+**No duplicated argument.** The analytic estimate is proved once, for arbitrary `ConeWeights`, and
+the smooth-divisor results are now corollaries:
+
+* `exists_model_upper_bound` and `exists_model_comparison` are the single-hyperplane case of the
+  weighted lemmas (`weightsMatch_single`, `singleConeWeights_le_one`).
+* `ConeComparableIn.exists_restrOpen_of_le_one` is the one-label case of the SNC theorem, through
+  `coneComparableIn_iff_sncConeComparableIn`.
+* `exists_hyperplane_estimates` is the `a = b = 0` case of `exists_coordHyperplane_estimates`.
+* `modelConeQuadratic_le_of_le_one` keeps its statement and constant. It is now proved from
+  `cone_term_le`.
+
+All Milestone 2 statements are unchanged and the existing tests (including the shear chart)
+still pass.
+
+**Not covered.** For `β_i > 1` the condition remains an existence-of-compatible-chart condition.
+The shear counterexample embeds through `isConeAlong_iff_isSNCConeAlong`.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -164,6 +203,16 @@ reused unchanged. The SNC model *is* `modelConeFormOn (coordSNCWeights hk angle)
   coordinates nonzero), which is equivalent to `z ∈ modelDomain (χ.localWeights angle)`.
   Charts are not required to have `p` on all of their active components (as in the spec). The
   components through the centre are always active (`mem_range_active_of_mem`).
+* **Chart invariance by labels.** In the SNC invariance theorem the coordinate change is matched
+  component-by-component *by label*. The slot of a label may differ between the two charts.
+  Active components of a chart that do not pass through `p` need no matching: their weights are
+  bounded near `p`.
+* **Helper renames (Milestone 6).** The projection `hypProj` onto `{z_0 = 0}` and its lemmas were
+  generalised to `coordHypProj a` (any coordinate) with the same lemma names otherwise
+  (`coordHypProj_apply`, `coordHypProj_apply_self`, …). The `0`-specific theorems
+  `exists_hyperplane_estimates`, `fderiv_apply_zero_eq_zero_of_tangent` and `norm_apply_zero_le`
+  are kept. The hypothesis `p ∈ D` of `ConeComparableIn.exists_restrOpen_of_le_one` is no longer
+  needed. It is kept, named `_hp`, so that existing calls are unchanged.
 * **Transport of forms** along an equality of open sets (`kahlerCast`) is used to compare
   `KahlerForm n D.complement` with `KahlerForm n D.toSNC.complement`. The two open sets are
   equal but not definitionally so.
@@ -174,27 +223,24 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 
 ## Outstanding proof obligations
 
-Done since the first review: agreement with `metricInChart` (Milestone 4) and `Divisors/SNC`
-(Milestone 5).
+Done since the first review: agreement with `metricInChart` (Milestone 4), `Divisors/SNC`
+(Milestone 5), and SNC chart invariance for `β_i ≤ 1` (Milestone 6).
 
-1. **SNC chart invariance for angles `β_i ≤ 1`.** This is the analogue of
-   `IsQuasiIsometricCone.forall_chart_of_le_one`. A change of SNC charts at `p` maps active
-   hyperplanes to active hyperplanes with the same labels, possibly permuting the slots. The proof
-   needs per-hyperplane versions of `exists_hyperplane_estimates`, conjugated by `swapCoord`, and
-   a multi-coordinate version of `modelConeQuadratic_le_of_le_one`. Not started. For `β_i > 1`
-   the condition stays an existence-of-compatible-chart condition, and the smooth
-   counterexample applies through `isConeAlong_iff_isSNCConeAlong`.
-2. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
+1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
    `modelConeFormOn`. Transport along *equal* open sets is `kahlerCast`.
-3. **Cone-admissible atlases for `β > 1`** (spec §4.1): a `ConeAdmissibleChartChange` interface
-   with bounded weighted Jacobians, and invariance within such an atlas.
-4. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
+2. **Cone-admissible atlases when some angle exceeds `2π`** (spec §4.1), for smooth and SNC
+   divisors: a `ConeAdmissibleChartChange` interface with bounded weighted Jacobians, and
+   invariance within such an atlas. The invariance theorem of Milestone 6 needs *all* `β_i ≤ 1`.
+   With a single `β_i > 1` it fails for arbitrary charts (shear counterexample).
+3. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
    polyhomogeneous interfaces. Deliberately not started, as requested. None of these is implied by
    `IsConeAlong`. Milestone 3 gives a form with `IsConeAlong` that is not Ricci-flat.
-5. **Metric-space statements for the flat cone.** Path-length distance, minimality of radial
-   segments, and the metric completion of `(ℂ \ {0}, g_β)` as the flat cone with its vertex.
-6. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
+4. **Metric-space statements for the flat cone.** The Milestone 3 results are tensor identities
+   and deck-group equivariance on covering coordinates (see the README). Still missing: the
+   quotient cone as a metric space, the path-length distance, minimality of radial segments, and
+   the metric completion of `(ℂ \ {0}, g_β)` with its vertex.
+5. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
 
 ## Blockers
 

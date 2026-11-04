@@ -12,8 +12,14 @@ public import Mathlib.Analysis.SpecialFunctions.Complex.Log
 This file proves the metric-geometric meaning of the model. The standard cone metric
 `ω_β = i β² |z_0|^(2β-2) dz_0 ∧ dz̄_0 + i ∑_{j ≥ 1} dz_j ∧ dz̄_j` is the Riemannian product of a
 **transverse** metric in the `z_0`-direction and the flat metric of `ℂⁿ⁻¹`
-(`modelConeQuadratic_single_eq_transverse`). The transverse metric is *exactly* (isometrically,
-not merely up to a constant) the flat cone of angle `2πβ`.
+(`modelConeQuadratic_single_eq_transverse`). In covering coordinates, the transverse metric
+tensor is *exactly* (not merely up to a constant) the flat cone metric of angle `2πβ`.
+
+**Scope.** All results here are identities of metric tensors on covering coordinates, together
+with equivariance under the deck transformations, and lengths of explicit curves. The quotient
+cone is not constructed, as a manifold or as a metric space. Neither is the path-length distance,
+the metric completion, or the cone vertex. So no metric-space isometry is claimed, and nothing is
+said at the vertex.
 
 ## The flat cone of angle `2πβ`
 
@@ -38,8 +44,9 @@ of variables**
 
 is a diffeomorphism of `(0, ∞) × ℝ` (`coneRadialChangeHomeomorph`,
 `contDiffOn_coneRadialChange`, `contDiffOn_coneRadialChangeInv`). It conjugates `θ ↦ θ + 2π` to
-`φ ↦ φ + 2πβ` (`coneRadialChange_add_two_pi`), so it descends to a diffeomorphism from `ℂ \ {0}`
-onto the flat cone of angle `2πβ`. The main theorems say that it is an **isometry**:
+`φ ↦ φ + 2πβ` (`coneRadialChange_add_two_pi`). It is therefore compatible with the two deck
+groups (the induced map between the quotients is not constructed here). The main theorems say
+that it pulls the flat cone metric back to the model metric, as an identity of tensors:
 
 * `transverseConeMetric_polar` (Hermitian normalisation, `c = 1`): in polar coordinates the
   transverse Hermitian form `β² |z_0|^(2β-2) |dz_0|²` is exactly `dρ² + ρ² dφ²` with `ρ = r^β`.
