@@ -42,6 +42,34 @@ that of `ω_β`. The form is pulled back to an arbitrary adapted chart by `metri
 * `IsConeAlong` asserts quasi-isometry only: no tangent-cone uniqueness, asymptotic expansion
   or weighted regularity.
 
+### The model is exactly a flat cone
+
+Transversally, `ω_β` is *isometric* to the flat cone of angle `2πβ`, not merely quasi-isometric.
+Write `z₀ = r e^{iθ}` and change variables radially, `ρ = r^β`, `φ = βθ`. Then the transverse
+metric becomes `dρ² + ρ² dφ²` with `φ ~ φ + 2πβ` (`transverseConeMetric_polar`). The same holds
+for the Riemannian metric `ω_β(·, J·)` of the upstream Kähler form with `ρ = √2 r^β`
+(`standardConeForm_polar_riemannian`). The holonomy is the rotation by `2πβ`, and the
+circumference is `2πβ` × radius (`coneCircleLength_eq_two_pi_mul_radialLength`).
+
+`perturbedConeForm_isConeAlong` and `perturbedConeForm_not_ricciFlat` give, for every `β`, a form
+with quasi-isometric cone angle `2πβ` that is not Ricci-flat, so it is not locally isometric to
+the model. Model geometry, strong asymptotic conditions (spec §3.5, not defined) and
+quasi-isometry are kept as three separate levels.
+
+### Agreement with upstream `metricInChart`
+
+`metricInAdaptedChart` is the pullback along an arbitrary holomorphic chart. When the adapted
+chart is the selected chart it equals the upstream `KahlerForm.metricInChart`
+(`metricInAdaptedChart_eq_metricInChart`). In general the two are related by
+`metricInChart x z = Aᵀ g^χ Ā` (`metricInChart_eq_metricInAdaptedChart_change`).
+
+### SNC divisors
+
+`SNCDivisor n X ι` has labelled components and SNC charts as in spec §4, and each component is a
+`SmoothDivisor` (`SNCDivisor.component`). `IsSNCConeAlong Δ angle ω₀` assigns an arbitrary angle
+`angle i > 0` to each label and compares with the *same* `ModelConeForm`, using the chart's local
+weights. The smooth case is the one-label case (`isConeAlong_iff_isSNCConeAlong`).
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -83,8 +111,19 @@ We use the upstream conventions without change.
 | `ConicalKahler/Cone/ChartInvariance.lean` | chart invariance for `0 < β ≤ 1` |
 | `ConicalKahler/Cone/AngleRestriction.lean` | the shear test: failure for `β > 1`, success for `β ≤ 1` |
 | `ConicalKahler/Cone/Kahler.lean` | `ConeKahlerForm`, Kähler–Einstein equation on `X \ D` |
+| `ConicalKahler/Cone/FlatCone.lean` | polar coordinates, radial change, isometry with the flat cone, holonomy, lengths |
+| `ConicalKahler/Analysis/RadialCalculus.lean` | rules for computing `g' + s g''` |
+| `ConicalKahler/Cone/Separable.lean` | Kähler forms `i∂∂̄ ∑ g_j(|z_j|²)` and their Ricci forms |
+| `ConicalKahler/Cone/QuasiIsometricExample.lean` | a quasi-isometric cone metric that is not Ricci-flat |
+| `ConicalKahler/Manifold/HolomorphicChart.lean` | `HolChart`: holomorphic charts outside the selected atlas |
+| `ConicalKahler/Cone/SelectedChart.lean` | agreement with upstream `metricInChart`; transformation law |
+| `ConicalKahler/Divisors/SNC.lean` | `SNCChart`, `SNCDivisor`, components, local weights, coordinate SNC |
+| `ConicalKahler/Cone/SNCComparison.lean` | SNC cone condition, SNC model, smooth case as specialization |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
+| `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
+| `ConicalKahlerTest/SelectedChart.lean` | agreement with `metricInChart`, shear transformation law |
+| `ConicalKahlerTest/SNC.lean` | two axes with angles `π`, `6π`; components; smooth case |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 
 ## Building

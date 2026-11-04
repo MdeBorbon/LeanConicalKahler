@@ -5,7 +5,7 @@ Last updated: 2026-11-04.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 315
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 656
 `ConicalKahler.*` declarations depend only on `propext`, `Classical.choice` and `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
 
@@ -52,9 +52,77 @@ The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has 
 With this the spec's v0.1 "definition of done" is met for the smooth-divisor case. The model and the
 smooth-divisor quasi-isometry are defined, the model identities and chart independence for
 `0 < β ≤ 1` are proved, and `β > 1` is supported as a model and as an existential compatible-chart
-condition, with an explicit counterexample to unrestricted invariance. The SNC generalisation is
-outstanding (see below). The model construction already accepts arbitrary `ConeWeights`, so SNC
-will not require changing it.
+condition, with an explicit counterexample to unrestricted invariance. The SNC generalisation
+(Milestone 5) did not change the model construction.
+
+## Milestone 3: metric geometry of the model (review priority 1): COMPLETE
+
+The standard cone metric is *exactly* a flat cone transversally. All statements below are
+equalities of metric tensors, and they are properties of the model only.
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| product structure: `q_β = q_transverse(z_0) + |dz'|²` | `modelConeQuadratic_single_eq_transverse`, `transverseConeMetric` | `Cone/FlatCone` |
+| flat cone of angle `2πβ`: metric `dρ² + ρ² dφ²` on `(0,∞) × ℝ`, `φ ~ φ + 2πβ`; it is flat (pullback of `|dw|²` by `ρe^{iφ}`) | `flatConeMetric`, `flatConeMetric_eq_normSq_fderiv_polarMap`, `flatConeMetric_add_snd`, `polarMap_add_snd` | `Cone/FlatCone` |
+| polar coordinates on `ℂ \ {0}` and deck group `θ ↦ θ + 2π` | `polarMap`, `fderiv_polarMap`, `normSq_fderiv_polarMap`, `polarMap_add_two_pi`, `exists_polarMap_eq` | `Cone/FlatCone` |
+| radial change `ρ = c r^β`, `φ = βθ` is a diffeomorphism of `(0,∞) × ℝ` conjugating `θ ↦ θ + 2π` to `φ ↦ φ + 2πβ` | `coneRadialChange`, `coneRadialChangeHomeomorph`, `contDiffOn_coneRadialChange`, `contDiffOn_coneRadialChangeInv`, `coneRadialChange_add_two_pi` | `Cone/FlatCone` |
+| **isometry, Hermitian form**: `β²|z_0|^(2β-2)|dz_0|² = dρ² + ρ²dφ²`, `ρ = r^β` | `transverseConeMetric_polar`, `modelConeQuadratic_polar_slice` | `Cone/FlatCone` |
+| **isometry, Riemannian metric of the upstream form**: `ω_β(v, Jv)` on a transverse slice `= dρ² + ρ²dφ²`, `ρ = √2 r^β` | `standardConeForm_polar_riemannian`, `transverseSlice`, `fderiv_transverseSlice_polarMap` | `Cone/FlatCone` |
+| developing map `ζ ↦ e^{βζ}` on the universal cover; holonomy = rotation by `2πβ`, trivial iff `β ∈ ℤ` | `transverseConeMetric_exp`, `exp_mul_add_two_pi_I`, `exp_two_pi_mul_I_eq_one_iff` | `Cone/FlatCone` |
+| circumference `2πβ r^β`, radial length `r^β`, ratio `2πβ` | `coneCircleLength_eq`, `coneRadialLength_eq`, `coneCircleLength_eq_two_pi_mul_radialLength` | `Cone/FlatCone` |
+| radial-coefficient calculus | `radialCoeff_congr`, `radialCoeff_add`, `radialCoeff_eq_deriv`, `radialCoeff_rpow_add_rpow_two_mul`, `radialCoeff_log_one_add_mul_rpow` | `Analysis/RadialCalculus` |
+| separable Kähler forms `i∂∂̄ ∑ g_j(|z_j|²)` and their Ricci forms | `SeparableProfile`, `SeparableProfile.kahlerForm`, `kahlerForm_metricInChart`, `ricciForm_coeffMatrix` | `Cone/Separable` |
+| **QI is strictly weaker than the model**: a form with `IsConeAlong` (`C = 5`) that is not Ricci-flat, for every `β > 0` | `perturbedConeForm`, `perturbedConeForm_isConeAlong`, `perturbedConeForm_ricciForm_coeffMatrix_zero` (`Ric_{00̄} = -4β²s^(β-1)/(1+4s^β)²`), `perturbedConeForm_not_ricciFlat`, `exists_isConeAlong_not_ricciFlat`, `perturbedConeKahlerForm_not_isKahlerEinstein_zero` | `Cone/QuasiIsometricExample` |
+| tests (`β = 1/2`, `β = 2`, `β = 1`, holonomy, `n = 2`) | | `ConicalKahlerTest/Geometry` |
+
+**Three levels, kept separate.**
+1. *Model geometry* (this milestone): `ω_β` is transversally isometric to the flat cone of angle
+   `2πβ`, and Ricci-flat.
+2. *Strong asymptotic cone conditions* (spec §3.5; not defined): the metric is asymptotic to the
+   model at the divisor.
+3. *Quasi-isometric cone condition* `IsConeAlong`: two-sided bounds only.
+
+The perturbed example `i∂∂̄(|z_0|^(2β) + |z_0|^(4β) + |z'|²)` satisfies 3. Its ratio to the model
+tends to `1`, so it would also satisfy 2. It is not Ricci-flat, so it fails 1. Hence 1 is strictly
+stronger than 3.
+
+## Milestone 4: compatibility with upstream `metricInChart` (review priority 2): COMPLETE
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| holomorphic charts outside the selected atlas; the selected chart is one | `HolChart`, `HolChart.toChartAt`, `HolChart.contDiffAt_transition`, `HolChart.ofChartAt`, `DivisorChart.toHolChart` | `Manifold/HolomorphicChart`, `Divisors/AdaptedChart` |
+| pullback along any holomorphic chart, on any open `U ⊆ X` | `formInHolChart`, `metricInHolChart`, `metricQuadraticInHolChart`, `formInHolChart_isPositive`, `metricInHolChart_posDef`, `formInHolChart_change`, `metricInHolChart_change`, `metricQuadraticInHolChart_change` | `Cone/ChartMetric` |
+| the adapted-chart pullback is the special case `U = X \ D` (by `rfl`) | `formInAdaptedChart_eq_formInHolChart`, `metricInAdaptedChart_eq_metricInHolChart`, `metricQuadraticInAdaptedChart_eq_metricQuadraticInHolChart` | `Cone/ChartMetric` |
+| charts of an open subset are restrictions of ambient charts | `extChartAt_opens_apply'`, `mem_extChartAt_opens_target`, `extChartAt_opens_symm_coe` | `Cone/SelectedChart` |
+| **selected chart = upstream**: `chartRep x z = formInHolChart … (ofChartAt x) z`, so `metricInChart x z = metricInHolChart … (ofChartAt x) z` on the whole chart target | `chartRep_eq_formInHolChart`, `metricInChart_eq_metricInHolChart` | `Cone/SelectedChart` |
+| **agreement**: if `χ.coord = chartAt x` then `metricInAdaptedChart D ω₀ χ z = ω₀.metricInChart x z` (and the quadratic forms agree) | `metricInAdaptedChart_eq_metricInChart`, `metricQuadraticInAdaptedChart_eq_chartRep` | `Cone/SelectedChart` |
+| **transformation law** for an arbitrary adapted chart: `metricInChart x z = Aᵀ g^χ(w) Ā`, `A = D(χ ∘ (chartAt x)⁻¹)(z)`, `w = χ((chartAt x)⁻¹ z)`; quadratic form `ω(v,Jv)/2 = q^χ(w; Av)` | `metricInChart_eq_metricInHolChart_change`, `metricInChart_eq_metricInAdaptedChart_change`, `chartRep_apply_I_smul_eq_metricQuadraticInAdaptedChart` | `Cone/SelectedChart` |
+| coordinate hyperplane: agreement for every Kähler form | `metricInAdaptedChart_coordHyperplane_eq_metricInChart` | `Cone/SelectedChart` |
+| tests (model; shear chart transformation law) | | `ConicalKahlerTest/SelectedChart` |
+
+The adapted-chart API was refactored to be a thin layer over `formInHolChart`. Every Milestone 2
+declaration keeps its name, statement and definition. Only the proofs now go through the generic
+lemmas. `formInAdaptedChart_coordHyperplaneChart` and
+`metricQuadraticInAdaptedChart_coordHyperplaneChart` (any Kähler form, identity chart) are new.
+
+## Milestone 5: SNC divisors with labelled cone angles (review priority 3, spec item 8): COMPLETE
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| SNC chart (spec §4 fields verbatim) | `SNCChart n X ι components p`, `SNCChart.slot`, `SNCChart.Away`, `SNCChart.toHolChart`, `SNCChart.restrOpen` | `Divisors/SNC` |
+| support/complement in a chart | `SNCChart.mem_iUnion_iff`, `symm_notMem_iUnion`, `away_coord`, `SNCChart.symmComplement` | `Divisors/SNC` |
+| SNC divisor with labelled components; complement is open | `SNCDivisor n X ι` (`components`, `isClosed`, `locallyFinite`, `exists_chart`), `support`, `isClosed_support`, `complement`, `mem_complement_iff_forall` | `Divisors/SNC` |
+| **each labelled component is a smooth divisor** | `SNCChart.toDivisorChart` (swap the slot to coordinate `0`), `SNCDivisor.component`, `swapCoord`, `HolChart.transCLE` | `Divisors/SNC`, `Manifold/HolomorphicChart` |
+| local weights `some (angle (active j))` / `none`; **same `ConeWeights` and `ModelConeForm`** | `SNCChart.localWeights`, `localWeights_angle_slot`, `mem_modelDomain_localWeights` (model domain = `Away`), `modelWeight_localWeights_slot` | `Divisors/SNC` |
+| coordinate SNC divisor `{z_0 ⋯ z_{k-1} = 0}` | `coordSNC n k hk`, `coordSNCChart`, `coordSNCWeights`, `coordSNC_complement` (= model domain) | `Divisors/SNC` |
+| metric in an SNC chart | `metricInSNCChart`, `metricQuadraticInSNCChart`, `metricInSNCChart_posDef`, `metricQuadraticInSNCChart_pos`, `metricQuadraticInSNCChart_change` | `Cone/SNCComparison` |
+| SNC quasi-isometric cone condition, arbitrary angles `β_i > 0` | `SNCConeComparableIn`, `IsQuasiIsometricSNCCone`, `IsSNCConeAlong` (abbrev), `.restrOpen`, `.mono`, `exists_chart_subset` | `Cone/SNCComparison` |
+| SNC model is SNC-conical (`C = 1`), Ricci-flat, KE | `modelOnCoordSNC`, `modelOnCoordSNC_coeffMatrix`, `modelOnCoordSNC_isSNCConeAlong`, `modelOnCoordSNC_ricciFlat`, `SNCConeKahlerForm`, `standardSNCConeKahlerForm_isKahlerEinstein` | `Cone/SNCComparison` |
+| **smooth case is a specialization** | `SmoothDivisor.toSNC`, `DivisorChart.toSNCChart`, `toSNC_complement`, `toSNC_chart_k`, `localWeights_eq_singleConeWeights`, `SmoothDivisor.toSNCForm`, `isConeAlong_iff_isSNCConeAlong` | `Divisors/SNC`, `Cone/SNCComparison` |
+| tests (`n = k = 2` with angles `π` and `6π`; components; `k = 1`; smooth ⇒ SNC) | | `ConicalKahlerTest/SNC` |
+
+`ConeWeights`, `modelDomain`, `modelWeight`, `modelConeQuadratic` and `modelConeFormOn` are
+reused unchanged. The SNC model *is* `modelConeFormOn (coordSNCWeights hk angle)`.
 
 ## Decisions affecting definitions
 
@@ -76,6 +144,29 @@ will not require changing it.
   shrinks the second chart (`restrOpen`) to a neighbourhood of `p` chosen in the proof.
 * `ConeKahlerForm.IsKahlerEinstein` is the equation on `X \ D` only, not the current equation on
   `X` (spec §6).
+* **Flat cone.** The flat cone of angle `2πβ` is represented by its polar coordinates
+  `(ρ, φ) ∈ (0, ∞) × ℝ` with the metric `dρ² + ρ²dφ²` and the deck translation `φ ↦ φ + 2πβ`.
+  The quotient manifold is not constructed. Isometry statements are pullback identities between
+  coverings that intertwine the deck groups. Lengths (`coneRadialLength`, `coneCircleLength`)
+  are lengths of explicit curves. They are not distances: minimality of radial segments is not
+  proved.
+* **Normalisation in the isometry.** With the Hermitian form `q` the radial variable is
+  `ρ = r^β`. With the upstream Riemannian metric `g = ω(·, J·) = 2q` it is `ρ = √2 r^β`.
+* **Generic chart layer.** The pullback is defined once for a `HolChart` on an arbitrary open
+  `U ⊆ X` (`formInHolChart`). `formInAdaptedChart` keeps its original definition, which is
+  definitionally the `U = X \ D` case.
+* **SNC divisors.** `SNCChart` has exactly the spec's fields. `SNCDivisor` asks for a
+  `LocallyFinite` family of closed components rather than `[Fintype ι]`. This is implied by
+  `[Finite ι]` (`locallyFinite_of_finite`) and is what makes the support closed. Components are
+  labelled, not required to be irreducible or connected: a label is what carries a cone angle.
+  The angle function is `ι → ConeAngle`, so every component has a cone angle (use `β = 1` for an
+  uncharged component). The "away" condition in an SNC chart is `χ.Away z` (all active
+  coordinates nonzero), which is equivalent to `z ∈ modelDomain (χ.localWeights angle)`.
+  Charts are not required to have `p` on all of their active components (as in the spec). The
+  components through the centre are always active (`mem_range_active_of_mem`).
+* **Transport of forms** along an equality of open sets (`kahlerCast`) is used to compare
+  `KahlerForm n D.complement` with `KahlerForm n D.toSNC.complement`. The two open sets are
+  equal but not definitionally so.
 
 Supporting lemmas re-proved locally because the upstream versions are `private`:
 `ConicalKahler.ddbar_congr` (upstream `KahlerForm.ddbar_eq_of_eventuallyEq`) and
@@ -83,21 +174,26 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 
 ## Outstanding proof obligations
 
-1. **Agreement with `metricInChart`**: if `χ.coord = chartAt (E n) x` for `x : D.complement`, then
-   `metricInAdaptedChart D ω₀ χ z _ _ = ω₀.metricInChart x z` on the chart target. This needs
-   lemmas identifying `extChartAt` and `tangentCoordChange` of an `Opens` subtype with those of the
-   ambient manifold. They are straightforward but were not needed for any result above.
+Done since the first review: agreement with `metricInChart` (Milestone 4) and `Divisors/SNC`
+(Milestone 5).
+
+1. **SNC chart invariance for angles `β_i ≤ 1`.** This is the analogue of
+   `IsQuasiIsometricCone.forall_chart_of_le_one`. A change of SNC charts at `p` maps active
+   hyperplanes to active hyperplanes with the same labels, possibly permuting the slots. The proof
+   needs per-hyperplane versions of `exists_hyperplane_estimates`, conjugated by `swapCoord`, and
+   a multi-coordinate version of `modelConeQuadratic_le_of_le_one`. Not started. For `β_i > 1`
+   the condition stays an existence-of-compatible-chart condition, and the smooth
+   counterexample applies through `isConeAlong_iff_isSNCConeAlong`.
 2. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
-   KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model already has
-   this via `modelConeFormOn`.
-3. **`Divisors/SNC`** (spec item 8): `SNCChart`, labelled components, the comparison condition
-   with weights `some (angle (active j))`, and the smooth-divisor case as a special case.
-   `ModelConeForm` and its Ricci-flatness already handle arbitrary `ConeWeights`.
-4. **Cone-admissible atlases for `β > 1`** (spec §4.1): a `ConeAdmissibleChartChange` interface
+   KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
+   `modelConeFormOn`. Transport along *equal* open sets is `kahlerCast`.
+3. **Cone-admissible atlases for `β > 1`** (spec §4.1): a `ConeAdmissibleChartChange` interface
    with bounded weighted Jacobians, and invariance within such an atlas.
-5. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
-   polyhomogeneous interfaces. Deliberately not started; none of these is implied by
-   `IsConeAlong`.
+4. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
+   polyhomogeneous interfaces. Deliberately not started, as requested. None of these is implied by
+   `IsConeAlong`. Milestone 3 gives a form with `IsConeAlong` that is not Ricci-flat.
+5. **Metric-space statements for the flat cone.** Path-length distance, minimality of radial
+   segments, and the metric completion of `(ℂ \ {0}, g_β)` as the flat cone with its vertex.
 6. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
 
 ## Blockers
