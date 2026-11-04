@@ -319,6 +319,29 @@ end Change
 
 section Model
 
+/-- For the coordinate hyperplane `D = {z_0 = 0} ⊆ ℂⁿ` and the identity adapted chart, any Kähler
+form on `ℂⁿ \ D` is its own expression in adapted coordinates. -/
+theorem formInAdaptedChart_coordHyperplaneChart
+    (ω₀ : KahlerForm n (coordHyperplane n).complement) (p : E n) {z : E n}
+    (hz : z ∈ (coordHyperplaneChart n p).coord.target) (haway : z 0 ≠ 0) :
+    formInAdaptedChart (coordHyperplane n) ω₀ (coordHyperplaneChart n p) z hz haway =
+      ω₀ ⟨z, haway⟩ := by
+  have hτ : (coordHyperplaneChart n p).toChartAt ((coordHyperplaneChart n p).coord.symm z) =
+      id := by
+    funext w
+    simp [DivisorChart.toChartAt, coordHyperplaneChart, chartAt_self_eq]
+  unfold formInAdaptedChart
+  rw [hτ, fderiv_id]
+  rfl
+
+/-- In the identity chart, the adapted quadratic form is `ω(v, Jv) / 2`. -/
+theorem metricQuadraticInAdaptedChart_coordHyperplaneChart
+    (ω₀ : KahlerForm n (coordHyperplane n).complement) (p : E n) {z : E n}
+    (hz : z ∈ (coordHyperplaneChart n p).coord.target) (haway : z 0 ≠ 0) (v : E n) :
+    metricQuadraticInAdaptedChart (coordHyperplane n) ω₀ (coordHyperplaneChart n p) z hz haway v =
+      ω₀ ⟨z, haway⟩ ![v, Complex.I • v] / 2 := by
+  rw [metricQuadraticInAdaptedChart, formInAdaptedChart_coordHyperplaneChart]
+
 /-- For the coordinate hyperplane `D = {z_0 = 0} ⊆ ℂⁿ` with the identity adapted chart, the form
 of the model `modelConeFormOn` in adapted coordinates is the model form itself. -/
 theorem formInAdaptedChart_model (β : ConeAngle) (p : E n) {z : E n}

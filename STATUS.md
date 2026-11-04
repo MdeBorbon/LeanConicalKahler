@@ -5,7 +5,7 @@ Last updated: 2026-11-04.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 315
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 446
 `ConicalKahler.*` declarations depend only on `propext`, `Classical.choice` and `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
 
@@ -56,6 +56,37 @@ condition, with an explicit counterexample to unrestricted invariance. The SNC g
 outstanding (see below). The model construction already accepts arbitrary `ConeWeights`, so SNC
 will not require changing it.
 
+## Milestone 3: metric geometry of the model (review priority 1): COMPLETE
+
+The standard cone metric is *exactly* a flat cone transversally. All statements below are
+equalities of metric tensors, and they are properties of the model only.
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| product structure: `q_β = q_transverse(z_0) + |dz'|²` | `modelConeQuadratic_single_eq_transverse`, `transverseConeMetric` | `Cone/FlatCone` |
+| flat cone of angle `2πβ`: metric `dρ² + ρ² dφ²` on `(0,∞) × ℝ`, `φ ~ φ + 2πβ`; it is flat (pullback of `|dw|²` by `ρe^{iφ}`) | `flatConeMetric`, `flatConeMetric_eq_normSq_fderiv_polarMap`, `flatConeMetric_add_snd`, `polarMap_add_snd` | `Cone/FlatCone` |
+| polar coordinates on `ℂ \ {0}` and deck group `θ ↦ θ + 2π` | `polarMap`, `fderiv_polarMap`, `normSq_fderiv_polarMap`, `polarMap_add_two_pi`, `exists_polarMap_eq` | `Cone/FlatCone` |
+| radial change `ρ = c r^β`, `φ = βθ` is a diffeomorphism of `(0,∞) × ℝ` conjugating `θ ↦ θ + 2π` to `φ ↦ φ + 2πβ` | `coneRadialChange`, `coneRadialChangeHomeomorph`, `contDiffOn_coneRadialChange`, `contDiffOn_coneRadialChangeInv`, `coneRadialChange_add_two_pi` | `Cone/FlatCone` |
+| **isometry, Hermitian form**: `β²|z_0|^(2β-2)|dz_0|² = dρ² + ρ²dφ²`, `ρ = r^β` | `transverseConeMetric_polar`, `modelConeQuadratic_polar_slice` | `Cone/FlatCone` |
+| **isometry, Riemannian metric of the upstream form**: `ω_β(v, Jv)` on a transverse slice `= dρ² + ρ²dφ²`, `ρ = √2 r^β` | `standardConeForm_polar_riemannian`, `transverseSlice`, `fderiv_transverseSlice_polarMap` | `Cone/FlatCone` |
+| developing map `ζ ↦ e^{βζ}` on the universal cover; holonomy = rotation by `2πβ`, trivial iff `β ∈ ℤ` | `transverseConeMetric_exp`, `exp_mul_add_two_pi_I`, `exp_two_pi_mul_I_eq_one_iff` | `Cone/FlatCone` |
+| circumference `2πβ r^β`, radial length `r^β`, ratio `2πβ` | `coneCircleLength_eq`, `coneRadialLength_eq`, `coneCircleLength_eq_two_pi_mul_radialLength` | `Cone/FlatCone` |
+| radial-coefficient calculus | `radialCoeff_congr`, `radialCoeff_add`, `radialCoeff_eq_deriv`, `radialCoeff_rpow_add_rpow_two_mul`, `radialCoeff_log_one_add_mul_rpow` | `Analysis/RadialCalculus` |
+| separable Kähler forms `i∂∂̄ ∑ g_j(|z_j|²)` and their Ricci forms | `SeparableProfile`, `SeparableProfile.kahlerForm`, `kahlerForm_metricInChart`, `ricciForm_coeffMatrix` | `Cone/Separable` |
+| **QI is strictly weaker than the model**: a form with `IsConeAlong` (`C = 5`) that is not Ricci-flat, for every `β > 0` | `perturbedConeForm`, `perturbedConeForm_isConeAlong`, `perturbedConeForm_ricciForm_coeffMatrix_zero` (`Ric_{00̄} = -4β²s^(β-1)/(1+4s^β)²`), `perturbedConeForm_not_ricciFlat`, `exists_isConeAlong_not_ricciFlat`, `perturbedConeKahlerForm_not_isKahlerEinstein_zero` | `Cone/QuasiIsometricExample` |
+| tests (`β = 1/2`, `β = 2`, `β = 1`, holonomy, `n = 2`) | | `ConicalKahlerTest/Geometry` |
+
+**Three levels, kept separate.**
+1. *Model geometry* (this milestone): `ω_β` is transversally isometric to the flat cone of angle
+   `2πβ`, and Ricci-flat.
+2. *Strong asymptotic cone conditions* (spec §3.5; not defined): the metric is asymptotic to the
+   model at the divisor.
+3. *Quasi-isometric cone condition* `IsConeAlong`: two-sided bounds only.
+
+The perturbed example `i∂∂̄(|z_0|^(2β) + |z_0|^(4β) + |z'|²)` satisfies 3. Its ratio to the model
+tends to `1`, so it would also satisfy 2. It is not Ricci-flat, so it fails 1. Hence 1 is strictly
+stronger than 3.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -76,6 +107,14 @@ will not require changing it.
   shrinks the second chart (`restrOpen`) to a neighbourhood of `p` chosen in the proof.
 * `ConeKahlerForm.IsKahlerEinstein` is the equation on `X \ D` only, not the current equation on
   `X` (spec §6).
+* **Flat cone.** The flat cone of angle `2πβ` is represented by its polar coordinates
+  `(ρ, φ) ∈ (0, ∞) × ℝ` with the metric `dρ² + ρ²dφ²` and the deck translation `φ ↦ φ + 2πβ`.
+  The quotient manifold is not constructed. Isometry statements are pullback identities between
+  coverings that intertwine the deck groups. Lengths (`coneRadialLength`, `coneCircleLength`)
+  are lengths of explicit curves. They are not distances: minimality of radial segments is not
+  proved.
+* **Normalisation in the isometry.** With the Hermitian form `q` the radial variable is
+  `ρ = r^β`. With the upstream Riemannian metric `g = ω(·, J·) = 2q` it is `ρ = √2 r^β`.
 
 Supporting lemmas re-proved locally because the upstream versions are `private`:
 `ConicalKahler.ddbar_congr` (upstream `KahlerForm.ddbar_eq_of_eventuallyEq`) and
