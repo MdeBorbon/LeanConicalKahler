@@ -5,7 +5,7 @@ Last updated: 2026-11-04.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 515
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 656
 `ConicalKahler.*` declarations depend only on `propext`, `Classical.choice` and `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
 
@@ -52,9 +52,8 @@ The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has 
 With this the spec's v0.1 "definition of done" is met for the smooth-divisor case. The model and the
 smooth-divisor quasi-isometry are defined, the model identities and chart independence for
 `0 < β ≤ 1` are proved, and `β > 1` is supported as a model and as an existential compatible-chart
-condition, with an explicit counterexample to unrestricted invariance. The SNC generalisation is
-outstanding (see below). The model construction already accepts arbitrary `ConeWeights`, so SNC
-will not require changing it.
+condition, with an explicit counterexample to unrestricted invariance. The SNC generalisation
+(Milestone 5) did not change the model construction.
 
 ## Milestone 3: metric geometry of the model (review priority 1): COMPLETE
 
@@ -106,6 +105,25 @@ declaration keeps its name, statement and definition. Only the proofs now go thr
 lemmas. `formInAdaptedChart_coordHyperplaneChart` and
 `metricQuadraticInAdaptedChart_coordHyperplaneChart` (any Kähler form, identity chart) are new.
 
+## Milestone 5: SNC divisors with labelled cone angles (review priority 3, spec item 8): COMPLETE
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| SNC chart (spec §4 fields verbatim) | `SNCChart n X ι components p`, `SNCChart.slot`, `SNCChart.Away`, `SNCChart.toHolChart`, `SNCChart.restrOpen` | `Divisors/SNC` |
+| support/complement in a chart | `SNCChart.mem_iUnion_iff`, `symm_notMem_iUnion`, `away_coord`, `SNCChart.symmComplement` | `Divisors/SNC` |
+| SNC divisor with labelled components; complement is open | `SNCDivisor n X ι` (`components`, `isClosed`, `locallyFinite`, `exists_chart`), `support`, `isClosed_support`, `complement`, `mem_complement_iff_forall` | `Divisors/SNC` |
+| **each labelled component is a smooth divisor** | `SNCChart.toDivisorChart` (swap the slot to coordinate `0`), `SNCDivisor.component`, `swapCoord`, `HolChart.transCLE` | `Divisors/SNC`, `Manifold/HolomorphicChart` |
+| local weights `some (angle (active j))` / `none`; **same `ConeWeights` and `ModelConeForm`** | `SNCChart.localWeights`, `localWeights_angle_slot`, `mem_modelDomain_localWeights` (model domain = `Away`), `modelWeight_localWeights_slot` | `Divisors/SNC` |
+| coordinate SNC divisor `{z_0 ⋯ z_{k-1} = 0}` | `coordSNC n k hk`, `coordSNCChart`, `coordSNCWeights`, `coordSNC_complement` (= model domain) | `Divisors/SNC` |
+| metric in an SNC chart | `metricInSNCChart`, `metricQuadraticInSNCChart`, `metricInSNCChart_posDef`, `metricQuadraticInSNCChart_pos`, `metricQuadraticInSNCChart_change` | `Cone/SNCComparison` |
+| SNC quasi-isometric cone condition, arbitrary angles `β_i > 0` | `SNCConeComparableIn`, `IsQuasiIsometricSNCCone`, `IsSNCConeAlong` (abbrev), `.restrOpen`, `.mono`, `exists_chart_subset` | `Cone/SNCComparison` |
+| SNC model is SNC-conical (`C = 1`), Ricci-flat, KE | `modelOnCoordSNC`, `modelOnCoordSNC_coeffMatrix`, `modelOnCoordSNC_isSNCConeAlong`, `modelOnCoordSNC_ricciFlat`, `SNCConeKahlerForm`, `standardSNCConeKahlerForm_isKahlerEinstein` | `Cone/SNCComparison` |
+| **smooth case is a specialization** | `SmoothDivisor.toSNC`, `DivisorChart.toSNCChart`, `toSNC_complement`, `toSNC_chart_k`, `localWeights_eq_singleConeWeights`, `SmoothDivisor.toSNCForm`, `isConeAlong_iff_isSNCConeAlong` | `Divisors/SNC`, `Cone/SNCComparison` |
+| tests (`n = k = 2` with angles `π` and `6π`; components; `k = 1`; smooth ⇒ SNC) | | `ConicalKahlerTest/SNC` |
+
+`ConeWeights`, `modelDomain`, `modelWeight`, `modelConeQuadratic` and `modelConeFormOn` are
+reused unchanged. The SNC model *is* `modelConeFormOn (coordSNCWeights hk angle)`.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -134,6 +152,21 @@ lemmas. `formInAdaptedChart_coordHyperplaneChart` and
   proved.
 * **Normalisation in the isometry.** With the Hermitian form `q` the radial variable is
   `ρ = r^β`. With the upstream Riemannian metric `g = ω(·, J·) = 2q` it is `ρ = √2 r^β`.
+* **Generic chart layer.** The pullback is defined once for a `HolChart` on an arbitrary open
+  `U ⊆ X` (`formInHolChart`). `formInAdaptedChart` keeps its original definition, which is
+  definitionally the `U = X \ D` case.
+* **SNC divisors.** `SNCChart` has exactly the spec's fields. `SNCDivisor` asks for a
+  `LocallyFinite` family of closed components rather than `[Fintype ι]`. This is implied by
+  `[Finite ι]` (`locallyFinite_of_finite`) and is what makes the support closed. Components are
+  labelled, not required to be irreducible or connected: a label is what carries a cone angle.
+  The angle function is `ι → ConeAngle`, so every component has a cone angle (use `β = 1` for an
+  uncharged component). The "away" condition in an SNC chart is `χ.Away z` (all active
+  coordinates nonzero), which is equivalent to `z ∈ modelDomain (χ.localWeights angle)`.
+  Charts are not required to have `p` on all of their active components (as in the spec). The
+  components through the centre are always active (`mem_range_active_of_mem`).
+* **Transport of forms** along an equality of open sets (`kahlerCast`) is used to compare
+  `KahlerForm n D.complement` with `KahlerForm n D.toSNC.complement`. The two open sets are
+  equal but not definitionally so.
 
 Supporting lemmas re-proved locally because the upstream versions are `private`:
 `ConicalKahler.ddbar_congr` (upstream `KahlerForm.ddbar_eq_of_eventuallyEq`) and
@@ -141,18 +174,26 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 
 ## Outstanding proof obligations
 
-1. ~~Agreement with `metricInChart`~~: done in Milestone 4.
+Done since the first review: agreement with `metricInChart` (Milestone 4) and `Divisors/SNC`
+(Milestone 5).
+
+1. **SNC chart invariance for angles `β_i ≤ 1`.** This is the analogue of
+   `IsQuasiIsometricCone.forall_chart_of_le_one`. A change of SNC charts at `p` maps active
+   hyperplanes to active hyperplanes with the same labels, possibly permuting the slots. The proof
+   needs per-hyperplane versions of `exists_hyperplane_estimates`, conjugated by `swapCoord`, and
+   a multi-coordinate version of `modelConeQuadratic_le_of_le_one`. Not started. For `β_i > 1`
+   the condition stays an existence-of-compatible-chart condition, and the smooth
+   counterexample applies through `isConeAlong_iff_isSNCConeAlong`.
 2. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
-   KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model already has
-   this via `modelConeFormOn`.
-3. **`Divisors/SNC`** (spec item 8): `SNCChart`, labelled components, the comparison condition
-   with weights `some (angle (active j))`, and the smooth-divisor case as a special case.
-   `ModelConeForm` and its Ricci-flatness already handle arbitrary `ConeWeights`.
-4. **Cone-admissible atlases for `β > 1`** (spec §4.1): a `ConeAdmissibleChartChange` interface
+   KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
+   `modelConeFormOn`. Transport along *equal* open sets is `kahlerCast`.
+3. **Cone-admissible atlases for `β > 1`** (spec §4.1): a `ConeAdmissibleChartChange` interface
    with bounded weighted Jacobians, and invariance within such an atlas.
-5. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
-   polyhomogeneous interfaces. Deliberately not started; none of these is implied by
-   `IsConeAlong`.
+4. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
+   polyhomogeneous interfaces. Deliberately not started, as requested. None of these is implied by
+   `IsConeAlong`. Milestone 3 gives a form with `IsConeAlong` that is not Ricci-flat.
+5. **Metric-space statements for the flat cone.** Path-length distance, minimality of radial
+   segments, and the metric completion of `(ℂ \ {0}, g_β)` as the flat cone with its vertex.
 6. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
 
 ## Blockers

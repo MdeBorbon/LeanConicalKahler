@@ -20,6 +20,8 @@ themselves (`HolChart.ofChartAt`) are all holomorphic charts. Pulling back a Kä
 * `HolChart.contDiffAt_transition`: `c₂ ∘ c₁⁻¹` is holomorphic near every common point.
 * `HolChart.ofChartAt x`: the selected chart at `x`, as a holomorphic chart.
 * `HolChart.restrOpen`: restriction to an open subset.
+* `HolChart.transCLE`: post-composition with a complex-linear automorphism of `ℂⁿ`, for example
+  the coordinate swap `swapCoord a b`. `HolChart.refl`: the identity chart of `ℂⁿ`.
 -/
 
 @[expose] public section
@@ -56,6 +58,26 @@ noncomputable def restrOpen (c : HolChart n X) (s : Set X) (hs : IsOpen s) : Hol
     exact c.holomorphic.mono inter_subset_left
   inverse_holomorphic :=
     c.inverse_holomorphic.mono fun _ hz => hz.1
+
+/-- Post-compose a holomorphic chart with a complex-linear automorphism `L` of `ℂⁿ`. -/
+noncomputable def transCLE (c : HolChart n X) (L : E n ≃L[ℂ] E n) : HolChart n X where
+  coord := c.coord.transHomeomorph L.toHomeomorph
+  holomorphic := by
+    have hL : ContMDiff 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ L := L.contDiff.contMDiff
+    exact hL.comp_contMDiffOn c.holomorphic
+  inverse_holomorphic := by
+    have hL : ContMDiff 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ L.symm := L.symm.contDiff.contMDiff
+    exact c.inverse_holomorphic.comp hL.contMDiffOn (fun _ hz => hz)
+
+@[simp]
+theorem transCLE_coord_apply (c : HolChart n X) (L : E n ≃L[ℂ] E n) (x : X) :
+    (c.transCLE L).coord x = L (c.coord x) :=
+  rfl
+
+@[simp]
+theorem transCLE_coord_source (c : HolChart n X) (L : E n ≃L[ℂ] E n) :
+    (c.transCLE L).coord.source = c.coord.source :=
+  rfl
 
 /-- The transition `extChartAt y ∘ c⁻¹` from `c`-coordinates to the selected chart at `y`. -/
 noncomputable def toChartAt (c : HolChart n X) (y : X) : E n → E n :=
@@ -146,5 +168,20 @@ theorem ofChartAt_coord (x : X) : (ofChartAt (n := n) x).coord = chartAt (E n) x
   rfl
 
 end HolChart
+
+/-- The identity chart of `ℂⁿ`. -/
+noncomputable def HolChart.refl (n : ℕ) : HolChart n (E n) where
+  coord := OpenPartialHomeomorph.refl (E n)
+  holomorphic := contMDiffOn_id
+  inverse_holomorphic := contMDiffOn_id
+
+/-- The linear automorphism of `ℂⁿ` exchanging the coordinates `a` and `b`. -/
+noncomputable def swapCoord {n : ℕ} (a b : Fin n) : E n ≃L[ℂ] E n :=
+  (LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ (Equiv.swap a b)).toContinuousLinearEquiv
+
+@[simp]
+theorem swapCoord_apply {n : ℕ} (a b : Fin n) (z : E n) (i : Fin n) :
+    swapCoord a b z i = z (Equiv.swap a b i) := by
+  simp [swapCoord]
 
 end ConicalKahler

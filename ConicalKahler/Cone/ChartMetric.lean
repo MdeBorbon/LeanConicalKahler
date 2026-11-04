@@ -110,6 +110,17 @@ theorem formInHolChart_congr {c' : HolChart n X} (h : c.coord = c'.coord) {z : E
   obtain rfl := HolChart.ext' h
   rfl
 
+/-- Transport a Kähler form along an equality of open subsets. -/
+def kahlerCast {V : TopologicalSpace.Opens X} (h : U = V) (ω₀ : KahlerForm n U) : KahlerForm n V :=
+  h ▸ ω₀
+
+/-- Transporting the form along `U = V` does not change its expression in any chart. -/
+theorem formInHolChart_kahlerCast {V : TopologicalSpace.Opens X} (h : U = V) {z : E n}
+    (hU : c.coord.symm z ∈ U) (hV : c.coord.symm z ∈ V) :
+    formInHolChart V (kahlerCast U h ω₀) c z hV = formInHolChart U ω₀ c z hU := by
+  subst h
+  rfl
+
 variable {U ω₀ c} {z : E n} (hz : z ∈ c.coord.target) (hU : c.coord.symm z ∈ U)
 include hz
 
@@ -156,6 +167,23 @@ theorem metricQuadraticInHolChart_nonneg (v : E n) :
   · exact (metricQuadraticInHolChart_pos hz hU hv).le
 
 end HolMetric
+
+/-- In the identity chart of `ℂⁿ`, a Kähler form on an open `U ⊆ ℂⁿ` is its own expression. -/
+theorem formInHolChart_refl (U : TopologicalSpace.Opens (E n)) (ω₀ : KahlerForm n U) {z : E n}
+    (hU : (HolChart.refl n).coord.symm z ∈ U) :
+    formInHolChart U ω₀ (HolChart.refl n) z hU = ω₀ ⟨z, hU⟩ := by
+  have hτ : (HolChart.refl n).toChartAt ((HolChart.refl n).coord.symm z) = id := by
+    funext w
+    simp [HolChart.toChartAt, HolChart.refl, chartAt_self_eq]
+  unfold formInHolChart
+  rw [hτ, fderiv_id]
+  rfl
+
+/-- In the identity chart of `ℂⁿ`, the quadratic form is `ω₀(v, Jv) / 2`. -/
+theorem metricQuadraticInHolChart_refl (U : TopologicalSpace.Opens (E n)) (ω₀ : KahlerForm n U)
+    {z : E n} (hU : (HolChart.refl n).coord.symm z ∈ U) (v : E n) :
+    metricQuadraticInHolChart U ω₀ (HolChart.refl n) z hU v = ω₀ ⟨z, hU⟩ ![v, Complex.I • v] / 2 := by
+  rw [metricQuadraticInHolChart, formInHolChart_refl]
 
 section HolChange
 

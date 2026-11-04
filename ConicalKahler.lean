@@ -20,3 +20,5 @@ public import ConicalKahler.Cone.Separable
 public import ConicalKahler.Cone.QuasiIsometricExample
 public import ConicalKahler.Manifold.HolomorphicChart
 public import ConicalKahler.Cone.SelectedChart
+public import ConicalKahler.Divisors.SNC
+public import ConicalKahler.Cone.SNCComparison
