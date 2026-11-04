@@ -258,6 +258,27 @@ theorem metricQuadraticInSNCChart_toSNC (ω₀ : KahlerForm n D.complement) {p :
     (χ.symm_notMem hz haway)
   exact congrArg (fun α : E n [⋀^Fin 2]→L[ℝ] ℝ => α ![v, Complex.I • v] / 2) (e1.trans e2)
 
+/-- **The smooth comparison in an adapted chart is the one-label SNC comparison** in any SNC chart
+with the same coordinate map and a single active component. -/
+theorem coneComparableIn_iff_sncConeComparableIn (β : ConeAngle) (ω₀ : KahlerForm n D.complement)
+    {p : X} (χ : DivisorChart n X D.carrier p) (χ' : SNCChart n X Unit D.toSNC.components p)
+    (hcoord : χ'.coord = χ.coord) (hk : χ'.k = 1) (C : ℝ) :
+    ConeComparableIn D β ω₀ χ C ↔
+      SNCConeComparableIn D.toSNC (fun _ => β) (D.toSNCForm ω₀) χ' C := by
+  constructor
+  · intro h z hz' haway' v
+    have hz : z ∈ χ.coord.target := by rw [← hcoord]; exact hz'
+    have h0 : z 0 ≠ 0 := (away_iff_of_k_eq_one χ' hk).mp haway'
+    rw [metricQuadraticInSNCChart_toSNC D ω₀ χ' χ hcoord hz' haway' hz h0,
+      localWeights_eq_singleConeWeights χ' hk β]
+    exact h z hz h0 v
+  · intro h z hz haway v
+    have hz' : z ∈ χ'.coord.target := by rw [hcoord]; exact hz
+    have haway' : χ'.Away z := (away_iff_of_k_eq_one χ' hk).mpr haway
+    have h' := h z hz' haway' v
+    rwa [metricQuadraticInSNCChart_toSNC D ω₀ χ' χ hcoord hz' haway' hz haway,
+      localWeights_eq_singleConeWeights χ' hk β] at h'
+
 /-- **The smooth-divisor cone condition is the one-label case of the SNC cone condition.** -/
 theorem isConeAlong_iff_isSNCConeAlong (β : ConeAngle) (ω₀ : KahlerForm n D.complement) :
     IsConeAlong D β ω₀ ↔ IsSNCConeAlong D.toSNC (fun _ => β) (D.toSNCForm ω₀) := by
@@ -265,21 +286,13 @@ theorem isConeAlong_iff_isSNCConeAlong (β : ConeAngle) (ω₀ : KahlerForm n D.
   · intro h p hp
     rw [D.toSNC_support] at hp
     obtain ⟨χ, C, hC, hcomp⟩ := h p hp
-    refine ⟨χ.toSNCChart, C, hC, fun z hz haway v => ?_⟩
-    have h0 : z 0 ≠ 0 :=
-      (away_iff_of_k_eq_one (components := D.toSNC.components) χ.toSNCChart rfl).mp haway
-    rw [metricQuadraticInSNCChart_toSNC D ω₀ _ χ rfl hz haway hz h0,
-      localWeights_eq_singleConeWeights (components := D.toSNC.components) χ.toSNCChart rfl β]
-    exact hcomp z hz h0 v
+    exact ⟨χ.toSNCChart, C, hC,
+      (coneComparableIn_iff_sncConeComparableIn D β ω₀ χ χ.toSNCChart rfl rfl C).mp hcomp⟩
   · intro h p hp
     obtain ⟨χ', C, hC, hcomp⟩ := h p (by rw [D.toSNC_support]; exact hp)
     have hk := D.toSNC_chart_k hp χ'
-    refine ⟨χ'.toDivisorChartOfSmooth hk, C, hC, fun z hz haway v => ?_⟩
-    have haway' : χ'.Away z := (away_iff_of_k_eq_one χ' hk).mpr haway
-    have h := hcomp z hz haway' v
-    rw [metricQuadraticInSNCChart_toSNC D ω₀ χ' (χ'.toDivisorChartOfSmooth hk) rfl hz haway' hz
-      haway, localWeights_eq_singleConeWeights χ' hk β] at h
-    exact h
+    exact ⟨χ'.toDivisorChartOfSmooth hk, C, hC,
+      (coneComparableIn_iff_sncConeComparableIn D β ω₀ _ χ' rfl hk C).mpr hcomp⟩
 
 end Specialization
 

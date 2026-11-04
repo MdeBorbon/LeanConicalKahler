@@ -22,3 +22,5 @@ public import ConicalKahler.Manifold.HolomorphicChart
 public import ConicalKahler.Cone.SelectedChart
 public import ConicalKahler.Divisors.SNC
 public import ConicalKahler.Cone.SNCComparison
+public import ConicalKahler.Cone.WeightedComparison
+public import ConicalKahler.Cone.SNCChartInvariance
