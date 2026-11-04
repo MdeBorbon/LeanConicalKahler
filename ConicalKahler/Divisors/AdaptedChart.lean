@@ -1,7 +1,6 @@
 module
 
-public import ConicalKahler.Cone.Weights
-public import CalabiYau.Geometry.Complex.Basic
+public import ConicalKahler.Manifold.HolomorphicChart
 
 /-!
 # Smooth divisors via adapted holomorphic charts
@@ -54,6 +53,14 @@ namespace DivisorChart
 
 variable {n : ℕ} [NeZero n] {X : Type*} [TopologicalSpace X] [ChartedSpace (E n) X]
   {D : Set X} {p : X}
+
+/-- The underlying holomorphic chart. -/
+def toHolChart (χ : DivisorChart n X D p) : HolChart n X :=
+  ⟨χ.coord, χ.holomorphic, χ.inverse_holomorphic⟩
+
+@[simp]
+theorem toHolChart_coord (χ : DivisorChart n X D p) : χ.toHolChart.coord = χ.coord :=
+  rfl
 
 theorem coord_center_zero (χ : DivisorChart n X D p) (hp : p ∈ D) : χ.coord p 0 = 0 :=
   (χ.cutsOut p χ.center_mem).mp hp

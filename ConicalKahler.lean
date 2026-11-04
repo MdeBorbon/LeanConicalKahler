@@ -18,3 +18,5 @@ public import ConicalKahler.Analysis.RadialCalculus
 public import ConicalKahler.Cone.FlatCone
 public import ConicalKahler.Cone.Separable
 public import ConicalKahler.Cone.QuasiIsometricExample
+public import ConicalKahler.Manifold.HolomorphicChart
+public import ConicalKahler.Cone.SelectedChart

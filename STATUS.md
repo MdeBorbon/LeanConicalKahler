@@ -5,7 +5,7 @@ Last updated: 2026-11-04.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 446
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 515
 `ConicalKahler.*` declarations depend only on `propext`, `Classical.choice` and `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
 
@@ -87,6 +87,25 @@ The perturbed example `i∂∂̄(|z_0|^(2β) + |z_0|^(4β) + |z'|²)` satisfies 
 tends to `1`, so it would also satisfy 2. It is not Ricci-flat, so it fails 1. Hence 1 is strictly
 stronger than 3.
 
+## Milestone 4: compatibility with upstream `metricInChart` (review priority 2): COMPLETE
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| holomorphic charts outside the selected atlas; the selected chart is one | `HolChart`, `HolChart.toChartAt`, `HolChart.contDiffAt_transition`, `HolChart.ofChartAt`, `DivisorChart.toHolChart` | `Manifold/HolomorphicChart`, `Divisors/AdaptedChart` |
+| pullback along any holomorphic chart, on any open `U ⊆ X` | `formInHolChart`, `metricInHolChart`, `metricQuadraticInHolChart`, `formInHolChart_isPositive`, `metricInHolChart_posDef`, `formInHolChart_change`, `metricInHolChart_change`, `metricQuadraticInHolChart_change` | `Cone/ChartMetric` |
+| the adapted-chart pullback is the special case `U = X \ D` (by `rfl`) | `formInAdaptedChart_eq_formInHolChart`, `metricInAdaptedChart_eq_metricInHolChart`, `metricQuadraticInAdaptedChart_eq_metricQuadraticInHolChart` | `Cone/ChartMetric` |
+| charts of an open subset are restrictions of ambient charts | `extChartAt_opens_apply'`, `mem_extChartAt_opens_target`, `extChartAt_opens_symm_coe` | `Cone/SelectedChart` |
+| **selected chart = upstream**: `chartRep x z = formInHolChart … (ofChartAt x) z`, so `metricInChart x z = metricInHolChart … (ofChartAt x) z` on the whole chart target | `chartRep_eq_formInHolChart`, `metricInChart_eq_metricInHolChart` | `Cone/SelectedChart` |
+| **agreement**: if `χ.coord = chartAt x` then `metricInAdaptedChart D ω₀ χ z = ω₀.metricInChart x z` (and the quadratic forms agree) | `metricInAdaptedChart_eq_metricInChart`, `metricQuadraticInAdaptedChart_eq_chartRep` | `Cone/SelectedChart` |
+| **transformation law** for an arbitrary adapted chart: `metricInChart x z = Aᵀ g^χ(w) Ā`, `A = D(χ ∘ (chartAt x)⁻¹)(z)`, `w = χ((chartAt x)⁻¹ z)`; quadratic form `ω(v,Jv)/2 = q^χ(w; Av)` | `metricInChart_eq_metricInHolChart_change`, `metricInChart_eq_metricInAdaptedChart_change`, `chartRep_apply_I_smul_eq_metricQuadraticInAdaptedChart` | `Cone/SelectedChart` |
+| coordinate hyperplane: agreement for every Kähler form | `metricInAdaptedChart_coordHyperplane_eq_metricInChart` | `Cone/SelectedChart` |
+| tests (model; shear chart transformation law) | | `ConicalKahlerTest/SelectedChart` |
+
+The adapted-chart API was refactored to be a thin layer over `formInHolChart`. Every Milestone 2
+declaration keeps its name, statement and definition. Only the proofs now go through the generic
+lemmas. `formInAdaptedChart_coordHyperplaneChart` and
+`metricQuadraticInAdaptedChart_coordHyperplaneChart` (any Kähler form, identity chart) are new.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -122,10 +141,7 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 
 ## Outstanding proof obligations
 
-1. **Agreement with `metricInChart`**: if `χ.coord = chartAt (E n) x` for `x : D.complement`, then
-   `metricInAdaptedChart D ω₀ χ z _ _ = ω₀.metricInChart x z` on the chart target. This needs
-   lemmas identifying `extChartAt` and `tangentCoordChange` of an `Opens` subtype with those of the
-   ambient manifold. They are straightforward but were not needed for any result above.
+1. ~~Agreement with `metricInChart`~~: done in Milestone 4.
 2. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model already has
    this via `modelConeFormOn`.

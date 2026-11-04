@@ -4,18 +4,26 @@ public import ConicalKahler.Divisors.AdaptedChart
 public import ConicalKahler.Cone.Model
 
 /-!
-# The metric of a Kähler form on `X \ D` in an arbitrary adapted chart
+# The metric of a Kähler form in an arbitrary holomorphic chart
 
 `KahlerForm.metricInChart` computes `g_{jk̄}` in the chart *selected* by `ChartedSpace`. An
 adapted chart `χ : DivisorChart n X D p` is in general a different chart, so we pull the form back
-explicitly. For `z ∈ χ.coord.target` with `z_0 ≠ 0` let `y = χ⁻¹(z) ∈ X \ D`. The value `ω y` is a
-`2`-form on `ℂⁿ` expressed in the selected chart at `y`; the transition from `χ`-coordinates to
-that chart is `τ = extChartAt y ∘ χ⁻¹` (`DivisorChart.toChartAt`), so the form in `χ`-coordinates
-is
+explicitly. Let `ω₀` be a Kähler form on an open set `U ⊆ X` and `c` a holomorphic chart of `X`
+(`HolChart`). For `z ∈ c.target` with `y = c⁻¹(z) ∈ U`, the value `ω₀ y` is a `2`-form on `ℂⁿ`
+expressed in the selected chart at `y`. The transition from `c`-coordinates to that chart is
+`τ = extChartAt y ∘ c⁻¹` (`HolChart.toChartAt`), so the form in `c`-coordinates is
 
-  `formInAdaptedChart D ω₀ χ z = (ω y) ∘ Dτ(z)`.
+  `formInHolChart U ω₀ c z = (ω₀ y) ∘ Dτ(z)`.
+
+For a smooth divisor `D`, `U = X \ D` and an adapted chart `χ`, this is `formInAdaptedChart`
+(`z_0 ≠ 0` guarantees `y ∉ D`). SNC charts use `formInHolChart` in the same way, and the selected
+chart gives back `KahlerForm.metricInChart` (`ConicalKahler.Cone.SelectedChart`).
 
 ## Main declarations
+
+* `formInHolChart`, `metricInHolChart`, `metricQuadraticInHolChart` for any holomorphic chart;
+  positivity (`formInHolChart_isPositive`, …) and the change of chart law
+  (`formInHolChart_change`, `metricQuadraticInHolChart_change`, `metricInHolChart_change`).
 
 * `formInAdaptedChart`, `metricInAdaptedChart` (its coefficient matrix `g^χ_{jk̄}(z)`), and
   `metricQuadraticInAdaptedChart` `= g^χ(v, v) / 2 = ∑ g^χ_{jk̄} v_j v̄_k`.
@@ -28,8 +36,8 @@ is
 * `metricQuadraticInAdaptedChart_model`: for the coordinate hyperplane in `ℂⁿ`, the identity chart
   and the model form, the adapted-chart quadratic form is `modelConeQuadratic`.
 
-The agreement with `KahlerForm.metricInChart` when `χ` is the selected chart is recorded in
-`STATUS.md` as an outstanding (non-blocking) obligation.
+The agreement with `KahlerForm.metricInChart` when `χ` is the selected chart, and the general
+transformation law between the two, are in `ConicalKahler.Cone.SelectedChart`.
 -/
 
 @[expose] public section
@@ -72,16 +80,164 @@ theorem compContinuousLinearMap_apply_I_smul (α : E n [⋀^Fin 2]→L[ℝ] ℝ)
   funext i
   fin_cases i <;> simp [map_smul]
 
+variable {X : Type*} [TopologicalSpace X] [ChartedSpace (E n) X] [IsManifold 𝓘(ℂ, E n) ω X]
+
+/-! ### The form and metric in an arbitrary holomorphic chart -/
+
+section HolMetric
+
+variable (U : TopologicalSpace.Opens X) (ω₀ : KahlerForm n U) (c : HolChart n X)
+
+/-- The Kähler form `ω₀` on `U` written in the coordinates of the holomorphic chart `c`, at a
+coordinate point `z` with `c⁻¹(z) ∈ U`: `(ω₀ y) ∘ Dτ(z)` with `y = c⁻¹(z)` and
+`τ = extChartAt y ∘ c⁻¹`. -/
+noncomputable def formInHolChart (z : E n) (hU : c.coord.symm z ∈ U) : E n [⋀^Fin 2]→L[ℝ] ℝ :=
+  (ω₀ ⟨c.coord.symm z, hU⟩).compContinuousLinearMap (fderiv ℝ (c.toChartAt (c.coord.symm z)) z)
+
+/-- The Hermitian coefficient matrix `g^c_{jk̄}(z)` of `ω₀` in the holomorphic chart `c`. -/
+noncomputable def metricInHolChart (z : E n) (hU : c.coord.symm z ∈ U) :
+    Matrix (Fin n) (Fin n) ℂ :=
+  (formInHolChart U ω₀ c z hU).coeffMatrix
+
+/-- The Hermitian quadratic form `g^c(v, v) / 2 = ∑ g^c_{jk̄} v_j v̄_k` of `ω₀` in the chart `c`. -/
+noncomputable def metricQuadraticInHolChart (z : E n) (hU : c.coord.symm z ∈ U) (v : E n) : ℝ :=
+  formInHolChart U ω₀ c z hU ![v, Complex.I • v] / 2
+
+/-- The form only depends on the coordinate map of the chart. -/
+theorem formInHolChart_congr {c' : HolChart n X} (h : c.coord = c'.coord) {z : E n}
+    (hU : c.coord.symm z ∈ U) (hU' : c'.coord.symm z ∈ U) :
+    formInHolChart U ω₀ c z hU = formInHolChart U ω₀ c' z hU' := by
+  obtain rfl := HolChart.ext' h
+  rfl
+
+variable {U ω₀ c} {z : E n} (hz : z ∈ c.coord.target) (hU : c.coord.symm z ∈ U)
+include hz
+
+theorem formInHolChart_eq :
+    formInHolChart U ω₀ c z hU =
+      (ω₀ ⟨c.coord.symm z, hU⟩).compContinuousLinearMap
+        ((fderiv ℂ (c.toChartAt (c.coord.symm z)) z).restrictScalars ℝ) := by
+  rw [formInHolChart, c.fderiv_real_toChartAt hz]
+
+theorem formInHolChart_isPositive : (formInHolChart U ω₀ c z hU).IsPositive := by
+  rw [formInHolChart_eq hz]
+  exact isPositive_compContinuousLinearMap_of_injective (ω₀.isPositive _) _
+    (c.injective_fderiv_toChartAt hz)
+
+theorem formInHolChart_isOneOne : (formInHolChart U ω₀ c z hU).IsOneOne :=
+  (formInHolChart_isPositive hz hU).1
+
+theorem metricInHolChart_posDef : (metricInHolChart U ω₀ c z hU).PosDef :=
+  (isPositive_iff.mp (formInHolChart_isPositive hz hU)).2
+
+theorem metricInHolChart_isHermitian : (metricInHolChart U ω₀ c z hU).IsHermitian :=
+  (formInHolChart_isOneOne hz hU).isHermitian_coeffMatrix
+
+/-- The quadratic form is the Hermitian form of the coefficient matrix. -/
+theorem metricQuadraticInHolChart_eq_sum (v : E n) :
+    metricQuadraticInHolChart U ω₀ c z hU v =
+      (∑ j, ∑ k, metricInHolChart U ω₀ c z hU j k * v j * star (v k)).re := by
+  rw [metricQuadraticInHolChart, (formInHolChart_isOneOne (ω₀ := ω₀) hz hU).apply_I_smul]
+  simp only [metricInHolChart]
+  ring
+
+theorem metricQuadraticInHolChart_pos {v : E n} (hv : v ≠ 0) :
+    0 < metricQuadraticInHolChart U ω₀ c z hU v := by
+  have h := (formInHolChart_isPositive (ω₀ := ω₀) hz hU).2 v hv
+  rw [metricQuadraticInHolChart]
+  linarith
+
+theorem metricQuadraticInHolChart_nonneg (v : E n) :
+    0 ≤ metricQuadraticInHolChart U ω₀ c z hU v := by
+  rcases eq_or_ne v 0 with rfl | hv
+  · have h0 : formInHolChart U ω₀ c z hU ![0, Complex.I • 0] = 0 :=
+      (formInHolChart U ω₀ c z hU).map_coord_zero 0 rfl
+    simp only [metricQuadraticInHolChart, h0, zero_div, le_refl]
+  · exact (metricQuadraticInHolChart_pos hz hU hv).le
+
+end HolMetric
+
+section HolChange
+
+variable {U : TopologicalSpace.Opens X} {ω₀ : KahlerForm n U} {c₁ c₂ : HolChart n X}
+  {z₁ z₂ : E n} (hz₁ : z₁ ∈ c₁.coord.target) (hU₁ : c₁.coord.symm z₁ ∈ U)
+  (hz₂ : z₂ ∈ c₂.coord.target) (hU₂ : c₂.coord.symm z₂ ∈ U)
+  (hsame : c₁.coord.symm z₁ = c₂.coord.symm z₂)
+include hz₁ hz₂ hsame
+
+omit [IsManifold 𝓘(ℂ, E n) ω X] hz₁ in
+theorem holTransition_apply : (c₂.coord ∘ c₁.coord.symm) z₁ = z₂ := by
+  simp only [Function.comp_apply, hsame, c₂.coord.right_inv hz₂]
+
+omit [IsManifold 𝓘(ℂ, E n) ω X] hz₁ in
+theorem holTransition_mem_source : c₁.coord.symm z₁ ∈ c₂.coord.source := by
+  rw [hsame]
+  exact c₂.coord.map_target hz₂
+
+/-- **Change of holomorphic chart.** The form in `c₁`-coordinates is the pullback of the form in
+`c₂`-coordinates by the derivative of the holomorphic transition `Φ = c₂ ∘ c₁⁻¹`. -/
+theorem formInHolChart_change :
+    formInHolChart U ω₀ c₁ z₁ hU₁ =
+      (formInHolChart U ω₀ c₂ z₂ hU₂).compContinuousLinearMap
+        (fderiv ℝ (c₂.coord ∘ c₁.coord.symm) z₁) := by
+  have hsrc := holTransition_mem_source hz₂ hsame
+  have hΦz := holTransition_apply hz₂ hsame
+  have hpt : (⟨c₁.coord.symm z₁, hU₁⟩ : U) = ⟨c₂.coord.symm z₂, hU₂⟩ := Subtype.ext hsame
+  have hloc : c₁.toChartAt (c₁.coord.symm z₁) =ᶠ[𝓝 z₁]
+      c₂.toChartAt (c₂.coord.symm z₂) ∘ (c₂.coord ∘ c₁.coord.symm) := by
+    have hev : ∀ᶠ w in 𝓝 z₁, c₁.coord.symm w ∈ c₂.coord.source :=
+      (c₁.coord.continuousAt_symm hz₁).preimage_mem_nhds (c₂.coord.open_source.mem_nhds hsrc)
+    filter_upwards [hev] with w hw
+    simp only [HolChart.toChartAt, Function.comp_apply, hsame, c₂.coord.left_inv hw]
+  have hΦ : DifferentiableAt ℝ (c₂.coord ∘ c₁.coord.symm) z₁ :=
+    ((HolChart.contDiffAt_transition c₁ c₂ hz₁ hsrc).differentiableAt
+      (by simp)).restrictScalars ℝ
+  have hτ₂ : DifferentiableAt ℝ (c₂.toChartAt (c₂.coord.symm z₂))
+      ((c₂.coord ∘ c₁.coord.symm) z₁) := by
+    rw [hΦz]
+    exact ((c₂.contDiffAt_toChartAt hz₂).differentiableAt (by simp)).restrictScalars ℝ
+  rw [formInHolChart, formInHolChart, hpt, hloc.fderiv_eq, fderiv_comp z₁ hτ₂ hΦ, hΦz,
+    compContinuousLinearMap_comp']
+
+omit [IsManifold 𝓘(ℂ, E n) ω X] in
+theorem fderiv_real_holTransition :
+    fderiv ℝ (c₂.coord ∘ c₁.coord.symm) z₁ =
+      (fderiv ℂ (c₂.coord ∘ c₁.coord.symm) z₁).restrictScalars ℝ :=
+  ((HolChart.contDiffAt_transition c₁ c₂ hz₁
+    (holTransition_mem_source hz₂ hsame)).differentiableAt (by simp)).fderiv_restrictScalars ℝ
+
+/-- **Change of holomorphic chart for the quadratic form:** `q₁(z₁; v) = q₂(z₂; DΦ(z₁) v)`. -/
+theorem metricQuadraticInHolChart_change (v : E n) :
+    metricQuadraticInHolChart U ω₀ c₁ z₁ hU₁ v =
+      metricQuadraticInHolChart U ω₀ c₂ z₂ hU₂ (fderiv ℂ (c₂.coord ∘ c₁.coord.symm) z₁ v) := by
+  rw [metricQuadraticInHolChart, formInHolChart_change hz₁ hU₁ hz₂ hU₂ hsame,
+    fderiv_real_holTransition hz₁ hz₂ hsame, compContinuousLinearMap_apply_I_smul]
+  rfl
+
+/-- **Change of holomorphic chart for the coefficient matrix:** `g₁ = Aᵀ g₂ Ā` with
+`A = clmMatrix (DΦ(z₁))`, in the upstream index convention. -/
+theorem metricInHolChart_change :
+    metricInHolChart U ω₀ c₁ z₁ hU₁ =
+      (EuclideanSpace.clmMatrix (fderiv ℂ (c₂.coord ∘ c₁.coord.symm) z₁)).transpose *
+        metricInHolChart U ω₀ c₂ z₂ hU₂ *
+        (EuclideanSpace.clmMatrix (fderiv ℂ (c₂.coord ∘ c₁.coord.symm) z₁)).map star := by
+  rw [metricInHolChart, formInHolChart_change hz₁ hU₁ hz₂ hU₂ hsame,
+    fderiv_real_holTransition hz₁ hz₂ hsame,
+    (formInHolChart_isOneOne (ω₀ := ω₀) hz₂ hU₂).coeffMatrix_compContinuousLinearMap]
+  rfl
+
+end HolChange
+
 /-! ### Transition maps between an adapted chart and the selected charts -/
 
-variable [NeZero n] {X : Type*} [TopologicalSpace X] [ChartedSpace (E n) X]
-  [IsManifold 𝓘(ℂ, E n) ω X]
+variable [NeZero n]
 
 namespace DivisorChart
 
 variable {D : Set X} {p : X}
 
-/-- The transition `extChartAt y ∘ χ⁻¹` from adapted coordinates to the selected chart at `y`. -/
+/-- The transition `extChartAt y ∘ χ⁻¹` from adapted coordinates to the selected chart at `y`
+(`HolChart.toChartAt` of `χ.toHolChart`). -/
 noncomputable def toChartAt (χ : DivisorChart n X D p) (y : X) : E n → E n :=
   extChartAt 𝓘(ℂ, E n) y ∘ χ.coord.symm
 
@@ -91,65 +247,37 @@ noncomputable def fromChartAt (χ : DivisorChart n X D p) (y : X) : E n → E n 
 
 omit [IsManifold 𝓘(ℂ, E n) ω X] in
 theorem contDiffAt_toChartAt (χ : DivisorChart n X D p) {z : E n} (hz : z ∈ χ.coord.target) :
-    ContDiffAt ℂ ∞ (χ.toChartAt (χ.coord.symm z)) z := by
-  have h1 : ContMDiffAt 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ χ.coord.symm z :=
-    χ.inverse_holomorphic.contMDiffAt (χ.coord.open_target.mem_nhds hz)
-  have h2 : ContMDiffAt 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ (extChartAt 𝓘(ℂ, E n) (χ.coord.symm z))
-      (χ.coord.symm z) :=
-    contMDiffAt_extChartAt
-  exact contMDiffAt_iff_contDiffAt.mp (h2.comp z h1)
+    ContDiffAt ℂ ∞ (χ.toChartAt (χ.coord.symm z)) z :=
+  χ.toHolChart.contDiffAt_toChartAt hz
 
 theorem contDiffAt_fromChartAt (χ : DivisorChart n X D p) {y : X} (hy : y ∈ χ.coord.source) :
-    ContDiffAt ℂ ∞ (χ.fromChartAt y) (extChartAt 𝓘(ℂ, E n) y y) := by
-  have h1 : ContMDiffAt 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ (extChartAt 𝓘(ℂ, E n) y).symm
-      (extChartAt 𝓘(ℂ, E n) y y) :=
-    (contMDiffOn_extChartAt_symm y).contMDiffAt
-      ((isOpen_extChartAt_target y).mem_nhds (mem_extChartAt_target y))
-  have h2 : ContMDiffAt 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ χ.coord y :=
-    χ.holomorphic.contMDiffAt (χ.coord.open_source.mem_nhds hy)
-  exact contMDiffAt_iff_contDiffAt.mp
-    (h2.comp_of_eq h1 ((extChartAt 𝓘(ℂ, E n) y).left_inv (mem_extChartAt_source y)))
+    ContDiffAt ℂ ∞ (χ.fromChartAt y) (extChartAt 𝓘(ℂ, E n) y y) :=
+  χ.toHolChart.contDiffAt_fromChartAt hy
 
 omit [IsManifold 𝓘(ℂ, E n) ω X] in
 theorem fromChartAt_comp_toChartAt (χ : DivisorChart n X D p) {z : E n}
     (hz : z ∈ χ.coord.target) :
-    χ.fromChartAt (χ.coord.symm z) ∘ χ.toChartAt (χ.coord.symm z) =ᶠ[𝓝 z] id := by
-  have hsrc : ∀ᶠ w in 𝓝 z,
-      χ.coord.symm w ∈ (extChartAt 𝓘(ℂ, E n) (χ.coord.symm z)).source :=
-    (χ.coord.continuousAt_symm hz).preimage_mem_nhds
-      ((isOpen_extChartAt_source (χ.coord.symm z)).mem_nhds (mem_extChartAt_source _))
-  filter_upwards [hsrc, χ.coord.open_target.mem_nhds hz] with w hw hwt
-  simp only [Function.comp_apply, fromChartAt, toChartAt, id]
-  rw [(extChartAt 𝓘(ℂ, E n) _).left_inv hw, χ.coord.right_inv hwt]
+    χ.fromChartAt (χ.coord.symm z) ∘ χ.toChartAt (χ.coord.symm z) =ᶠ[𝓝 z] id :=
+  χ.toHolChart.fromChartAt_comp_toChartAt hz
 
 /-- The derivative of the transition to the selected chart has a left inverse. -/
 theorem fderiv_fromChartAt_comp_fderiv_toChartAt (χ : DivisorChart n X D p) {z : E n}
     (hz : z ∈ χ.coord.target) :
     (fderiv ℂ (χ.fromChartAt (χ.coord.symm z))
         (χ.toChartAt (χ.coord.symm z) z)).comp (fderiv ℂ (χ.toChartAt (χ.coord.symm z)) z) =
-      ContinuousLinearMap.id ℂ (E n) := by
-  have hτ : DifferentiableAt ℂ (χ.toChartAt (χ.coord.symm z)) z :=
-    (χ.contDiffAt_toChartAt hz).differentiableAt (by simp)
-  have hσ : DifferentiableAt ℂ (χ.fromChartAt (χ.coord.symm z))
-      (χ.toChartAt (χ.coord.symm z) z) :=
-    (χ.contDiffAt_fromChartAt (χ.coord.map_target hz)).differentiableAt (by simp)
-  rw [← fderiv_comp z hσ hτ, (χ.fromChartAt_comp_toChartAt hz).fderiv_eq, fderiv_id]
+      ContinuousLinearMap.id ℂ (E n) :=
+  χ.toHolChart.fderiv_fromChartAt_comp_fderiv_toChartAt hz
 
 theorem injective_fderiv_toChartAt (χ : DivisorChart n X D p) {z : E n}
     (hz : z ∈ χ.coord.target) :
-    Function.Injective (fderiv ℂ (χ.toChartAt (χ.coord.symm z)) z) := by
-  intro a b hab
-  have h := congrArg (fderiv ℂ (χ.fromChartAt (χ.coord.symm z))
-    (χ.toChartAt (χ.coord.symm z) z)) hab
-  rw [← ContinuousLinearMap.comp_apply, ← ContinuousLinearMap.comp_apply,
-    χ.fderiv_fromChartAt_comp_fderiv_toChartAt hz] at h
-  simpa using h
+    Function.Injective (fderiv ℂ (χ.toChartAt (χ.coord.symm z)) z) :=
+  χ.toHolChart.injective_fderiv_toChartAt hz
 
 omit [IsManifold 𝓘(ℂ, E n) ω X] in
 theorem fderiv_real_toChartAt (χ : DivisorChart n X D p) {z : E n} (hz : z ∈ χ.coord.target) :
     fderiv ℝ (χ.toChartAt (χ.coord.symm z)) z =
       (fderiv ℂ (χ.toChartAt (χ.coord.symm z)) z).restrictScalars ℝ :=
-  ((χ.contDiffAt_toChartAt hz).differentiableAt (by simp)).fderiv_restrictScalars ℝ
+  χ.toHolChart.fderiv_real_toChartAt hz
 
 end DivisorChart
 
@@ -160,12 +288,8 @@ omit [IsManifold 𝓘(ℂ, E n) ω X] in
 theorem contDiffAt_adaptedTransition {D : Set X} {p₁ p₂ : X} (χ₁ : DivisorChart n X D p₁)
     (χ₂ : DivisorChart n X D p₂) {z₁ : E n} (hz₁ : z₁ ∈ χ₁.coord.target)
     (h₂ : χ₁.coord.symm z₁ ∈ χ₂.coord.source) :
-    ContDiffAt ℂ ∞ (χ₂.coord ∘ χ₁.coord.symm) z₁ := by
-  have h1 : ContMDiffAt 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ χ₁.coord.symm z₁ :=
-    χ₁.inverse_holomorphic.contMDiffAt (χ₁.coord.open_target.mem_nhds hz₁)
-  have h2 : ContMDiffAt 𝓘(ℂ, E n) 𝓘(ℂ, E n) ∞ χ₂.coord (χ₁.coord.symm z₁) :=
-    χ₂.holomorphic.contMDiffAt (χ₂.coord.open_source.mem_nhds h₂)
-  exact contMDiffAt_iff_contDiffAt.mp (h2.comp z₁ h1)
+    ContDiffAt ℂ ∞ (χ₂.coord ∘ χ₁.coord.symm) z₁ :=
+  HolChart.contDiffAt_transition χ₁.toHolChart χ₂.toHolChart hz₁ h₂
 
 /-! ### The form and metric in an adapted chart -/
 
@@ -192,51 +316,59 @@ noncomputable def metricQuadraticInAdaptedChart (z : E n) (hz : z ∈ χ.coord.t
     (haway : z 0 ≠ 0) (v : E n) : ℝ :=
   formInAdaptedChart D ω₀ χ z hz haway ![v, Complex.I • v] / 2
 
+/-- The adapted-chart form is the holomorphic-chart form of `χ.toHolChart` on `U = X \ D`. -/
+theorem formInAdaptedChart_eq_formInHolChart (z : E n) (hz : z ∈ χ.coord.target)
+    (haway : z 0 ≠ 0) :
+    formInAdaptedChart D ω₀ χ z hz haway =
+      formInHolChart D.complement ω₀ χ.toHolChart z (χ.symm_notMem hz haway) :=
+  rfl
+
+theorem metricInAdaptedChart_eq_metricInHolChart (z : E n) (hz : z ∈ χ.coord.target)
+    (haway : z 0 ≠ 0) :
+    metricInAdaptedChart D ω₀ χ z hz haway =
+      metricInHolChart D.complement ω₀ χ.toHolChart z (χ.symm_notMem hz haway) :=
+  rfl
+
+theorem metricQuadraticInAdaptedChart_eq_metricQuadraticInHolChart (z : E n)
+    (hz : z ∈ χ.coord.target) (haway : z 0 ≠ 0) (v : E n) :
+    metricQuadraticInAdaptedChart D ω₀ χ z hz haway v =
+      metricQuadraticInHolChart D.complement ω₀ χ.toHolChart z (χ.symm_notMem hz haway) v :=
+  rfl
+
 variable {D ω₀ χ} {z : E n} (hz : z ∈ χ.coord.target) (haway : z 0 ≠ 0)
 include hz
 
 theorem formInAdaptedChart_eq :
     formInAdaptedChart D ω₀ χ z hz haway =
       (ω₀ (χ.symmComplement hz haway)).compContinuousLinearMap
-        ((fderiv ℂ (χ.toChartAt (χ.coord.symm z)) z).restrictScalars ℝ) := by
-  rw [formInAdaptedChart, χ.fderiv_real_toChartAt hz]
+        ((fderiv ℂ (χ.toChartAt (χ.coord.symm z)) z).restrictScalars ℝ) :=
+  formInHolChart_eq (c := χ.toHolChart) hz _
 
-theorem formInAdaptedChart_isPositive : (formInAdaptedChart D ω₀ χ z hz haway).IsPositive := by
-  rw [formInAdaptedChart_eq hz]
-  exact isPositive_compContinuousLinearMap_of_injective (ω₀.isPositive _) _
-    (χ.injective_fderiv_toChartAt hz)
+theorem formInAdaptedChart_isPositive : (formInAdaptedChart D ω₀ χ z hz haway).IsPositive :=
+  formInHolChart_isPositive (c := χ.toHolChart) hz _
 
 theorem formInAdaptedChart_isOneOne : (formInAdaptedChart D ω₀ χ z hz haway).IsOneOne :=
   (formInAdaptedChart_isPositive hz haway).1
 
 theorem metricInAdaptedChart_posDef : (metricInAdaptedChart D ω₀ χ z hz haway).PosDef :=
-  (isPositive_iff.mp (formInAdaptedChart_isPositive hz haway)).2
+  metricInHolChart_posDef (c := χ.toHolChart) hz _
 
 theorem metricInAdaptedChart_isHermitian : (metricInAdaptedChart D ω₀ χ z hz haway).IsHermitian :=
-  (formInAdaptedChart_isOneOne hz haway).isHermitian_coeffMatrix
+  metricInHolChart_isHermitian (c := χ.toHolChart) hz _
 
 /-- The adapted quadratic form is the Hermitian form of the adapted coefficient matrix. -/
 theorem metricQuadraticInAdaptedChart_eq_sum (v : E n) :
     metricQuadraticInAdaptedChart D ω₀ χ z hz haway v =
-      (∑ j, ∑ k, metricInAdaptedChart D ω₀ χ z hz haway j k * v j * star (v k)).re := by
-  rw [metricQuadraticInAdaptedChart,
-    (formInAdaptedChart_isOneOne (ω₀ := ω₀) hz haway).apply_I_smul]
-  simp only [metricInAdaptedChart]
-  ring
+      (∑ j, ∑ k, metricInAdaptedChart D ω₀ χ z hz haway j k * v j * star (v k)).re :=
+  metricQuadraticInHolChart_eq_sum (c := χ.toHolChart) hz _ v
 
 theorem metricQuadraticInAdaptedChart_pos {v : E n} (hv : v ≠ 0) :
-    0 < metricQuadraticInAdaptedChart D ω₀ χ z hz haway v := by
-  have h := (formInAdaptedChart_isPositive (ω₀ := ω₀) hz haway).2 v hv
-  rw [metricQuadraticInAdaptedChart]
-  linarith
+    0 < metricQuadraticInAdaptedChart D ω₀ χ z hz haway v :=
+  metricQuadraticInHolChart_pos (c := χ.toHolChart) hz _ hv
 
 theorem metricQuadraticInAdaptedChart_nonneg (v : E n) :
-    0 ≤ metricQuadraticInAdaptedChart D ω₀ χ z hz haway v := by
-  rcases eq_or_ne v 0 with rfl | hv
-  · have h0 : formInAdaptedChart D ω₀ χ z hz haway ![0, Complex.I • 0] = 0 :=
-      (formInAdaptedChart D ω₀ χ z hz haway).map_coord_zero 0 rfl
-    simp only [metricQuadraticInAdaptedChart, h0, zero_div, le_refl]
-  · exact (metricQuadraticInAdaptedChart_pos hz haway hv).le
+    0 ≤ metricQuadraticInAdaptedChart D ω₀ χ z hz haway v :=
+  metricQuadraticInHolChart_nonneg (c := χ.toHolChart) hz _ v
 
 end AdaptedMetric
 
@@ -265,41 +397,22 @@ theorem adaptedTransition_mem_source : χ₁.coord.symm z₁ ∈ χ₂.coord.sou
 theorem formInAdaptedChart_change :
     formInAdaptedChart D ω₀ χ₁ z₁ hz₁ haway₁ =
       (formInAdaptedChart D ω₀ χ₂ z₂ hz₂ haway₂).compContinuousLinearMap
-        (fderiv ℝ (χ₂.coord ∘ χ₁.coord.symm) z₁) := by
-  have hsrc := adaptedTransition_mem_source hz₂ hsame
-  have hΦz := adaptedTransition_apply hz₂ hsame
-  have hpt : χ₁.symmComplement hz₁ haway₁ = χ₂.symmComplement hz₂ haway₂ := Subtype.ext hsame
-  -- the two transitions to the selected chart at `y = χ₁⁻¹ z₁ = χ₂⁻¹ z₂`
-  have hloc : χ₁.toChartAt (χ₁.coord.symm z₁) =ᶠ[𝓝 z₁]
-      χ₂.toChartAt (χ₂.coord.symm z₂) ∘ (χ₂.coord ∘ χ₁.coord.symm) := by
-    have hev : ∀ᶠ w in 𝓝 z₁, χ₁.coord.symm w ∈ χ₂.coord.source :=
-      (χ₁.coord.continuousAt_symm hz₁).preimage_mem_nhds (χ₂.coord.open_source.mem_nhds hsrc)
-    filter_upwards [hev] with w hw
-    simp only [DivisorChart.toChartAt, Function.comp_apply, hsame, χ₂.coord.left_inv hw]
-  have hΦ : DifferentiableAt ℝ (χ₂.coord ∘ χ₁.coord.symm) z₁ :=
-    ((contDiffAt_adaptedTransition χ₁ χ₂ hz₁ hsrc).differentiableAt (by simp)).restrictScalars ℝ
-  have hτ₂ : DifferentiableAt ℝ (χ₂.toChartAt (χ₂.coord.symm z₂))
-      ((χ₂.coord ∘ χ₁.coord.symm) z₁) := by
-    rw [hΦz]
-    exact ((χ₂.contDiffAt_toChartAt hz₂).differentiableAt (by simp)).restrictScalars ℝ
-  rw [formInAdaptedChart, formInAdaptedChart, hpt, hloc.fderiv_eq, fderiv_comp z₁ hτ₂ hΦ, hΦz,
-    compContinuousLinearMap_comp']
+        (fderiv ℝ (χ₂.coord ∘ χ₁.coord.symm) z₁) :=
+  formInHolChart_change (c₁ := χ₁.toHolChart) (c₂ := χ₂.toHolChart) hz₁ _ hz₂ _ hsame
 
 omit [IsManifold 𝓘(ℂ, E n) ω X] in
 theorem fderiv_real_adaptedTransition :
     fderiv ℝ (χ₂.coord ∘ χ₁.coord.symm) z₁ =
       (fderiv ℂ (χ₂.coord ∘ χ₁.coord.symm) z₁).restrictScalars ℝ :=
-  ((contDiffAt_adaptedTransition χ₁ χ₂ hz₁
-    (adaptedTransition_mem_source hz₂ hsame)).differentiableAt (by simp)).fderiv_restrictScalars ℝ
+  fderiv_real_holTransition (c₁ := χ₁.toHolChart) (c₂ := χ₂.toHolChart) hz₁ hz₂ hsame
 
 /-- **Change of adapted chart for the quadratic form:** `q₁(z₁; v) = q₂(z₂; DΦ(z₁) v)`. -/
 theorem metricQuadraticInAdaptedChart_change (v : E n) :
     metricQuadraticInAdaptedChart D ω₀ χ₁ z₁ hz₁ haway₁ v =
       metricQuadraticInAdaptedChart D ω₀ χ₂ z₂ hz₂ haway₂
-        (fderiv ℂ (χ₂.coord ∘ χ₁.coord.symm) z₁ v) := by
-  rw [metricQuadraticInAdaptedChart, formInAdaptedChart_change hz₁ haway₁ hz₂ haway₂ hsame,
-    fderiv_real_adaptedTransition hz₁ hz₂ hsame, compContinuousLinearMap_apply_I_smul]
-  rfl
+        (fderiv ℂ (χ₂.coord ∘ χ₁.coord.symm) z₁ v) :=
+  metricQuadraticInHolChart_change (c₁ := χ₁.toHolChart) (c₂ := χ₂.toHolChart) hz₁ _ hz₂ _
+    hsame v
 
 /-- **Change of adapted chart for the coefficient matrix:** `g₁ = Aᵀ g₂ Ā` with
 `A = clmMatrix (DΦ(z₁))`, in the upstream index convention. -/
@@ -307,11 +420,8 @@ theorem metricInAdaptedChart_change :
     metricInAdaptedChart D ω₀ χ₁ z₁ hz₁ haway₁ =
       (EuclideanSpace.clmMatrix (fderiv ℂ (χ₂.coord ∘ χ₁.coord.symm) z₁)).transpose *
         metricInAdaptedChart D ω₀ χ₂ z₂ hz₂ haway₂ *
-        (EuclideanSpace.clmMatrix (fderiv ℂ (χ₂.coord ∘ χ₁.coord.symm) z₁)).map star := by
-  rw [metricInAdaptedChart, formInAdaptedChart_change hz₁ haway₁ hz₂ haway₂ hsame,
-    fderiv_real_adaptedTransition hz₁ hz₂ hsame,
-    (formInAdaptedChart_isOneOne (ω₀ := ω₀) hz₂ haway₂).coeffMatrix_compContinuousLinearMap]
-  rfl
+        (EuclideanSpace.clmMatrix (fderiv ℂ (χ₂.coord ∘ χ₁.coord.symm) z₁)).map star :=
+  metricInHolChart_change (c₁ := χ₁.toHolChart) (c₂ := χ₂.toHolChart) hz₁ _ hz₂ _ hsame
 
 end Change
 
