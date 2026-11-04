@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Installs elan + the toolchain pinned in `lean-toolchain`, fetches the Mathlib cache,
+      # and runs `lake build` (library + tests).
+      - uses: leanprover/lean-action@v1
+        with:
+          use-mathlib-cache: true
+          build: true
+          test: false
+          lint: false
+
+      - name: Reject proof placeholders and new axioms in sources
+        run: |
+          if grep -rnwE 'sorry|admit' ConicalKahler ConicalKahlerTest --include='*.lean'; then
+            echo "::error::found sorry/admit"; exit 1
+          fi
+          if grep -rnE '^\s*(private\s+|protected\s+)?(axiom|opaque)\b' \
+              ConicalKahler ConicalKahlerTest --include='*.lean'; then
+            echo "::error::found axiom/opaque declaration"; exit 1
+          fi
+
+      - name: Axiom audit (only propext, Classical.choice, Quot.sound)
+        run: lake env lean scripts/AxiomAudit.lean

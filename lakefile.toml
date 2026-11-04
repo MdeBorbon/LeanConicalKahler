@@ -1,0 +1,27 @@
+name = "ConicalKahlerLean"
+version = "0.1.0"
+defaultTargets = ["ConicalKahler", "ConicalKahlerTest"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+maxSynthPendingDepth = 3
+
+# Same Mathlib release as the pinned upstream Calabi–Yau project.
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.1"
+
+# Upstream Kähler geometry library, pinned to an exact commit
+# ("chore: upgrade to Lean and Mathlib v4.34.1", 2026-10-03).
+[[require]]
+name = "calabiyau"
+git = "https://github.com/wxkj99/calabi-yau"
+rev = "91b1ddf000c7028bc42ae6102eba0e2042eb37ff"
+
+[[lean_lib]]
+name = "ConicalKahler"
+
+[[lean_lib]]
+name = "ConicalKahlerTest"
