@@ -5,7 +5,8 @@ built on top of the formal proof of the Calabi conjecture
 [`wxkj99/calabi-yau`](https://github.com/wxkj99/calabi-yau).
 
 The design document is [`CONICAL_KAHLER_LEAN_API.md`](CONICAL_KAHLER_LEAN_API.md); progress,
-open proof obligations and blockers are tracked in [`STATUS.md`](STATUS.md).
+open proof obligations and blockers are tracked in [`STATUS.md`](STATUS.md). The plan towards the
+Schauder estimates of de Borbon–Edwards is in [`ROADMAP.md`](ROADMAP.md).
 
 ## Main result so far
 
@@ -96,6 +97,30 @@ any other SNC chart at `p` after shrinking (`SNCConeComparableIn.exists_restrOpe
   (`exists_weighted_model_comparison`). The smooth-divisor invariance theorems are now its
   one-label case.
 
+### The Laplacian of the cone models
+
+`laplaceBeltrami ω₀ f` is the Laplace–Beltrami operator of the Riemannian metric `g = ω₀(·, J·)`.
+It is the upstream `CalabiYau.Riemannian.ΔG`, reused rather than redefined. For any product of
+cones and Euclidean factors,
+
+```
+Δ_g f = ∑_j Δ_{z_j} f / (2 w_j),     Δ_{z_j} = ∂²_{x_j} + ∂²_{y_j}
+```
+
+(`laplaceBeltrami_modelConeFormOn`). On a cone factor in the coordinates `ρ = |z_j|^β`, `θ`,
+the `j`-th term is `½ (F_ρρ + ρ⁻¹ F_ρ + (βρ)⁻² F_θθ)`
+(`coordLaplacian_div_modelWeight_conePolar`, `laplaceBeltrami_standardCone_polar`). The factor `½`
+is the normalisation `g = 2q`.
+
+The following are harmonic:
+- `ρ^{k/β} cos kθ` and `ρ^{k/β} sin kθ` (`coneHarmonicCos_polar_eq_zero`). These are `Re z^k`
+  and `Im z^k`, which are harmonic for every Kähler form (`laplaceBeltrami_re_pow_eq_zero`).
+- Differences of the squared radial coordinates `ρ_a² − ρ_b²` (`laplaceBeltrami_potentialTerm_sub`).
+- `log |z_j|²` (`laplaceBeltrami_log_coordNormSq_eq_zero`).
+
+Homogeneity, cone dilations and derivative estimates are in `ConicalKahler/Laplacian/ConeHarmonic`
+and `ConicalKahler/Cone/Dilation`.
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -147,11 +172,16 @@ We use the upstream conventions without change.
 | `ConicalKahler/Cone/SelectedChart.lean` | agreement with upstream `metricInChart`; transformation law |
 | `ConicalKahler/Divisors/SNC.lean` | `SNCChart`, `SNCDivisor`, components, local weights, coordinate SNC |
 | `ConicalKahler/Cone/SNCComparison.lean` | SNC cone condition, SNC model, smooth case as specialization |
+| `ConicalKahler/Cone/Dilation.lean` | cone dilations; homothety `q ↦ λ² q` of every product of cones |
+| `ConicalKahler/Laplacian/Polar.lean` | `Δ_{z_j}` in polar and cone coordinates; second-order chain rule |
+| `ConicalKahler/Laplacian/Model.lean` | `laplaceBeltrami`; Laplacian of products of cones; harmonic functions |
+| `ConicalKahler/Laplacian/ConeHarmonic.lean` | `ρ^{k/β} cos kθ`, `ρ^{k/β} sin kθ`: harmonicity, homogeneity, derivative bounds |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
 | `ConicalKahlerTest/SelectedChart.lean` | agreement with `metricInChart`, shear transformation law |
 | `ConicalKahlerTest/SNC.lean` | two axes with angles `π`, `6π`; components; smooth case |
+| `ConicalKahlerTest/Laplacian.lean` | polar formula, harmonic functions, cross-check of the two routes, dilation |
 | `ConicalKahlerTest/SNCInvariance.lean` | crossing components with angles `π` and `2π/3`; swapped and mixed charts |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 

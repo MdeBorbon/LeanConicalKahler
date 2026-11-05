@@ -24,3 +24,7 @@ public import ConicalKahler.Divisors.SNC
 public import ConicalKahler.Cone.SNCComparison
 public import ConicalKahler.Cone.WeightedComparison
 public import ConicalKahler.Cone.SNCChartInvariance
+public import ConicalKahler.Cone.Dilation
+public import ConicalKahler.Laplacian.Polar
+public import ConicalKahler.Laplacian.ConeHarmonic
+public import ConicalKahler.Laplacian.Model

@@ -2,6 +2,7 @@ module
 
 public import ConicalKahler.Analysis.DDBarLocal
 public import CalabiYau.Geometry.Complex.Basic
+public import Mathlib.Geometry.Manifold.ContMDiffMap
 
 /-!
 # Open subsets of `ℂⁿ` as complex manifolds
@@ -56,6 +57,17 @@ theorem contMDiff_opens_of_contDiffOn {f : EuclideanSpace ℂ (Fin n) → ℝ}
   intro x
   apply contMDiffAt_subtype_iff.mpr
   exact contMDiffAt_iff_contDiffAt.mpr (hf.contDiffAt (U.isOpen.mem_nhds x.2))
+
+/-- A function smooth on the open set `U ⊆ ℂⁿ`, as a bundled smooth function on the manifold
+`U`. -/
+noncomputable def restrictSmooth {f : EuclideanSpace ℂ (Fin n) → ℝ} (hf : ContDiffOn ℝ ∞ f U) :
+    ContMDiffMap 𝓘(ℝ, EuclideanSpace ℂ (Fin n)) 𝓘(ℝ) U ℝ ∞ :=
+  ⟨fun y : U => f y, contMDiff_opens_of_contDiffOn U hf⟩
+
+@[simp]
+theorem restrictSmooth_apply {f : EuclideanSpace ℂ (Fin n) → ℝ} (hf : ContDiffOn ℝ ∞ f U)
+    (y : U) : restrictSmooth U hf y = f y :=
+  rfl
 
 /-- On `U ⊆ ℂⁿ`, the manifold `i∂∂̄` of the restriction of `f` is `ddbar f`. -/
 theorem mddbar_opens (f : EuclideanSpace ℂ (Fin n) → ℝ) (x : U) :
