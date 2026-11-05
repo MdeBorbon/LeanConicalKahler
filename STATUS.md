@@ -5,7 +5,7 @@ Last updated: 2026-11-05.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1137
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1369
 `ConicalKahler.*` declarations (library and tests) depend only on `propext`, `Classical.choice` and
 `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
@@ -305,6 +305,50 @@ The target theorem is unchanged.
 - No Sobolev spaces, weak solutions or Schauder estimates yet. The classification of homogeneous
   harmonic functions is not attempted.
 
+## Milestone 9: Sobolev spaces and weak solutions on the real cone models (fifth review): COMPLETE
+
+All entries are kernel-checked. The Hilbert-space framework (`Sobolev/H1`, `Sobolev/Elliptic`) works
+on any finite-dimensional real inner product space with an additive Haar measure. The Caccioppoli
+inequality and density work on `ℝ^d` (Lebesgue measure), where upstream's Sobolev library applies.
+The cone models enter through `coneCoeff` (`Sobolev/ConeLaplacian`).
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| test functions; the Hilbert space `L²(Ω) × L²(Ω; F)` of pairs; graphs `(φ, ∇φ)` | `IsTestFn`, `L2Pair`, `graph`, `testSubmodule` | `Sobolev/H1` |
+| **`W^{1,2}_0(Ω)`** (closure of the graphs; complete) and **`W^{1,2}(Ω)`** (pairs with `G` the weak gradient of `u`; closed); `W^{1,2}_0 ⊆ W^{1,2}` | `H01`, `W12`, `IsWeakGradPair`, `H01_le_W12` | `Sobolev/H1` |
+| integration by parts for test functions | `integral_mul_fderiv_eq_neg` | `Sobolev/H1` |
+| **Friedrichs–Poincaré** for `Ω ⊆ B̄(0, R)`: `‖u‖ ≤ 2R ‖∇u‖` on `W^{1,2}_0(Ω)` | `norm_graph_fst_le`, `norm_fst_le_of_mem_H01`, `norm_sq_le_of_mem_H01` | `Sobolev/H1` |
+| symmetric uniformly elliptic measurable coefficient fields; Cauchy–Schwarz and the norm bound for symmetric non-negative operators | `CoeffField`, `inner_sq_le_of_symm`, `norm_apply_le_of_symm`, `stronglyMeasurable_of_inner` | `Sobolev/Elliptic` |
+| multiplication by `A` on `L²`; the Dirichlet form `∫ ⟨A G, H⟩`; coercivity on `W^{1,2}_0` | `CoeffField.mulOp`, `.dirichletForm`, `.lam_mul_norm_sq_le`, `.isCoercive_dirichletForm₀` | `Sobolev/Elliptic` |
+| **weak solutions** of `-div(A ∇u) = f`; testing against all of `W^{1,2}_0(Ω)` | `CoeffField.IsWeakSolution`, `.isWeakSolution_iff`, `IsWeakSolution.forall_H01` | `Sobolev/Elliptic` |
+| **existence and uniqueness** in `W^{1,2}_0(Ω)` for bounded `Ω` and `f ∈ L²(Ω)` (Lax–Milgram) | `CoeffField.existsUnique_H01_isWeakSolution` | `Sobolev/Elliptic` |
+| cut-offs of `W^{1,2}(Ω)` functions lie in `W^{1,2}_0(Ω)` (via upstream mollification) | `cutPair`, `hasWeakPartialDeriv_cutFst`, `cutPair_mem_H01` | `Sobolev/Caccioppoli` |
+| **Caccioppoli** (paper, Lemma 2.3): `∫ η² ⟨A ∇u, ∇u⟩ ≤ ∫ η² f² + ∫ (η² + 4Λ |∇η|²) u²` | `caccioppoli` | `Sobolev/Caccioppoli` |
+| the inverse metric `g⁻¹` of one factor is the paper's metric with angle `1/β`; `G(β) G(1/β) = 1` | `coneInvFactor`, `inner_coneInvFactor`, `paperConeGram_mul_inv`, `productConeGram_mul_inv` | `Sobolev/ConeLaplacian` |
+| **the cone Laplacian as a coefficient field** `A = g⁻¹` on `ℝ^d` (`λ = (1+∑β_a²)⁻¹`, `Λ = 1+∑β_a⁻²`; `λ = 1` if `β_a ≤ 1`) | `coneInvOp`, `coordIso`, `coneCoeffA`, `coneCoeff`, `coneCoeff_coercive_of_le_one` | `Sobolev/ConeLaplacian` |
+| existence/uniqueness and Caccioppoli for the cone Laplacian | `cone_existsUnique_H01`, `cone_caccioppoli` | `Sobolev/ConeLaplacian` |
+| logarithmic cut-offs `h_n(t) = S(log t / n + 2)`; `|h_n'| ≤ C/(nt)` | `logCut`, `contDiff_logCut`, `abs_deriv_logCut_le` | `Sobolev/Capacity` |
+| energy in a plane `∫_{ℝ²} 4|y|² h_n'(|y|²)² ≤ 4πC²/n`; Fubini over the plane of `(x_{i₀}, x_{i₁})`; `∫_{B̄_R} |∇χ_n|² ≤ (4πC²/n) V_R` | `integral_cutEnergy_plane_le`, `integral_closedBall_le_plane`, `integral_closedBall_norm_gradient_planeCut_le` | `Sobolev/Capacity` |
+| **density** (paper, §2.1): test functions on `Ω \ S` are dense in `W^{1,2}_0(Ω)`; the weak equation need only be tested on the regular part | `graph_mem_closure_testSubmodule_diff`, `dense_testSubmodule_regular`, `isWeakSolution_iff_regular` | `Sobolev/Capacity` |
+| tests on `C(S¹_π) × ℝ ⊆ ℝ³` | | `ConicalKahlerTest/Sobolev` |
+
+**Normalisation.** The paper's weak equation `∫ ⟨∇u, ∇φ⟩_g dV_g = ∫ f φ dV_g` becomes, in real
+coordinates, `∫ ⟨g⁻¹ ∇u, ∇φ⟩ dx = ∫ f φ dx`: the constant `∏ β_a` in `dV_g = (∏ β_a) dx` cancels
+(`productConeVolume_eq`). We therefore use Lebesgue measure and `A = g⁻¹`.
+
+**What is not claimed.**
+- The `W^{1,2}` spaces are those of `ℝ^d` with Lebesgue measure. The paper defines them through
+  `g` and `dV_g`; the norms are equivalent (bounds `λ, Λ` and the constant `∏ β_a`), but that is
+  stated here only through the coercivity and upper bounds of `coneCoeff`.
+- The paper tests the weak equation against compactly supported **Lipschitz** functions; we use
+  smooth ones. Ours is implied by the paper's, and conversely holds for every test pair in
+  `W^{1,2}_0(Ω)` (`IsWeakSolution.forall_H01`). That compactly supported Lipschitz functions lie in
+  `W^{1,2}_0` (Rademacher) is not formalised.
+- The Friedrichs constant `2R` is not optimal. The mean-value Poincaré inequality on balls is not
+  restated here (upstream has it on the unit ball).
+- Rellich compactness, harmonic approximation (Lemma 2.4), regularity and the Hessian estimate
+  (Prop. 2.5) are not started.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -390,6 +434,19 @@ The target theorem is unchanged.
   `ConeWeights.realChart`, not cones of angle `2π`. At `w = 0` the formula `paperConeMetric 1` is
   degenerate.
 
+* **Sobolev spaces as Hilbert spaces of pairs (Milestone 9).** `W^{1,2}(Ω)` and `W^{1,2}_0(Ω)`
+  are subspaces of `L2Pair μ Ω = L²(Ω) × L²(Ω; F)`: pairs `(u, G)` with `G` the weak gradient of
+  `u`, respectively the closure of the graphs `(φ, ∇φ)` of test functions. This gives completeness
+  and Lax–Milgram directly. Upstream's predicates `MemW1p`, `MemW01p` are used through a bridge
+  (`cutPair_mem_H01`) where their mollification lemma is needed.
+* **Test functions** are smooth with compact support (upstream's convention), not Lipschitz as in
+  the paper (see "What is not claimed" under Milestone 9).
+* **Coefficients** (`CoeffField`) are operator fields `A : F → (F →L[ℝ] F)`, symmetric, with
+  measurable matrix coefficients and the bounds `λ, Λ` almost everywhere. For the cone the bounds
+  fail only on the null singular set.
+* **`set_option linter.unusedSectionVars false`** is set in the `Sobolev/` files. Many small lemmas
+  share one typeclass context, and not every lemma uses all of it. It disables a style lint only.
+
 Supporting lemmas re-proved locally because the upstream versions are `private`:
 `ConicalKahler.ddbar_congr` (upstream `KahlerForm.ddbar_eq_of_eventuallyEq`) and
 `ConicalKahler.mddbar_opens` (upstream `KahlerForm.mddbar_restrict_open`).
@@ -398,7 +455,8 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 
 Done since the first review: agreement with `metricInChart` (Milestone 4), `Divisors/SNC`
 (Milestone 5), SNC chart invariance for `β_i ≤ 1` (Milestone 6), the Laplacian (Milestone 7), and
-the real cone geometry with `𝒟₂` (Milestone 8).
+the real cone geometry with `𝒟₂` (Milestone 8), and Sobolev spaces and weak solutions
+(Milestone 9).
 
 1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
@@ -419,9 +477,11 @@ the real cone geometry with `𝒟₂` (Milestone 8).
    - the identification with the metric completion of `(ℂ \ {0}, g_β)`.
 5. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
 6. **Schauder theory** (`ROADMAP.md`). Done: the real models, the formal cone distance, `dV_g`
-   and `𝒟₂` (Milestone 8). Next (Milestone 9): Sobolev spaces `W^{1,2}` on the real models, weak
-   solutions of `Δu = f` and the first elliptic estimates. Then: completeness of `𝓗_{≤2+α}`, the
-   `L²` Hessian bound, and the Campanato iteration.
+   and `𝒟₂` (Milestone 8); `W^{1,2}`, `W^{1,2}_0`, weak solutions, Friedrichs–Poincaré,
+   existence and uniqueness, Caccioppoli and density (Milestone 9). Next (proposed Milestone 10):
+   Rellich compactness, harmonic approximation (Lemma 2.4), dilations and scaled estimates, and the
+   spectral theorem for the Dirichlet problem. Then: completeness of `𝓗_{≤2+α}`, the `L²` Hessian
+   bound (by the localised Bochner argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
 7. **Smaller items from Milestone 8.**
    - Full `γ`-Hölder continuity of `r^γ cos θ` for the cone distance (only the estimate at the
      vertex is proved).

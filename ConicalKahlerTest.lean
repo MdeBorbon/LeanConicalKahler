@@ -9,3 +9,4 @@ public import ConicalKahlerTest.SNCInvariance
 public import ConicalKahlerTest.Laplacian
 public import ConicalKahlerTest.RealCone
 public import ConicalKahlerTest.PaperChecks
+public import ConicalKahlerTest.Sobolev

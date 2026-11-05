@@ -132,10 +132,10 @@ omitted) and `[C]` (cited from the literature).
 
 | Ingredient | Status | Possible source |
 |---|---|---|
-| `W^{1,2}`, `W^{1,2}_0` on balls, weak formulation (2.2) | Planned | upstream `Sobolev.Euclidean.MemW1p`, `MemH01` (in the paper's real coordinates) |
-| density of `C_c^∞(reg)` (codim-2 capacity) | Planned | Lemma 2.2 |
-| Poincaré, existence by Riesz/Lax–Milgram, uniqueness | Planned | upstream `poincare_unitBall_W1p_public`; Lax–Milgram is in EllipticPDE (see §4) |
-| Lemma 2.3, Caccioppoli | Planned | EllipticPDE `Regularity.caccioppoli` (bounded measurable coefficients) |
+| `W^{1,2}`, `W^{1,2}_0` on balls, weak formulation (2.2) | **Done** (Milestone 9): `W12`, `H01` (Hilbert spaces of pairs `(u, ∇u)`), `CoeffField.IsWeakSolution`, `IsWeakSolution.forall_H01`; the cone Laplacian is `coneCoeff` (`A = g⁻¹`) | upstream `MemW1p`, `MemW01p` via `cutPair_mem_H01` |
+| density of `C_c^∞(reg)` (codim-2 capacity) | **Done**: `dense_testSubmodule_regular`, `isWeakSolution_iff_regular` (logarithmic cut-offs) | Lemma 2.2 |
+| Poincaré, existence by Riesz/Lax–Milgram, uniqueness | **Done**: `norm_fst_le_of_mem_H01` (Friedrichs, `‖u‖ ≤ 2R‖∇u‖`), `existsUnique_H01_isWeakSolution`, `cone_existsUnique_H01` | Mathlib Lax–Milgram |
+| Lemma 2.3, Caccioppoli | **Done**: `caccioppoli` (any bounded measurable coefficients), `cone_caccioppoli` | upstream mollification for the cut-off test function |
 | Lemma 2.4, harmonic approximation (Rellich and weak limits) | Planned | upstream `rellich_kondrachov_W01p_seq` |
 | Lemma 3.1, spectral theorem on the link | Planned | |
 | Lemma 3.3, expansion of `W^{1,2}` harmonic functions (suspected gap: continuity up to the boundary, `PAPER_REVIEW.md` S2) | Planned | energy-uniqueness repair (`PAPER_REVIEW.md` S2) |
@@ -201,20 +201,22 @@ No incompatible dependency has been added.
 1. **Real cone geometry and `𝒟₂`** (Milestone 8, **done**): real coordinates, uniform equivalence,
    the formal cone distance, `dV_g`, `𝒟₂`, the optimality examples, normalisations. See
    `STATUS.md`.
-2. **Sobolev spaces and weak solutions on the real models** (Milestone 9): `W^{1,2}` and
-   `W^{1,2}_0` on balls of `RealConeModel` with respect to `productConeVolume` (equivalently
-   Lebesgue measure); the weak formulation of `Δu = f` with the bounded measurable coefficients of
-   `g` in real coordinates; Poincaré, existence and uniqueness (Riesz / Lax–Milgram); Caccioppoli
-   (Lemma 2.3); density of `C_c^∞(reg)` (Lemma 2.2). Reuse upstream `Sobolev.Euclidean.MemW1p`.
-3. **`𝓗_{≤2}` (explicit part):** the rest of Corollary 3.5 for the explicit list.
-4. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables.
-5. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
+2. **Sobolev spaces and weak solutions on the real models** (Milestone 9, **done**): `W^{1,2}`,
+   `W^{1,2}_0` as Hilbert spaces; Friedrichs–Poincaré; existence and uniqueness (Lax–Milgram);
+   Caccioppoli; density of `C_c^∞(Ω \ S)`. See `STATUS.md`.
+3. **Compactness and harmonic approximation** (proposed Milestone 10): Rellich on `W^{1,2}_0` via
+   upstream `rellich_kondrachov_W01p_seq`, weak limits, Lemma 2.4; dilations and the scaled
+   estimates of §2.5.1 on vertex-centred balls; the spectral theorem for the Dirichlet problem on
+   `B_1` (compact resolvent), which Prop. 2.5 and Lemma 3.1 both need.
+4. **`𝓗_{≤2}` (explicit part):** the rest of Corollary 3.5 for the explicit list.
+5. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables.
+6. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
    argument (`PAPER_REVIEW.md` §C, `research_notes/PROPOSITION_2_5_AUDIT.md`). This is not the
    arXiv proof, which has a false step (V9). Decide between formalising or assuming the Lipschitz
    bound for eigenfunctions. State the passage to the operators of `𝒟₂` explicitly (two pure
    conical operators need first-order control).
-6. **Campanato iteration** (Lemmas 2.6, 2.7, 4.1, 4.3, Prop. 5.1, §5).
-7. **The cone distance as a length distance**, wherever the proof needs geodesic properties of
+7. **Campanato iteration** (Lemmas 2.6, 2.7, 4.1, 4.3, Prop. 5.1, §5).
+8. **The cone distance as a length distance**, wherever the proof needs geodesic properties of
    `d_g` beyond the formulas proved so far.
 
 **Issues in the paper** are recorded separately in `PAPER_REVIEW.md`, which distinguishes errors

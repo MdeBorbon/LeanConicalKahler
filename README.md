@@ -158,6 +158,20 @@ are globally defined, unlike the flat developing coordinates `r e^{iβθ}`
     (`β ≥ 1/2`) or `1/β − 2` (`β < 1/2`), some `D ∈ 𝒟₂` maps a harmonic function to a function
     that is not `α`-Hölder near the vertex.
 
+### Sobolev spaces and weak solutions
+
+`ConicalKahler/Sobolev/` sets up the `L²` theory that the Schauder estimates start from.
+- `W^{1,2}(Ω)` and `W^{1,2}_0(Ω)` are Hilbert spaces of pairs `(u, ∇u)` (`W12`, `H01`).
+- The Friedrichs–Poincaré inequality is `norm_fst_le_of_mem_H01`.
+- For any symmetric, measurable, uniformly elliptic coefficient field (`CoeffField`):
+  - weak solutions of `-div(A∇u) = f` exist and are unique in `W^{1,2}_0` (Lax–Milgram,
+    `existsUnique_H01_isWeakSolution`);
+  - the Caccioppoli inequality holds (`caccioppoli`).
+- The cone Laplacian in the paper's real coordinates is the case `A = g⁻¹` (`coneCoeff`). In real
+  coordinates `g⁻¹` is the paper's metric with angles `1/β_a`.
+- The codimension-two singular set has zero capacity: test functions supported off it are dense
+  in `W^{1,2}_0` (`dense_testSubmodule_regular`).
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -219,6 +233,11 @@ We use the upstream conventions without change.
 | `ConicalKahler/Real/D2.lean` | polar coordinates, `pd`, `Δ_β`, `D2Op` (`𝒟₂`), harmonic examples, Hölder sharpness |
 | `ConicalKahler/Real/Bridge.lean` | Kähler model → real model; `ω(v, Jv) = 2 g_paper` |
 | `ConicalKahler/Real/Normalisation.lean` | `laplaceBeltrami = ½ Δ_β` in the paper's coordinates |
+| `ConicalKahler/Sobolev/H1.lean` | test functions, `W^{1,2}`, `W^{1,2}_0` as Hilbert spaces of pairs, Friedrichs–Poincaré |
+| `ConicalKahler/Sobolev/Elliptic.lean` | coefficient fields, Dirichlet form, weak solutions, Lax–Milgram existence and uniqueness |
+| `ConicalKahler/Sobolev/Caccioppoli.lean` | cut-offs in `W^{1,2}_0` (upstream mollification), Caccioppoli inequality |
+| `ConicalKahler/Sobolev/ConeLaplacian.lean` | `g⁻¹` of the real cone models as a coefficient field; cone versions of the estimates |
+| `ConicalKahler/Sobolev/Capacity.lean` | logarithmic cut-offs, zero capacity of the singular set, density |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -227,6 +246,7 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/Laplacian.lean` | polar formula, harmonic functions, cross-check of the two routes, dilation |
 | `ConicalKahlerTest/SNCInvariance.lean` | crossing components with angles `π` and `2π/3`; swapped and mixed charts |
 | `ConicalKahlerTest/RealCone.lean` | cone distances, area `πβρ²` of a cone disk, odd dimension, `𝒟₂` membership, sharpness |
+| `ConicalKahlerTest/Sobolev.lean` | constants, existence, Poincaré, Caccioppoli and density on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 

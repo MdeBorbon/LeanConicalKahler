@@ -38,3 +38,4 @@ public import ConicalKahler.Sobolev.H1
 public import ConicalKahler.Sobolev.Elliptic
 public import ConicalKahler.Sobolev.Caccioppoli
 public import ConicalKahler.Sobolev.ConeLaplacian
+public import ConicalKahler.Sobolev.Capacity
