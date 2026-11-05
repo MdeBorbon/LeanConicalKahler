@@ -27,7 +27,7 @@ of pairs `(u, G)` of a function and a vector field, with the `L²` product norm
 * `W12 μ Ω`, **the Sobolev space `W^{1,2}(Ω)`**, is the closed subspace of pairs `(u, G)` such that
   `G` is the weak gradient of `u`: `∫ u ∂_w φ = -∫ ⟨G, w⟩ φ` for all test functions `φ` and all `w`
   (`IsWeakGradPair`). `H01_le_W12`: every element of `H01` is such a pair.
-* **Friedrichs–Poincaré inequality** (`norm_fst_le_of_mem_H01`): if `Ω ⊆ B̄(0, R)`, then
+* **Friedrichs–Poincaré inequality** (`norm_fst_le_of_mem_H01`): if `Ω ⊆ B̄(c, R)`, then
   `‖u‖_{L²} ≤ 2R ‖G‖_{L²}` for `(u, G) ∈ H01 μ Ω`. For test functions it is proved by one
   integration by parts, `∫ φ² = -2 ∫ ⟨e, x⟩ φ ∂_e φ` for a unit vector `e`, and it passes to the
   closure.
@@ -366,40 +366,44 @@ theorem norm_graph_snd_sq (Ω : Set F) {U : Set F} {φ : F → ℝ} (hφ : IsTes
     ‖(graph μ Ω hφ).snd‖ ^ 2 = ∫ x in Ω, ‖gradient φ x‖ ^ 2 ∂μ := by
   rw [graph_snd, norm_toLp_sq]
 
-/-- **Friedrichs inequality for test functions.** If `Ω ⊆ B̄(0, R)`, then
+/-- **Friedrichs inequality for test functions.** If `Ω ⊆ B̄(c, R)`, then
 `‖φ‖_{L²(Ω)} ≤ 2R ‖∇φ‖_{L²(Ω)}`. Proof: for a unit vector `e`, integration by parts gives
-`∫ φ² = -2 ∫ ⟨e, x⟩ φ ∂_e φ`, and `|⟨e, x⟩| ≤ R` on the support. -/
-theorem norm_graph_fst_le [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : Ω ⊆ Metric.closedBall 0 R) {φ : F → ℝ} (hφ : IsTestFn Ω φ) :
+`∫ φ² = -2 ∫ ⟨e, x - c⟩ φ ∂_e φ`, and `|⟨e, x - c⟩| ≤ R` on the support. The constant does not
+depend on the centre `c`. -/
+theorem norm_graph_fst_le [Nontrivial F] {Ω : Set F} {c : F} {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : Ω ⊆ Metric.closedBall c R) {φ : F → ℝ} (hφ : IsTestFn Ω φ) :
     ‖(graph μ Ω hφ).fst‖ ≤ 2 * R * ‖(graph μ Ω hφ).snd‖ := by
   obtain ⟨e, he⟩ := exists_norm_eq F zero_le_one
-  set ℓ : F →L[ℝ] ℝ := innerSL ℝ e
+  set L : F →L[ℝ] ℝ := innerSL ℝ e
+  set ℓ : F → ℝ := fun x => L x - L c with hℓ_def
   set a := ‖(graph μ Ω hφ).fst‖ with ha_def
   set b := ‖(graph μ Ω hφ).snd‖ with hb_def
   have hout : ∀ x ∉ Ω, φ x = 0 := fun x hx =>
     image_eq_zero_of_notMem_tsupport fun h => hx (hφ.tsupport_subset h)
   have hdφ : ∀ x, HasFDerivAt φ (fderiv ℝ φ x) x := fun x => (hφ.differentiable x).hasFDerivAt
+  have hdℓ : ∀ x, HasFDerivAt ℓ L x := fun x => L.hasFDerivAt.sub_const _
+  have hℓc : Continuous ℓ := L.continuous.sub continuous_const
   have hsq : ∀ x, fderiv ℝ (fun y => φ y * φ y) x e = 2 * (φ x * fderiv ℝ φ x e) := fun x => by
     rw [show (fun y => φ y * φ y) = φ * φ from rfl, ((hdφ x).mul (hdφ x)).fderiv]
     simp only [_root_.add_apply, _root_.smul_apply, smul_eq_mul]
     ring
   have hℓ : ∀ x, fderiv ℝ ℓ x e = 1 := fun x => by
-    rw [ContinuousLinearMap.fderiv]
-    simp [ℓ, he]
+    rw [(hdℓ x).fderiv]
+    simp [L, he]
   have hcs : HasCompactSupport fun x => φ x * fderiv ℝ φ x e := hφ.hasCompactSupport.mul_right
   have hcont : Continuous fun x => φ x * fderiv ℝ φ x e :=
     hφ.continuous.mul (hφ.continuous_fderiv_apply e)
   have hibp := integral_mul_fderiv_eq_neg_fderiv_mul_of_integrable (μ := μ) (f := ℓ)
-    (g := fun y => φ y * φ y) (v := e) ?_ ?_ ?_ (fun x _ => ℓ.differentiableAt)
+    (g := fun y => φ y * φ y) (v := e) ?_ ?_ ?_ (fun x _ => (hdℓ x).differentiableAt)
     (fun x _ => ((hdφ x).mul (hdφ x)).differentiableAt)
   rotate_left
   · simp only [hℓ, one_mul]
     exact (hφ.continuous.mul hφ.continuous).integrable_of_hasCompactSupport
       hφ.hasCompactSupport.mul_right
   · simp only [hsq]
-    exact (ℓ.continuous.mul (continuous_const.mul hcont)).integrable_of_hasCompactSupport
+    exact (hℓc.mul (continuous_const.mul hcont)).integrable_of_hasCompactSupport
       (hcs.mul_left.mul_left)
-  · exact (ℓ.continuous.mul (hφ.continuous.mul hφ.continuous)).integrable_of_hasCompactSupport
+  · exact (hℓc.mul (hφ.continuous.mul hφ.continuous)).integrable_of_hasCompactSupport
       hφ.hasCompactSupport.mul_right.mul_left
   simp only [hsq, hℓ, one_mul] at hibp
   -- pointwise bound
@@ -410,10 +414,10 @@ theorem norm_graph_fst_le [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
     have hxΩ : x ∈ Ω := by
       by_contra h
       exact hx (hout x h)
-    have hxR : ‖x‖ ≤ R := by simpa using hΩ hxΩ
+    have hxR : ‖x - c‖ ≤ R := by simpa [dist_eq_norm] using hΩ hxΩ
     have hℓx : |ℓ x| ≤ R := by
-      calc |ℓ x| = |⟪e, x⟫_ℝ| := rfl
-        _ ≤ ‖e‖ * ‖x‖ := abs_real_inner_le_norm e x
+      calc |ℓ x| = |⟪e, x - c⟫_ℝ| := by simp [ℓ, L, inner_sub_right]
+        _ ≤ ‖e‖ * ‖x - c‖ := abs_real_inner_le_norm e _
         _ ≤ R := by rw [he, one_mul]; exact hxR
     have hde : |fderiv ℝ φ x e| ≤ ‖gradient φ x‖ := by
       rw [← inner_gradient]
@@ -431,7 +435,7 @@ theorem norm_graph_fst_le [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
     (continuous_const.mul (hφ.continuous.abs.mul hφ.continuous_gradient.norm)).integrable_of_hasCompactSupport
       (hφ.hasCompactSupport.abs.mul_right.mul_left)
   have hint_lhs : Integrable (fun x => -(ℓ x * (2 * (φ x * fderiv ℝ φ x e)))) μ :=
-    ((ℓ.continuous.mul (continuous_const.mul hcont)).integrable_of_hasCompactSupport
+    ((hℓc.mul (continuous_const.mul hcont)).integrable_of_hasCompactSupport
       (hcs.mul_left.mul_left)).neg
   have hmain : ∫ x, φ x * φ x ∂μ ≤ ∫ x, 2 * R * (|φ x| * ‖gradient φ x‖) ∂μ := by
     rw [show ∫ x, φ x * φ x ∂μ = ∫ x, -(ℓ x * (2 * (φ x * fderiv ℝ φ x e))) ∂μ by
@@ -456,10 +460,11 @@ theorem norm_graph_fst_le [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
     positivity
   · nlinarith
 
-/-- **Friedrichs–Poincaré inequality on `W^{1,2}_0(Ω)`.** If `Ω ⊆ B̄(0, R)`, then
-`‖u‖_{L²(Ω)} ≤ 2R ‖G‖_{L²(Ω)}` for every `(u, G) ∈ H01 μ Ω`. -/
-theorem norm_fst_le_of_mem_H01 [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : Ω ⊆ Metric.closedBall 0 R) {v : L2Pair μ Ω} (hv : v ∈ H01 μ Ω) :
+/-- **Friedrichs–Poincaré inequality on `W^{1,2}_0(Ω)`.** If `Ω ⊆ B̄(c, R)`, then
+`‖u‖_{L²(Ω)} ≤ 2R ‖G‖_{L²(Ω)}` for every `(u, G) ∈ H01 μ Ω`. The constant is independent of the
+centre `c`. -/
+theorem norm_fst_le_of_mem_H01 [Nontrivial F] {Ω : Set F} {c : F} {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : Ω ⊆ Metric.closedBall c R) {v : L2Pair μ Ω} (hv : v ∈ H01 μ Ω) :
     ‖v.fst‖ ≤ 2 * R * ‖v.snd‖ := by
   have hfst : Continuous fun v : L2Pair μ Ω => v.fst :=
     continuous_fst.comp (WithLp.prodContinuousLinearEquiv 2 ℝ _ _).continuous
@@ -481,8 +486,8 @@ theorem norm_sq_L2Pair {Ω : Set F} (v : L2Pair μ Ω) : ‖v‖ ^ 2 = ‖v.fst�
 
 /-- On `W^{1,2}_0(Ω)` the gradient controls the full norm:
 `‖(u, G)‖² ≤ (1 + 4R²) ‖G‖²`. -/
-theorem norm_sq_le_of_mem_H01 [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : Ω ⊆ Metric.closedBall 0 R) {v : L2Pair μ Ω} (hv : v ∈ H01 μ Ω) :
+theorem norm_sq_le_of_mem_H01 [Nontrivial F] {Ω : Set F} {c : F} {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : Ω ⊆ Metric.closedBall c R) {v : L2Pair μ Ω} (hv : v ∈ H01 μ Ω) :
     ‖v‖ ^ 2 ≤ (1 + 4 * R ^ 2) * ‖v.snd‖ ^ 2 := by
   have h := norm_fst_le_of_mem_H01 hR hΩ hv
   have h0 := norm_nonneg v.fst
