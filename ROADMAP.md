@@ -23,24 +23,33 @@ The paper and this project normalise differently. Every entry below is backed by
 | Paper | This project | Lean evidence |
 |---|---|---|
 | cone factor `C(S¹_{2πβ})` with metric `dr² + β²r² dθ²`, `r` = distance to the apex | complex coordinate `z_j`, Hermitian form `q = β² \|z_j\|^{2β-2} \|dz_j\|²`, with `r = ρ = \|z_j\|^β` | `transverseConeMetric_polar` (`q = dρ² + β²ρ² dθ²`) |
-| `g = ∑_a (dr_a² + β_a² r_a² dθ_a²) + ds²` | `q = modelConeQuadratic θ`, i.e. **half** the Riemannian metric `g = ω_θ(·, J·)` of `ModelConeForm θ` | `modelConeForm_apply_I_smul` (`ω(v, Jv) = 2q`) |
-| `Δ = ∑_a Δ_{β_a} + Δ_{ℝ^{m-2n}}`, `Δ_β = ∂_r² + r⁻¹∂_r + (βr)⁻²∂_θ²` | `laplaceBeltrami (ModelConeForm θ) = ½ Δ_paper` | `laplaceBeltrami_modelConeFormOn`, `coordLaplacian_div_modelWeight_conePolar`, `laplaceBeltrami_standardCone_polar` |
-| `Δ_β r² = 4` | `Δ_g ρ_j² = 2` | `laplaceBeltrami_potentialTerm` |
+| `g = ∑_a (dr_a² + β_a² r_a² dθ_a²) + ds²` | `q = modelConeQuadratic θ`, i.e. **half** the Riemannian metric `g = ω_θ(·, J·)` of `ModelConeForm θ` | `modelConeForm_apply_I_smul` (`ω(v, Jv) = 2q`); in the paper's real coordinates `ConeWeights.modelConeQuadratic_eq_productConeMetric`, `ConeWeights.modelConeForm_apply_I_smul_eq_two_mul` (`g = 2 Φ^* g_paper`), `transverseConeMetric_eq_paperConeMetric` |
+| `Δ = ∑_a Δ_{β_a} + Δ_{ℝ^{m-2n}}`, `Δ_β = ∂_r² + r⁻¹∂_r + (βr)⁻²∂_θ²` | `laplaceBeltrami (ModelConeForm θ) = ½ Δ_paper` | `laplaceBeltrami_modelConeFormOn`, `coordLaplacian_div_modelWeight_conePolar`, `laplaceBeltrami_standardCone_polar`; `laplaceBeltrami_eq_half_coneLaplacian` (`Δ_g = ½ Δ_β` with `Δ_β` = `coneLaplacian` in the paper's coordinates) |
+| `Δ_β r² = 4` | `Δ_g ρ_j² = 2` | `laplaceBeltrami_potentialTerm`; `Δ_β r² = 4` in `ConicalKahlerTest/PaperChecks.lean` |
 | harmonic functions `r^{k/β} cos kθ`, `r^{k/β} sin kθ` | `coneHarmonicCos β k ρ θ`, `coneHarmonicSin` = `Re z^k`, `Im z^k` | `coneHarmonicCos_polar_eq_zero`, `re_pow_coordSlice_conePolar`, `laplaceBeltrami_re_pow_eq_zero` |
 | dilations `λ(r_a, θ_a, s) = (λr_a, θ_a, λs)`, homothety of `g` | `coneDilation θ λ` (`z_j ↦ λ^{1/β_j} z_j` or `λ z_j`) | `modelConeQuadratic_coneDilation` (`q ↦ λ² q`) |
 | Euclidean coordinates `s ∈ ℝ^{m-2n}` | complex Euclidean factors `z_j` (`θ_j = none`) | |
-| the identification with `ℝ^m` reading `(r_a, θ_a)` as polar coordinates (eq. (2.1)) | the radial change `(r, θ) ↦ (r^β, βθ)` / `w = \|z\|^{β-1} z` | `coneRadialChange`, `coneRadialChangeHomeomorph` |
-| complex coordinate `z = (βr)^{1/β} e^{iθ}` (corrected; §5.1 and App. A.2 contain typos) | ours is `z_ours = β^{-1/β} z_paper`: `ρ = \|z_ours\|^β` and `q = β² \|z_ours\|^{2β-2}\|dz_ours\|²` | |
+| the paper's **real coordinates**: `(r_a, θ_a)` read as Euclidean polar coordinates, `(x_a, y_a) = (r_a cos θ_a, r_a sin θ_a)` (eq. (2.1)); they **keep the angle `θ`** and are globally defined on the cone | `w = Φ_β(z) = \|z\|^{β-1} z` (`r = \|w\| = \|z\|^β`, `arg w = arg z`), a homeomorphism of `ℂ` | `realConeChart`, `realConeChart_polarMap`, `realConeChartHomeomorph`; product version `ConeWeights.realChart` into `RealConeModel` |
+| the **flat developing coordinates** `ρ e^{iβθ}`, in which the metric is Euclidean; they use the angle `βθ`, so they are defined only locally or on the universal cover (the deck transformation `θ ↦ θ + 2π` acts by rotation through `2πβ`) | `coneRadialChange (r, θ) = (r^β, βθ)`, developing map `ζ ↦ e^{βζ}` | `coneRadialChange_add_two_pi`, `exp_mul_add_two_pi_I` (Milestone 3) |
+| complex coordinate `z = (βr)^{1/β} e^{iθ}` (corrected; §5.1 and App. A.2 contain typos) | ours is `z_ours = β^{-1/β} z_paper`: `ρ = \|z_ours\|^β` and `q = β² \|z_ours\|^{2β-2}\|dz_ours\|²` | `transverseConeMetric_rescale` (`PaperChecks`); see `PAPER_REVIEW.md` V2 |
+| polar coordinates `(r_a, θ_a, s_i)` of the real model, `θ_a ∈ ℝ/2πℤ` | `PolarPoint κ ι` (lifted angles), `PolarPoint.toModel` | `PolarPoint.toModel_update_theta_add_two_pi` |
+| the cone distance `d_g` (the paper: geodesic distance of `g`) | `coneDist β` (one factor, formula of the Euclidean cone), `ConeTwo β`, `ConeProduct β ι` (`L²` product) — **formally defined**; not yet proved to be the length distance of `g` | `coneDist_polarMap`, `coneDist_vertex`, `ConeProduct.dist_mk` |
+| `dV_g = (∏ β_a) dx` (p. 5) | `productConeVolume β` (Lebesgue with density `√det g`) | `productConeVolume_eq`, `det_productConeGram` |
+| `𝒟₂` (p. 2) | `D2Op β ι`, `D2Op.apply` (coordinate operators) | `D2Op.apply_factor_eq_zero`, `sharp_holderExponent` |
+| the terms of `μ` (eq. (1.1)) | `holderExponentBound β_a` (`1/β - 1` or `1/β - 2`) | `sharp_holderExponent` |
 | angles `0 < β_a < 1` | models for all `β > 0`; chart invariance for `β ≤ 1` | `IsQuasiIsometricSNCCone.forall_chart_of_le_one` |
 
 **Two scope differences that matter.**
 1. **Dimension.** The paper allows any `m ≥ 3`, including odd `m` (e.g. `m = 3`, `C(S¹_{2πβ}) × ℝ`).
-   This project works on `ℂⁿ`, so `m = 2n` is even and Euclidean factors come in complex pairs.
-   Odd `m`, and the paper's alternative `m = 3` proof (§3.5.1, which needs De Giorgi–Nash–Moser),
-   are outside the current framework.
+   The Kähler side of this project works on `ℂⁿ`, so `m = 2n` there. Since Milestone 8 the real
+   model `RealConeModel κ ι = ℝ^{(Fin 2 × κ) ⊕ ι}` has dimension `2 #κ + #ι`, which can be odd, and
+   the analysis towards Theorem 1.1 is set up there. `ConeWeights.realChart` identifies the Kähler
+   models with the even-dimensional real models. The paper's alternative `m = 3` proof (§3.5.1,
+   which needs De Giorgi–Nash–Moser) is not planned.
 2. **Hölder spaces.** The paper's `C^α` is Hölder for the cone distance `d_g`. That is Euclidean
-   Hölder in the coordinates `(r_a cos θ_a, r_a sin θ_a)`, **not** in the complex coordinate `z`.
-   Function spaces must therefore be set up in the `w = |z|^{β-1} z` coordinates (or intrinsically).
+   Hölder in the coordinates `(r_a cos θ_a, r_a sin θ_a)`, **not** in the complex coordinate `z`
+   (`ConeProduct.dist_bounds_uniform`). Function spaces are therefore set up in the real model
+   `RealConeModel`.
 
 ---
 
@@ -69,14 +78,17 @@ Here `B_r` are balls centred at the vertex, `B(x, ρ)` is a `d_g`-ball, and inte
 against `dV_g = (∏ β_a) · Lebesgue` in the paper's coordinates. The pointwise Hölder coefficient is
 `|f|_{C^α(x)} = sup_{d(x,y)<1} |f(y) − f(x)| / d(x,y)^α`.
 
-**Formalisation decisions to make before stating it in Lean** (all **Planned**):
-- **Meaning of the pure conical operators.** Coordinate derivatives and orthonormal-frame Hessian
-  components differ by first-order terms. The paper does not say which is meant (extraction §2.3).
-  Recommended: frame Hessian components plus `Δ_{β_a}`.
+**Formalisation decisions:**
+- **`𝒟₂` consists of coordinate differential operators** in `(r_a, θ_a, s_i)`, exactly as listed on
+  p. 2, with the explicit weights `r_a⁻¹`, `(r_a r_b)⁻¹`, `r_a⁻²` and the conical Laplacian
+  `Δ_{β_a} = ∂²_{r_a} + r_a⁻¹∂_{r_a} + (β_a r_a)⁻²∂²_{θ_a}`. They are **not** covariant Hessian
+  components. (An earlier version of this roadmap suggested Hessian components. That was a
+  misreading: p. 2 specifies the operators explicitly.) Formalised in Milestone 8 as `D2Op`.
 - **Hölder exponent.** State the estimate in the Campanato form above, and derive Hölder
   continuity of `Du` separately (Lemma 2.6).
-- **Coordinates.** Work in the paper's real coordinates. In this project those are reached
-  through `coneRadialChange` on each cone factor.
+- **Coordinates.** Work in the paper's real coordinates, which keep `θ` (`realConeChart`). Do
+  **not** use the flat developing coordinates `ρ e^{iβθ}` (`coneRadialChange`) for function
+  spaces. They are not single-valued on the cone.
 
 ---
 
@@ -99,7 +111,10 @@ omitted) and `[C]` (cited from the literature).
 | barrier `ε ∑_a log r_a` harmonic off `S` (Lemma 3.2) | **Proved**: `laplaceBeltrami_log_coordNormSq_eq_zero` |
 | pluriharmonic functions are harmonic for every Kähler form | **Proved**: `laplaceBeltrami_eq_zero_of_ddbar_eq_zero`, `laplaceBeltrami_re_eq_zero` |
 | **completeness**: `𝓗_{≤2}` is *exactly* the list of Prop. 3.4, and there is no homogeneous harmonic function of degree in `(2, 2+μ)` | Planned. This is the hard part of §3: the spectral theorem on the link (Lemma 3.1), Sturm–Liouville and Frobenius theory for (3.2) (§§3.3–3.4), and induction on `n`. A Fourier decomposition in each `θ_a` may be a more elementary route. |
-| Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}` | Planned (explicit computation once `𝒟₂` is fixed) |
+| `𝒟₂` as coordinate operators (p. 2) | **Defined**: `D2Op`, `D2Op.apply`, `pd`, `coneLaplacian`, `paperLaplacian` |
+| harmonic examples in the paper's coordinates, including `r^{1/β} s cos θ` (p. 3) | **Proved**: `paperLaplacian_harmonicCos`, `paperLaplacian_mixedExample` |
+| optimality of the exponent (p. 3, items 1–2): `D u ~ r^{γ} cos θ` is not `α`-Hölder for `α > γ = holderExponentBound β` | **Proved**: `sharp_holderExponent`, `not_holderNearVertex_radialCosFn`; exclusion of pure conical operators for `β ≥ 1/2` (including `β = 1/2`): `not_holderNearVertex_pure_of_half_le` |
+| Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}` | **Partly proved**: for `β_a ≥ 1/2`, every `D ∈ 𝒟₂` annihilates every `Δ_{β_a}`-harmonic function of `(r_a, θ_a)` alone (`D2Op.apply_factor_eq_zero`). The rest of the list (`s_i`, degree-2 functions) is planned. |
 | Lemma 2.2: log cut-off with small Dirichlet energy | Planned (explicit) |
 | Lemma 4.2, monotonicity at the vertex | Planned (elementary given the expansion) |
 
@@ -107,10 +122,11 @@ omitted) and `[C]` (cited from the literature).
 
 | Ingredient | Status |
 |---|---|
-| distance `d_g`, balls `B(x,ρ)`, `(min β)² g_ℝ^m ≤ g ≤ g_ℝ^m` (eq. (2.1)) | Planned. Only tensor-level facts are proved (`ConicalKahler.Cone.FlatCone`). No metric space is constructed. |
-| geometry of balls in the 2D cone after cuts (App. A.1; the constant `c_β` has a typo) | Planned |
+| `(min β)² g_ℝ^m ≤ g ≤ g_ℝ^m` (eq. (2.1)) | **Proved**: `productConeMetric_bounds_of_le_one` (and `productConeMetric_bounds` for any angles) |
+| distance `d_g`, comparison with the Euclidean distance, ball inclusions | **Proved for the formal distance** `coneDist` / `ConeProduct`: `ConeProduct.dist_bounds_of_le_one`, `ConeProduct.ball_subset_of_le_one`, `ConeProduct.ball_of_cone_eq_zero` (balls centred at the vertex are Euclidean), `ConeProduct.dist_smul`, `ConeProduct.homeomorph`. **Outstanding**: that `coneDist` is the length distance of `g`. |
+| geometry of balls in the 2D cone after cuts (App. A.1; the constant `c_β` has a typo, `PAPER_REVIEW.md` V6) | Partly: locally flat in developing coordinates (`coneDist_polarMap_eq_developing`); distance to the opposite ray (`PaperChecks`) |
 | Lemma 4.1: finitely many bad scales | Planned (elementary given App. A.1) |
-| `dV_g = (∏ β_a) dx` | Planned |
+| `dV_g = (∏ β_a) dx` | **Proved**: `productConeVolume_eq`, `map_ofLp_productConeVolume` |
 
 ### 3.3 Sobolev spaces and weak solutions
 
@@ -122,8 +138,8 @@ omitted) and `[C]` (cited from the literature).
 | Lemma 2.3, Caccioppoli | Planned | EllipticPDE `Regularity.caccioppoli` (bounded measurable coefficients) |
 | Lemma 2.4, harmonic approximation (Rellich and weak limits) | Planned | upstream `rellich_kondrachov_W01p_seq` |
 | Lemma 3.1, spectral theorem on the link | Planned | |
-| Lemma 3.3, expansion of `W^{1,2}` harmonic functions (gap: continuity up to the boundary) | Planned | energy-uniqueness repair suggested in extraction §6 |
-| **Prop. 2.5**, interior `L²` Hessian bound; uses the cited Lipschitz bound for Dirichlet eigenfunctions [Mon17], [BKMR18, Prop. 5.4] | Planned. **The heaviest analytic input**, and the only deep external regularity result on the main line. Boundary terms are dropped in the paper (its equalities should be `≤`). | |
+| Lemma 3.3, expansion of `W^{1,2}` harmonic functions (suspected gap: continuity up to the boundary, `PAPER_REVIEW.md` S2) | Planned | energy-uniqueness repair (`PAPER_REVIEW.md` S2) |
+| **Prop. 2.5**, interior `L²` Hessian bound; uses the cited Lipschitz bound for Dirichlet eigenfunctions [Mon17], [BKMR18, Prop. 5.4] | Planned. **The heaviest analytic input**, and the only deep external regularity result on the main line. The paper drops boundary terms; we suspect its equalities should be `≤` (`PAPER_REVIEW.md` S1). | |
 | local `C^{2,α}` regularity off the singular set | Planned | upstream `interiorSchauderEstimate_all` (interior Schauder on `ℂⁿ`) |
 
 ### 3.4 Campanato theory and the iteration
@@ -182,27 +198,21 @@ No incompatible dependency has been added.
 
 ## 5. Proposed milestones
 
-1. **Real coordinates and the cone distance.**
-   - The paper's coordinates `(r_a cos θ_a, r_a sin θ_a, s)` as a global homeomorphism of the
-     model, built from `coneRadialChange` on each factor.
-   - The metric comparison (2.1) and `dV_g`.
-   - The cone distance `d_g` with its comparison to the Euclidean distance.
-2. **`𝒟₂` and `𝓗_{≤2}` (explicit part).**
-   - Fix the meaning of `𝒟₂`.
-   - Prove Corollary 3.5 for the explicit list.
-   - Prove the optimality examples of p. 3: `r^{1/β} s cos θ` is harmonic and its `∂_r∂_s` is
-     exactly `C^{1/β-1}`.
-3. **Weak solutions** on balls centred at the vertex. Use upstream `MemW1p` in real coordinates,
-   plus Poincaré, existence and uniqueness, Caccioppoli, and the density of `C_c^∞(reg)`.
+1. **Real cone geometry and `𝒟₂`** (Milestone 8, **done**): real coordinates, uniform equivalence,
+   the formal cone distance, `dV_g`, `𝒟₂`, the optimality examples, normalisations. See
+   `STATUS.md`.
+2. **Sobolev spaces and weak solutions on the real models** (Milestone 9): `W^{1,2}` and
+   `W^{1,2}_0` on balls of `RealConeModel` with respect to `productConeVolume` (equivalently
+   Lebesgue measure); the weak formulation of `Δu = f` with the bounded measurable coefficients of
+   `g` in real coordinates; Poincaré, existence and uniqueness (Riesz / Lax–Milgram); Caccioppoli
+   (Lemma 2.3); density of `C_c^∞(reg)` (Lemma 2.2). Reuse upstream `Sobolev.Euclidean.MemW1p`.
+3. **`𝓗_{≤2}` (explicit part):** the rest of Corollary 3.5 for the explicit list.
 4. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables.
 5. **The `L²` Hessian bound** (Prop. 2.5): decide between formalising or assuming the Lipschitz
    bound for eigenfunctions.
 6. **Campanato iteration** (Lemmas 2.6, 2.7, 4.1, 4.3, Prop. 5.1, §5).
+7. **The cone distance as a length distance**, wherever the proof needs geodesic properties of
+   `d_g` beyond the formulas proved so far.
 
-**Known issues in the paper to handle** (details in the extraction):
-- Complex-coordinate normalisation typos (§5.1, App. A.2): `k²β²` should be `k²/β²`, a sign in
-  `L_{0,0}`, `(m−3)⁻¹` should be `(m−2)⁻¹`, and `c_β = sin πβ` should be its reciprocal.
-- Boundary terms dropped in Prop. 2.5.
-- A continuity gap in Lemma 3.3.
-- Uniformity in the centre in Lemma 2.4 and Prop. 5.1.
-- The case `β_a = 1/2`.
+**Issues in the paper** are recorded separately in `PAPER_REVIEW.md`, which distinguishes errors
+verified by computation from suspected ones. The target theorem is not altered.
