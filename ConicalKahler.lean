@@ -39,3 +39,11 @@ public import ConicalKahler.Sobolev.Elliptic
 public import ConicalKahler.Sobolev.Caccioppoli
 public import ConicalKahler.Sobolev.ConeLaplacian
 public import ConicalKahler.Sobolev.Capacity
+public import ConicalKahler.Sobolev.Restrict
+public import ConicalKahler.Sobolev.Rellich
+public import ConicalKahler.Sobolev.Intrinsic
+public import ConicalKahler.Sobolev.HarmonicApprox
+public import ConicalKahler.Sobolev.ConeApprox
+public import ConicalKahler.Sobolev.Divergence
+public import ConicalKahler.Sobolev.Scaling
+public import ConicalKahler.Sobolev.Spectral

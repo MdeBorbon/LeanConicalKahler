@@ -278,7 +278,7 @@ theorem coneCoeff_coercive_of_le_one {β : κ → ConeAngle} (hβ : ∀ a, (β a
 `f ∈ L²(Ω)`, there is exactly one `u ∈ W^{1,2}_0(Ω)` with `∫ ⟨g⁻¹ ∇u, ∇φ⟩ = ∫ f φ` for all test
 functions `φ`. -/
 theorem cone_existsUnique_H01 [NeZero d] (β : κ → ConeAngle) (e : RealConeIndex κ ι ≃ Fin d)
-    {Ω : Set 𝔼} {R : ℝ} (hR : 0 ≤ R) (hΩ : Ω ⊆ Metric.closedBall 0 R)
+    {Ω : Set 𝔼} {x₀ : 𝔼} {R : ℝ} (hR : 0 ≤ R) (hΩ : Ω ⊆ Metric.closedBall x₀ R)
     (f : Lp ℝ 2 (volume.restrict Ω)) :
     ∃! v : H01 volume Ω, (coneCoeff β e).IsWeakSolution f v :=
   (coneCoeff β e).existsUnique_H01_isWeakSolution hR hΩ f

@@ -302,8 +302,8 @@ def dirichletForm₀ (Ω : Set F) : H01 μ Ω →L[ℝ] H01 μ Ω →L[ℝ] ℝ 
 
 /-- **Coercivity on `W^{1,2}_0(Ω)`** for bounded `Ω`, via Friedrichs–Poincaré:
 `λ/(1 + 4R²) ‖v‖² ≤ ∫_Ω ⟨A ∇u, ∇u⟩`. -/
-theorem isCoercive_dirichletForm₀ [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : Ω ⊆ Metric.closedBall 0 R) : IsCoercive (c.dirichletForm₀ Ω) := by
+theorem isCoercive_dirichletForm₀ [Nontrivial F] {Ω : Set F} {x₀ : F} {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : Ω ⊆ Metric.closedBall x₀ R) : IsCoercive (c.dirichletForm₀ Ω) := by
   refine ⟨c.lam / (1 + 4 * R ^ 2), by have := c.lam_pos; positivity, fun u => ?_⟩
   have h1 := norm_sq_le_of_mem_H01 hR hΩ u.2
   have h2 := c.lam_mul_norm_sq_le Ω (u : L2Pair μ Ω).snd
@@ -319,10 +319,10 @@ theorem isCoercive_dirichletForm₀ [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 
     _ = c.lam * ‖(u : L2Pair μ Ω).snd‖ ^ 2 := by field_simp
     _ ≤ _ := h2
 
-/-- **Existence and uniqueness of weak solutions** (Lax–Milgram). Let `Ω ⊆ B̄(0, R)`. For every
+/-- **Existence and uniqueness of weak solutions** (Lax–Milgram). Let `Ω ⊆ B̄(x₀, R)`. For every
 `f ∈ L²(Ω)` there is exactly one `v ∈ W^{1,2}_0(Ω)` with `-div(A ∇v) = f` weakly. -/
-theorem existsUnique_H01_isWeakSolution [Nontrivial F] {Ω : Set F} {R : ℝ} (hR : 0 ≤ R)
-    (hΩ : Ω ⊆ Metric.closedBall 0 R) (f : Lp ℝ 2 (μ.restrict Ω)) :
+theorem existsUnique_H01_isWeakSolution [Nontrivial F] {Ω : Set F} {x₀ : F} {R : ℝ} (hR : 0 ≤ R)
+    (hΩ : Ω ⊆ Metric.closedBall x₀ R) (f : Lp ℝ 2 (μ.restrict Ω)) :
     ∃! v : H01 μ Ω, c.IsWeakSolution f v := by
   have hcoer := c.isCoercive_dirichletForm₀ hR hΩ
   -- the functional `ψ ↦ ∫ f ψ` on `W^{1,2}_0(Ω)` and its Riesz representative

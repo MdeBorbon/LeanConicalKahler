@@ -10,3 +10,4 @@ public import ConicalKahlerTest.Laplacian
 public import ConicalKahlerTest.RealCone
 public import ConicalKahlerTest.PaperChecks
 public import ConicalKahlerTest.Sobolev
+public import ConicalKahlerTest.Compactness

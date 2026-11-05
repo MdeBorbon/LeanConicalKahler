@@ -5,7 +5,7 @@ Last updated: 2026-11-05.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1369
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1560
 `ConicalKahler.*` declarations (library and tests) depend only on `propext`, `Classical.choice` and
 `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
@@ -317,7 +317,7 @@ The cone models enter through `coneCoeff` (`Sobolev/ConeLaplacian`).
 | test functions; the Hilbert space `L²(Ω) × L²(Ω; F)` of pairs; graphs `(φ, ∇φ)` | `IsTestFn`, `L2Pair`, `graph`, `testSubmodule` | `Sobolev/H1` |
 | **`W^{1,2}_0(Ω)`** (closure of the graphs; complete) and **`W^{1,2}(Ω)`** (pairs with `G` the weak gradient of `u`; closed); `W^{1,2}_0 ⊆ W^{1,2}` | `H01`, `W12`, `IsWeakGradPair`, `H01_le_W12` | `Sobolev/H1` |
 | integration by parts for test functions | `integral_mul_fderiv_eq_neg` | `Sobolev/H1` |
-| **Friedrichs–Poincaré** for `Ω ⊆ B̄(0, R)`: `‖u‖ ≤ 2R ‖∇u‖` on `W^{1,2}_0(Ω)` | `norm_graph_fst_le`, `norm_fst_le_of_mem_H01`, `norm_sq_le_of_mem_H01` | `Sobolev/H1` |
+| **Friedrichs–Poincaré** for `Ω ⊆ B̄(x₀, R)` (any centre, since Milestone 10): `‖u‖ ≤ 2R ‖∇u‖` on `W^{1,2}_0(Ω)` | `norm_graph_fst_le`, `norm_fst_le_of_mem_H01`, `norm_sq_le_of_mem_H01` | `Sobolev/H1` |
 | symmetric uniformly elliptic measurable coefficient fields; Cauchy–Schwarz and the norm bound for symmetric non-negative operators | `CoeffField`, `inner_sq_le_of_symm`, `norm_apply_le_of_symm`, `stronglyMeasurable_of_inner` | `Sobolev/Elliptic` |
 | multiplication by `A` on `L²`; the Dirichlet form `∫ ⟨A G, H⟩`; coercivity on `W^{1,2}_0` | `CoeffField.mulOp`, `.dirichletForm`, `.lam_mul_norm_sq_le`, `.isCoercive_dirichletForm₀` | `Sobolev/Elliptic` |
 | **weak solutions** of `-div(A ∇u) = f`; testing against all of `W^{1,2}_0(Ω)` | `CoeffField.IsWeakSolution`, `.isWeakSolution_iff`, `IsWeakSolution.forall_H01` | `Sobolev/Elliptic` |
@@ -347,7 +347,88 @@ coordinates, `∫ ⟨g⁻¹ ∇u, ∇φ⟩ dx = ∫ f φ dx`: the constant `∏ 
 - The Friedrichs constant `2R` is not optimal. The mean-value Poincaré inequality on balls is not
   restated here (upstream has it on the unit ball).
 - Rellich compactness, harmonic approximation (Lemma 2.4), regularity and the Hessian estimate
-  (Prop. 2.5) are not started.
+  (Prop. 2.5) are not started. (Rellich and Lemma 2.4 are done in Milestone 10.)
+
+## Milestone 10: compactness, harmonic approximation, scaling, spectral theory (sixth review): COMPLETE
+
+All entries are kernel-checked. Files `Sobolev/Restrict`, `Sobolev/Rellich`, `Sobolev/Intrinsic`,
+`Sobolev/HarmonicApprox`, `Sobolev/ConeApprox`, `Sobolev/Divergence`, `Sobolev/Scaling`,
+`Sobolev/Spectral`; tests in `ConicalKahlerTest/Compactness`.
+
+**1. Bridges with the geometric theory.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| `g⁻¹ ξ` is the **metric gradient**: `g(g⁻¹ξ, w) = ⟨ξ, w⟩`; `|∇_g u|²_g = ⟨g⁻¹ξ, ξ⟩` | `productConeBilin_coneInvOp`, `productConeMetric_coneInvOp`, `coneGradNormSq_eq` | `Sobolev/Intrinsic` |
+| `dV_g`, transported to `ℝ^d`, is `(∏ β_a) dx` (reusing `productConeVolume_eq`) | `coneVolume`, `coneVolume_eq` | `Sobolev/Intrinsic` |
+| the **intrinsic norm** `∫_Ω (u² + |∇_g u|²_g) dV_g = (∏ β_a)(‖u‖² + ∫ ⟨g⁻¹G, G⟩)` | `intrinsicNormSq`, `intrinsicNormSq_eq` | `Sobolev/Intrinsic` |
+| **norm equivalence** (paper, §2.1): `(∏β) λ ‖(u,G)‖² ≤ ‖u‖²_{W^{1,2}_g} ≤ (∏β) Λ ‖(u,G)‖²`; lower constant `∏β` for `β_a ≤ 1` | `intrinsicNormSq_bounds`, `intrinsicNormSq_lower_of_le_one` | `Sobolev/Intrinsic` |
+| `g⁻¹ = I + ∑_a (β_a⁻² − 1) P_a` on the regular part (`P_a`: projection onto the rotation field `J_a y`; `J_a` skew) | `coneInvOp_eq_add_sum`, `rotJ`, `inner_rotJ_self` | `Sobolev/Divergence` |
+| second derivatives along curves; polar second derivatives `∂²_r`, `∂²_θ = r²D²u(e_θ,e_θ) − r Du(e_r)`, `∂²_s` | `deriv_deriv_comp_curve`, `pd_r_pd_r_eq`, `pd_θ_pd_θ_eq`, `pd_s_pd_s_eq` | `Sobolev/Divergence` |
+| **`div(g⁻¹ ∇u) = paperLaplacian β (u ∘ toModel)`** at every regular point, for `u` of class `C²` there (with `laplaceBeltrami_eq_half_coneLaplacian`, this is `2 Δ_g` for one factor) | `divergence`, `divergence_coneInvOp_gradient` | `Sobolev/Divergence` |
+
+**2. Rellich compactness.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| our weak gradients are upstream weak partial derivatives; `H01 ⊆` upstream `MemW01p`; upstream witnesses agree with ours a.e. | `hasWeakPartialDeriv_of_mem_W12`, `memW01p_of_mem_H01`, `ae_eq_snd_of_witness` | `Sobolev/Rellich` |
+| **Rellich**: bounded sequences in `W^{1,2}_0(Ω)` (`Ω` bounded open) have `L²`-convergent subsequences (reusing upstream `rellich_kondrachov_W01p_seq`) | `rellich_H01` | `Sobolev/Rellich` |
+| **the embedding `W^{1,2}_0(Ω) ↪ L²(Ω)` is a compact operator** | `H01.fstL`, `isCompactOperator_H01_fst` | `Sobolev/Rellich` |
+| restriction to subdomains: `L²(Ω) → L²(U)`, pairs, `W^{1,2}` and weak solutions restrict | `restrictLp`, `L2Pair.restrict`, `restrict_mem_W12`, `IsWeakSolution.restrict` | `Sobolev/Restrict` |
+| smooth cut-offs `0 ≤ η ≤ 1`, `η = 1` on a compact `K ⊆ Ω` | `exists_cutoff` | `Sobolev/Restrict` |
+
+**3. Harmonic approximation (paper, Lemma 2.4).**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| energy estimates for the Dirichlet problem: `λ‖∇w‖ ≤ 2R‖f‖`, `λ‖w‖ ≤ 4R²‖f‖` (`Ω ⊆ B̄(x₀, R)`) | `lam_mul_norm_snd_le`, `lam_mul_norm_fst_le` | `Sobolev/HarmonicApprox` |
+| **harmonic replacement**: `u = h + w` with `h` weakly `A`-harmonic on `Ω`, `w ∈ W^{1,2}_0(Ω)`, `λ‖u − h‖ ≤ 4R²‖f‖` | `exists_harmonic_replacement` | `Sobolev/HarmonicApprox` |
+| **Lemma 2.4 with explicit `δ = λε/(4R²+1)`**, independent of the centre and shape of `Ω`, without the hypothesis `‖u‖ ≤ 1`; the paper's form with `U ⊆ Ω` | `harmonic_approximation`, `harmonic_approximation_restrict` | `Sobolev/HarmonicApprox` |
+| **Lemma 2.4 on cone balls `B(p, ρ)` with `δ` independent of `p`** (`B(p,ρ) ⊆ B̄_E(p, ρ/lowerConst β)`) | `coneBall`, `coneBall_subset_closedBall`, `ball_subset_coneBall`, `isOpen_coneBall`, `cone_harmonic_approximation` | `Sobolev/ConeApprox` |
+| Caccioppoli in gradient form; bounds for cut-off pairs | `caccioppoli_norm`, `norm_cutPair_sq_le` | `Sobolev/HarmonicApprox` |
+| **compactness of approximate solutions**: weak solutions with `‖u_n‖ ≤ M`, `f_n → f` have a subsequence converging **in `W^{1,2}(U)`** (`U` open, `closure U ⊆ Ω` compact) to a weak solution with right-hand side `f` | `norm_restrict_sq_le_of_cutoff`, `exists_tendsto_of_approx_solutions` | `Sobolev/HarmonicApprox` |
+| Lemma 2.4 by the **paper's contradiction argument** | `harmonic_approximation_of_compactness` | `Sobolev/HarmonicApprox` |
+
+**4. Scaling.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| `∫_{t⁻¹Ω} F(tx) dx = t^{-d} ∫_Ω F`; `‖u(t·)‖² = t^{-d}‖u‖²` | `dilDom`, `setIntegral_comp_smul_dilDom`, `dilLp`, `norm_dilLp_sq` | `Sobolev/Scaling` |
+| `(u, G) ↦ (u(t·), t G(t·))` preserves `W^{1,2}`; the Dirichlet energy scales by `t^{2−d}` | `dilate`, `dilate_mem_W12`, `norm_dilate_snd_sq` | `Sobolev/Scaling` |
+| **scaling of weak solutions**: `-div(A∇(u(t·))) = t² f(t·)` for dilation-invariant `A` | `CoeffField.IsWeakSolution.dilate` | `Sobolev/Scaling` |
+| `g⁻¹` is dilation invariant; cone balls dilate to cone balls; **scaled norms `‖u‖_{B(x,ρ)}` are dilation invariant** | `coneCoeffA_smul`, `dilDom_coneBall`, `scaledNormSq`, `scaledNormSq_dilate` | `Sobolev/Scaling` |
+| Caccioppoli on `B(p,1) ⊂ B(p,2)` with a constant independent of `p` | `exists_caccioppoli_ball` | `Sobolev/Scaling` |
+| **scaled Caccioppoli** (§2.5.1): `λ∫_{B(p,ρ)}|∇u|² ≤ ρ²∫_{B(p,2ρ)} f² + (1+4ΛΓ²)ρ⁻²∫_{B(p,2ρ)} u²` (by dilation from unit scale) | `exists_caccioppoli_ball_scaled` | `Sobolev/Scaling` |
+
+**5. The spectral theorem for the Dirichlet problem** (the feasibility study turned into a proof:
+Mathlib already has the spectral theorem for compact symmetric operators).
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| the solution operator `f ↦ u ∈ W^{1,2}_0(Ω)` is bounded linear; `G = fst ∘ solution` | `CoeffField.solution`, `.solutionL`, `.dirichletG` | `Sobolev/Spectral` |
+| `G` is **compact**, **symmetric**, **positive** and **injective** | `.isCompactOperator_dirichletG`, `.isSymmetric_dirichletG`, `.inner_dirichletG_self_nonneg`, `.injective_dirichletG` | `Sobolev/Spectral` |
+| **the eigenspaces of `G` span a dense subspace of `L²(Ω)`; nonzero eigenspaces are finite-dimensional** | `.dirichletG_eigenspaces_dense`, `.finiteDimensional_eigenspace_dirichletG` | `Sobolev/Spectral` |
+| eigenvectors are **Dirichlet eigenfunctions** `-div(A∇u) = μ⁻¹ u`, `u ∈ W^{1,2}_0`, with `0 < μ ≤ 4R²/λ` | `.dirichletG_eigen` | `Sobolev/Spectral` |
+
+**What is not claimed.**
+- **Proposition 2.5 is not proved**, and nothing here uses the incorrect equalities of its arXiv
+  proof (`PAPER_REVIEW.md` V9). The spectral theorem is an input to the localised Bochner argument
+  (`PAPER_REVIEW.md` §C), whose obligations (i)–(v) remain open.
+- The eigenvalues of `G` are not arranged into a sequence `λ_j → ∞` with an orthonormal basis.
+  The statements are density of the span of the eigenspaces, finite multiplicity and the lower
+  bound `λ/(4R²)`.
+- The divergence identity is pointwise, for `C²` functions at regular points. The converse (a
+  classical solution on the regular part that lies in `W^{1,2}` is a weak solution) is not
+  formalised. It needs integration by parts against test functions supported in the regular set
+  (`dense_testSubmodule_regular` reduces to those).
+- The scaled Caccioppoli inequality is stated on **Euclidean** balls of the real coordinates, with
+  arbitrary centre and radius. Geodesic balls are comparable (`coneBall_subset_closedBall`,
+  `ball_subset_coneBall`), which gives the estimate between `B(p, ρ)` and `B(p, Kρ)` for a fixed
+  `K = K(β)`, but the ratio `2` between geodesic balls is not proved. It would need cut-offs that
+  are Lipschitz for `d_g`.
+- The scaled Hessian estimate of §2.5.1 is not proved (it depends on Proposition 2.5).
+- `𝒟₂` operators are not touched in this milestone. They remain coordinate operators, distinct
+  from covariant Hessian components.
 
 ## Decisions affecting definitions
 
@@ -444,6 +525,20 @@ coordinates, `∫ ⟨g⁻¹ ∇u, ∇φ⟩ dx = ∫ f φ dx`: the constant `∏ 
 * **Coefficients** (`CoeffField`) are operator fields `A : F → (F →L[ℝ] F)`, symmetric, with
   measurable matrix coefficients and the bounds `λ, Λ` almost everywhere. For the cone the bounds
   fail only on the null singular set.
+* **Friedrichs–Poincaré with a centre (Milestone 10).** `norm_graph_fst_le`,
+  `norm_fst_le_of_mem_H01`, `norm_sq_le_of_mem_H01`, `isCoercive_dirichletForm₀`,
+  `existsUnique_H01_isWeakSolution` and `cone_existsUnique_H01` now take `Ω ⊆ B̄(x₀, R)` with an
+  implicit centre. Existing calls with `B̄(0, R)` are unchanged.
+* **Lemma 2.4 by harmonic replacement (Milestone 10).** The main statement uses the direct argument
+  (Lax–Milgram plus the energy estimate), which gives an explicit `δ` that is uniform in the centre.
+  The paper's compactness argument is also formalised, as a separate theorem.
+* **Divergence** is defined classically as `∑_k ∂_k V_k`, using one-variable partial derivatives of
+  components (`divergence`). It does not use the trace of a Fréchet derivative of the operator
+  field `g⁻¹`, which is not differentiable at the singular set.
+* **Dilations** act on the domain by preimage (`dilDom t Ω = {x | t x ∈ Ω}`), not by pointwise
+  scaling of sets.
+* **The intrinsic norm** `intrinsicNormSq` uses only the existing `productConeMetric`,
+  `coneInvOp` and `productConeVolume`, transported by `coordIso`. No new metric is introduced.
 * **`set_option linter.unusedSectionVars false`** is set in the `Sobolev/` files. Many small lemmas
   share one typeclass context, and not every lemma uses all of it. It disables a style lint only.
 
@@ -455,8 +550,9 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 
 Done since the first review: agreement with `metricInChart` (Milestone 4), `Divisors/SNC`
 (Milestone 5), SNC chart invariance for `β_i ≤ 1` (Milestone 6), the Laplacian (Milestone 7), and
-the real cone geometry with `𝒟₂` (Milestone 8), and Sobolev spaces and weak solutions
-(Milestone 9).
+the real cone geometry with `𝒟₂` (Milestone 8), Sobolev spaces and weak solutions
+(Milestone 9), and compactness, harmonic approximation, scaling and the Dirichlet spectral
+theorem (Milestone 10).
 
 1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
@@ -478,10 +574,17 @@ the real cone geometry with `𝒟₂` (Milestone 8), and Sobolev spaces and weak
 5. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
 6. **Schauder theory** (`ROADMAP.md`). Done: the real models, the formal cone distance, `dV_g`
    and `𝒟₂` (Milestone 8); `W^{1,2}`, `W^{1,2}_0`, weak solutions, Friedrichs–Poincaré,
-   existence and uniqueness, Caccioppoli and density (Milestone 9). Next (proposed Milestone 10):
-   Rellich compactness, harmonic approximation (Lemma 2.4), dilations and scaled estimates, and the
-   spectral theorem for the Dirichlet problem. Then: completeness of `𝓗_{≤2+α}`, the `L²` Hessian
-   bound (by the localised Bochner argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
+   existence and uniqueness, Caccioppoli and density (Milestone 9); Rellich, Lemma 2.4 (uniform in
+   the centre), scaling, the bridges with `g`, `dV_g` and `paperLaplacian`, and the Dirichlet
+   spectral theorem (Milestone 10). Next: homogeneous harmonic functions (completeness of
+   `𝓗_{≤2+α}`, Prop. 3.4, Lemma 3.3), the `L²` Hessian bound (by the localised Bochner argument,
+   `PAPER_REVIEW.md` §C), and the Campanato iteration.
+   Smaller items from Milestone 10:
+   - classical solutions on the regular part that lie in `W^{1,2}` are weak solutions
+     (integration by parts against test functions supported away from `S`);
+   - Caccioppoli with cut-offs that are Lipschitz for `d_g`, which gives the ratio `2` between
+     geodesic balls;
+   - eigenvalues of `G` as a sequence, with an orthonormal basis of eigenfunctions.
 7. **Smaller items from Milestone 8.**
    - Full `γ`-Hölder continuity of `r^γ cos θ` for the cone distance (only the estimate at the
      vertex is proved).

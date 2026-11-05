@@ -34,7 +34,9 @@ The paper and this project normalise differently. Every entry below is backed by
 | complex coordinate `z = (βr)^{1/β} e^{iθ}` (corrected; §5.1 and App. A.2 contain typos) | ours is `z_ours = β^{-1/β} z_paper`: `ρ = \|z_ours\|^β` and `q = β² \|z_ours\|^{2β-2}\|dz_ours\|²` | `transverseConeMetric_rescale` (`PaperChecks`); see `PAPER_REVIEW.md` V2 |
 | polar coordinates `(r_a, θ_a, s_i)` of the real model, `θ_a ∈ ℝ/2πℤ` | `PolarPoint κ ι` (lifted angles), `PolarPoint.toModel` | `PolarPoint.toModel_update_theta_add_two_pi` |
 | the cone distance `d_g` (the paper: geodesic distance of `g`) | `coneDist β` (one factor, formula of the Euclidean cone), `ConeTwo β`, `ConeProduct β ι` (`L²` product) — **formally defined**; not yet proved to be the length distance of `g` | `coneDist_polarMap`, `coneDist_vertex`, `ConeProduct.dist_mk` |
-| `dV_g = (∏ β_a) dx` (p. 5) | `productConeVolume β` (Lebesgue with density `√det g`) | `productConeVolume_eq`, `det_productConeGram` |
+| `dV_g = (∏ β_a) dx` (p. 5) | `productConeVolume β` (Lebesgue with density `√det g`); on `ℝ^d`: `coneVolume β e` | `productConeVolume_eq`, `det_productConeGram`, `coneVolume_eq` |
+| `Δ` in divergence form, `div(g⁻¹ ∇u)` (§2.2 weak formulation) | `coneCoeff β e` (`A = g⁻¹`), `divergence` | `divergence_coneInvOp_gradient` (`div(g⁻¹∇u) = paperLaplacian` at regular points, `u ∈ C²`) |
+| `W^{1,2}` norm defined by `g` and `dV_g` (§2.1) | `intrinsicNormSq β e` (built from `productConeMetric`, `coneInvOp`, `productConeVolume`) | `intrinsicNormSq_eq`, `intrinsicNormSq_bounds` (equivalent to the Euclidean norm) |
 | `𝒟₂` (p. 2) | `D2Op β ι`, `D2Op.apply` (coordinate operators) | `D2Op.apply_factor_eq_zero`, `sharp_holderExponent` |
 | the terms of `μ` (eq. (1.1)) | `holderExponentBound β_a` (`1/β - 1` or `1/β - 2`) | `sharp_holderExponent` |
 | angles `0 < β_a < 1` | models for all `β > 0`; chart invariance for `β ≤ 1` | `IsQuasiIsometricSNCCone.forall_chart_of_le_one` |
@@ -104,7 +106,7 @@ omitted) and `[C]` (cited from the literature).
 | Model metric, its Laplacian, product structure (§1.1, p. 2) | **Proved**: `laplaceBeltrami_modelConeFormOn`, `laplaceBeltrami_modelConeFormOn_split` |
 | `Δ_β` in polar coordinates | **Proved**: `coordLaplacian_conePolar`, `laplaceBeltrami_standardCone_polar` |
 | `r^{k/β} cos kθ`, `r^{k/β} sin kθ` harmonic (App. A.2, (A.1)) | **Proved**: `coneHarmonicCos_polar_eq_zero`, `coneHarmonicSin_polar_eq_zero`, `laplaceBeltrami_re_pow_eq_zero`, `laplaceBeltrami_im_pow_eq_zero` |
-| homogeneity and dilations (§2.5) | **Proved**: `coneHarmonicCos_homogeneous`, `re_pow_coneDilate`, `modelConeQuadratic_coneDilation` |
+| homogeneity and dilations (§2.5) | **Proved**: `coneHarmonicCos_homogeneous`, `re_pow_coneDilate`, `modelConeQuadratic_coneDilation`; on weak solutions `CoeffField.IsWeakSolution.dilate`, `coneCoeffA_smul`, `scaledNormSq_dilate` (Milestone 10) |
 | derivative bounds `|∂_r u| ≲ r^{k/β-1}` etc. (used for the optimality examples, p. 3) | **Proved**: `coneHarmonicCos_bounds`, `coneHarmonicSin_bounds`, `coneHarmonicCos_gradNormSq` |
 | degree-2 functions `r_a² − r_b²`, `r_a² − (s_1² + s_2²)` harmonic (Prop. 3.4(3)) | **Proved**: `laplaceBeltrami_potentialTerm_sub` |
 | `1`, `s_i`, `r_a^{1/β_a} cos θ_a` (Prop. 3.4(1)–(2)) harmonic | **Proved** as `Re`/`Im` of `z_j` (`k = 1`) |
@@ -136,8 +138,12 @@ omitted) and `[C]` (cited from the literature).
 | density of `C_c^∞(reg)` (codim-2 capacity) | **Done**: `dense_testSubmodule_regular`, `isWeakSolution_iff_regular` (logarithmic cut-offs) | Lemma 2.2 |
 | Poincaré, existence by Riesz/Lax–Milgram, uniqueness | **Done**: `norm_fst_le_of_mem_H01` (Friedrichs, `‖u‖ ≤ 2R‖∇u‖`), `existsUnique_H01_isWeakSolution`, `cone_existsUnique_H01` | Mathlib Lax–Milgram |
 | Lemma 2.3, Caccioppoli | **Done**: `caccioppoli` (any bounded measurable coefficients), `cone_caccioppoli` | upstream mollification for the cut-off test function |
-| Lemma 2.4, harmonic approximation (Rellich and weak limits) | Planned | upstream `rellich_kondrachov_W01p_seq` |
-| Lemma 3.1, spectral theorem on the link | Planned | |
+| Rellich: `W^{1,2}_0(Ω) ↪ L²(Ω)` compact | **Done** (Milestone 10): `rellich_H01`, `isCompactOperator_H01_fst` (bridge `memW01p_of_mem_H01`) | upstream `rellich_kondrachov_W01p_seq` (reused) |
+| norm equivalence (§2.1): Euclidean and intrinsic `W^{1,2}` | **Done**: `intrinsicNormSq_bounds` | |
+| Lemma 2.4, harmonic approximation | **Done** (Milestone 10). Direct proof with explicit `δ = λε/(4R²+1)`, uniform in the centre: `harmonic_approximation`, `cone_harmonic_approximation` (cone balls). The paper's compactness argument: `exists_tendsto_of_approx_solutions` (strong `W^{1,2}` convergence), `harmonic_approximation_of_compactness` | |
+| scaled estimates of §2.5.1 | **Partly done**: scaling of weak solutions, of the energy and of scaled norms; scaled Caccioppoli `exists_caccioppoli_ball_scaled` (Euclidean balls, any centre). The scaled Hessian estimate needs Prop. 2.5 | |
+| spectral theorem for the Dirichlet problem on bounded domains (needed for Prop. 2.5) | **Done** (Milestone 10): `CoeffField.dirichletG` compact, symmetric, positive, injective; `dirichletG_eigenspaces_dense`, `finiteDimensional_eigenspace_dirichletG`, `dirichletG_eigen` | Mathlib `orthogonalComplement_iSup_eigenspaces_eq_bot` |
+| Lemma 3.1, spectral theorem on the link | Planned. The Dirichlet theorem above is for domains of `ℝ^d`, not for the link | |
 | Lemma 3.3, expansion of `W^{1,2}` harmonic functions (suspected gap: continuity up to the boundary, `PAPER_REVIEW.md` S2) | Planned | energy-uniqueness repair (`PAPER_REVIEW.md` S2) |
 | **Prop. 2.5**, interior `L²` Hessian bound; uses the cited Lipschitz bound for Dirichlet eigenfunctions [Mon17], [BKMR18, Prop. 5.4] | Planned. **The heaviest analytic input**, and the only deep external regularity result on the main line. The arXiv proof omits an outer boundary term, so its equalities are false (confirmed, `PAPER_REVIEW.md` V9). `W^{2,2}` must be intrinsic (V10). **Audit / possible repair, not proved:** `research_notes/PROPOSITION_2_5_AUDIT.md` and `PAPER_REVIEW.md` §C (localised Bochner argument) | |
 | local `C^{2,α}` regularity off the singular set | Planned | upstream `interiorSchauderEstimate_all` (interior Schauder on `ℂⁿ`) |
@@ -204,11 +210,19 @@ No incompatible dependency has been added.
 2. **Sobolev spaces and weak solutions on the real models** (Milestone 9, **done**): `W^{1,2}`,
    `W^{1,2}_0` as Hilbert spaces; Friedrichs–Poincaré; existence and uniqueness (Lax–Milgram);
    Caccioppoli; density of `C_c^∞(Ω \ S)`. See `STATUS.md`.
-3. **Compactness and harmonic approximation** (proposed Milestone 10): Rellich on `W^{1,2}_0` via
-   upstream `rellich_kondrachov_W01p_seq`, weak limits, Lemma 2.4; dilations and the scaled
-   estimates of §2.5.1 on vertex-centred balls; the spectral theorem for the Dirichlet problem on
-   `B_1` (compact resolvent), which Prop. 2.5 and Lemma 3.1 both need.
-4. **`𝓗_{≤2}` (explicit part):** the rest of Corollary 3.5 for the explicit list.
+3. **Compactness and harmonic approximation** (Milestone 10, **done**): Rellich via upstream; the
+   intrinsic norm and `div(g⁻¹∇u) = Δ_paper`; Lemma 2.4 uniform in the centre (and the paper's
+   compactness argument); dilations, scaled norms and the scaled Caccioppoli inequality; the
+   spectral theorem for the Dirichlet problem. See `STATUS.md`.
+4. **Weak harmonic functions on the models** (recommended Milestone 11):
+   - classical solutions on the regular part that lie in `W^{1,2}` are weak solutions (integration
+     by parts with the divergence identity, plus density);
+   - hence the explicit harmonic functions of §3 (`r^{k/β} cos kθ`, `s_i`, the degree-2 list) are
+     weakly harmonic;
+   - interior regularity off the singular set (upstream interior Schauder on `ℂⁿ`, or Weyl's lemma);
+   - Fourier decomposition in the angles `θ_a` of weak harmonic functions on vertex-centred balls,
+     towards Lemma 3.3 by energy uniqueness (`PAPER_REVIEW.md` S2) instead of the maximum principle;
+   - the rest of Corollary 3.5 for the explicit list.
 5. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables.
 6. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
    argument (`PAPER_REVIEW.md` §C, `research_notes/PROPOSITION_2_5_AUDIT.md`). This is not the
