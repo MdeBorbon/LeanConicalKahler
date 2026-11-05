@@ -6,7 +6,9 @@ built on top of the formal proof of the Calabi conjecture
 
 The design document is [`CONICAL_KAHLER_LEAN_API.md`](CONICAL_KAHLER_LEAN_API.md); progress,
 open proof obligations and blockers are tracked in [`STATUS.md`](STATUS.md). The plan towards the
-Schauder estimates of de Borbon–Edwards is in [`ROADMAP.md`](ROADMAP.md).
+Schauder estimates of de Borbon–Edwards is in [`ROADMAP.md`](ROADMAP.md). Issues found in that
+paper are recorded in [`PAPER_REVIEW.md`](PAPER_REVIEW.md), with verified errors kept separate from
+suspected gaps.
 
 ## Main result so far
 
@@ -121,6 +123,41 @@ The following are harmonic:
 Homogeneity, cone dilations and derivative estimates are in `ConicalKahler/Laplacian/ConeHarmonic`
 and `ConicalKahler/Cone/Dilation`.
 
+### Real cone models and the operators `𝒟₂`
+
+The Schauder estimates are formulated in the paper's **real coordinates**. A cone factor point
+is `w = r e^{iθ} ∈ ℝ²`, with `θ ∈ ℝ/2πℤ` the same angle as on the Kähler side. These coordinates
+are globally defined, unlike the flat developing coordinates `r e^{iβθ}`
+(`developing_add_two_pi_ne`).
+
+* `RealConeModel κ ι = ℝ^{(Fin 2 × κ) ⊕ ι}`: cone factors indexed by `κ`, Euclidean coordinates by
+  `ι`. Its dimension is `2#κ + #ι`, which can be odd.
+* The model metric `g = ∑_a (dr_a² + β_a² r_a² dθ_a²) + ds²` (`productConeMetric`) satisfies
+  `b²|v|² ≤ g(v) ≤ |v|²` when `b ≤ β_a ≤ 1`. Its Gram matrix has determinant `∏ β_a²`, and the
+  Riemannian volume is `(∏ β_a)` times Lebesgue measure (`productConeVolume_eq`).
+* **Cone distance.** `coneDist β` is the distance of the Euclidean cone over a circle of length
+  `2πβ`: `d² = r² + s² − 2rs cos(min(β∠, π))`. `ConeTwo β` and `ConeProduct β ι` (the `L²`
+  product, via Mathlib's `PiLp`) are metric spaces. We prove:
+  - the comparison `b|p − q| ≤ d(p, q) ≤ |p − q|`, and ball inclusions;
+  - that balls centred at the vertex are Euclidean balls;
+  - that dilations scale `d`;
+  - that `d` induces the Euclidean topology;
+  - that locally `d` is the flat distance in developing coordinates.
+
+  **This distance is formally defined.** It is not yet proved to be the length distance of `g`.
+* **Bridge.** `ConeWeights.realChart` (`z ↦ |z|^{β-1} z` on cone directions) maps the Kähler
+  model to the real model. Under this map the Hermitian form of the Kähler model is the pull-back
+  of `g`. The Riemannian metric `ω(·, J·)` is **twice** that pull-back, and
+  `laplaceBeltrami = ½ Δ_β` (`ConeWeights.modelConeForm_apply_I_smul_eq_two_mul`,
+  `laplaceBeltrami_eq_half_coneLaplacian`).
+* **`𝒟₂`** (`D2Op`) lists exactly the coordinate operators of the paper (p. 2). The pure conical
+  ones are included only when `β_a < 1/2`.
+  - For `β_a ≥ 1/2` every `D ∈ 𝒟₂` annihilates the harmonic functions of one factor
+    (`D2Op.apply_factor_eq_zero`).
+  - The examples on p. 3 are sharp (`sharp_holderExponent`). For `α` above `1/β − 1`
+    (`β ≥ 1/2`) or `1/β − 2` (`β < 1/2`), some `D ∈ 𝒟₂` maps a harmonic function to a function
+    that is not `α`-Hölder near the vertex.
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -176,6 +213,12 @@ We use the upstream conventions without change.
 | `ConicalKahler/Laplacian/Polar.lean` | `Δ_{z_j}` in polar and cone coordinates; second-order chain rule |
 | `ConicalKahler/Laplacian/Model.lean` | `laplaceBeltrami`; Laplacian of products of cones; harmonic functions |
 | `ConicalKahler/Laplacian/ConeHarmonic.lean` | `ρ^{k/β} cos kθ`, `ρ^{k/β} sin kθ`: harmonicity, homogeneity, derivative bounds |
+| `ConicalKahler/Real/ConeFactor.lean` | one cone factor in the paper's real coordinates: metric, Gram determinant, `realConeChart` bridge |
+| `ConicalKahler/Real/ConeDistance.lean` | hinges, the cone distance, `ConeTwo` metric space, Euclidean comparison |
+| `ConicalKahler/Real/Product.lean` | `RealConeModel`, product metric, volume, `ConeProduct` metric space, balls |
+| `ConicalKahler/Real/D2.lean` | polar coordinates, `pd`, `Δ_β`, `D2Op` (`𝒟₂`), harmonic examples, Hölder sharpness |
+| `ConicalKahler/Real/Bridge.lean` | Kähler model → real model; `ω(v, Jv) = 2 g_paper` |
+| `ConicalKahler/Real/Normalisation.lean` | `laplaceBeltrami = ½ Δ_β` in the paper's coordinates |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -183,6 +226,8 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/SNC.lean` | two axes with angles `π`, `6π`; components; smooth case |
 | `ConicalKahlerTest/Laplacian.lean` | polar formula, harmonic functions, cross-check of the two routes, dilation |
 | `ConicalKahlerTest/SNCInvariance.lean` | crossing components with angles `π` and `2π/3`; swapped and mixed charts |
+| `ConicalKahlerTest/RealCone.lean` | cone distances, area `πβρ²` of a cone disk, odd dimension, `𝒟₂` membership, sharpness |
+| `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 
 ## Building

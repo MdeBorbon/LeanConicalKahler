@@ -7,3 +7,5 @@ public import ConicalKahlerTest.SelectedChart
 public import ConicalKahlerTest.SNC
 public import ConicalKahlerTest.SNCInvariance
 public import ConicalKahlerTest.Laplacian
+public import ConicalKahlerTest.RealCone
+public import ConicalKahlerTest.PaperChecks

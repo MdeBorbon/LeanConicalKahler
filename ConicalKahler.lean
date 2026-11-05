@@ -28,3 +28,9 @@ public import ConicalKahler.Cone.Dilation
 public import ConicalKahler.Laplacian.Polar
 public import ConicalKahler.Laplacian.ConeHarmonic
 public import ConicalKahler.Laplacian.Model
+public import ConicalKahler.Real.ConeFactor
+public import ConicalKahler.Real.ConeDistance
+public import ConicalKahler.Real.Product
+public import ConicalKahler.Real.D2
+public import ConicalKahler.Real.Bridge
+public import ConicalKahler.Real.Normalisation
