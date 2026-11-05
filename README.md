@@ -172,6 +172,26 @@ are globally defined, unlike the flat developing coordinates `r e^{iβθ}`
 - The codimension-two singular set has zero capacity: test functions supported off it are dense
   in `W^{1,2}_0` (`dense_testSubmodule_regular`).
 
+### Compactness, harmonic approximation, scaling and spectral theory
+
+- **Bridges** with the geometric theory:
+  - `div(g⁻¹∇u)` is the paper's Laplacian at regular points (`divergence_coneInvOp_gradient`);
+  - the intrinsic `W^{1,2}` norm defined by `g` and `dV_g` is equivalent to the Euclidean one
+    (`intrinsicNormSq_bounds`).
+- **Rellich**: `W^{1,2}_0(Ω) ↪ L²(Ω)` is compact (`isCompactOperator_H01_fst`). This reuses
+  upstream's Rellich–Kondrachov theorem through the bridge `memW01p_of_mem_H01`.
+- **Harmonic approximation** (the paper's Lemma 2.4):
+  - harmonic replacement gives an explicit `δ`, uniform in the centre, also on cone balls
+    (`harmonic_approximation`, `cone_harmonic_approximation`);
+  - the paper's compactness argument is `exists_tendsto_of_approx_solutions` and
+    `harmonic_approximation_of_compactness`.
+- **Scaling**:
+  - dilations of weak solutions (`CoeffField.IsWeakSolution.dilate`);
+  - the dilation invariance of `g⁻¹` and of the scaled norms;
+  - the scaled Caccioppoli inequality (`exists_caccioppoli_ball_scaled`).
+- **The spectral theorem for the Dirichlet problem**: the solution operator is compact, symmetric,
+  positive and injective, and its eigenspaces span `L²(Ω)` (`CoeffField.dirichletG_eigenspaces_dense`).
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -238,6 +258,14 @@ We use the upstream conventions without change.
 | `ConicalKahler/Sobolev/Caccioppoli.lean` | cut-offs in `W^{1,2}_0` (upstream mollification), Caccioppoli inequality |
 | `ConicalKahler/Sobolev/ConeLaplacian.lean` | `g⁻¹` of the real cone models as a coefficient field; cone versions of the estimates |
 | `ConicalKahler/Sobolev/Capacity.lean` | logarithmic cut-offs, zero capacity of the singular set, density |
+| `ConicalKahler/Sobolev/Restrict.lean` | restriction to subdomains, smooth cut-off functions |
+| `ConicalKahler/Sobolev/Rellich.lean` | bridge to upstream `MemW01p`, Rellich compactness, compact embedding |
+| `ConicalKahler/Sobolev/Intrinsic.lean` | metric gradient, `dV_g` on `ℝ^d`, intrinsic `W^{1,2}` norm and its equivalence |
+| `ConicalKahler/Sobolev/HarmonicApprox.lean` | harmonic replacement, Lemma 2.4, compactness of approximate solutions |
+| `ConicalKahler/Sobolev/ConeApprox.lean` | cone balls in `ℝ^d`, Lemma 2.4 uniformly in the centre |
+| `ConicalKahler/Sobolev/Divergence.lean` | `div(g⁻¹∇u)` equals the paper's Laplacian at regular points |
+| `ConicalKahler/Sobolev/Scaling.lean` | dilations, scaled norms, scaled Caccioppoli |
+| `ConicalKahler/Sobolev/Spectral.lean` | Dirichlet solution operator, spectral theorem |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -247,6 +275,7 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/SNCInvariance.lean` | crossing components with angles `π` and `2π/3`; swapped and mixed charts |
 | `ConicalKahlerTest/RealCone.lean` | cone distances, area `πβρ²` of a cone disk, odd dimension, `𝒟₂` membership, sharpness |
 | `ConicalKahlerTest/Sobolev.lean` | constants, existence, Poincaré, Caccioppoli and density on `C(S¹_π) × ℝ` |
+| `ConicalKahlerTest/Compactness.lean` | Rellich, Lemma 2.4, divergence identity, scaling and the spectral theorem on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 

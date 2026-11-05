@@ -315,12 +315,33 @@ and `C²` off the singular set, to a `W^{1,2}` function whose boundary trace is 
 Convergence of the series is not discussed. A proof by energy uniqueness in `W^{1,2}_0` plus
 separation of variables would avoid the issue.
 
-### S3. Uniformity in Lemma 2.4 and Proposition 5.1
+### S3. Uniformity in Lemma 2.4 and Proposition 5.1 (resolved for Lemma 2.4, in Lean)
 
-The harmonic approximation constant `δ` must be uniform over centres `x` with `|x| < ε₀` in each of
-the finitely many model cones. Lemma 2.4 is stated only for `B_1` (centred at the vertex, by the
-paper's convention). Rellich compactness on `W^{1,2}(B_{1/2}(x))` for general geodesic balls also
+Proposition 5.1 needs the harmonic approximation constant `δ` to be uniform over centres `x` with
+`|x| < ε₀` in each of the finitely many model cones. But Lemma 2.4 is stated only for `B_1`
+(centred at the vertex, by the paper's convention), and its compactness proof does not obviously
+give this uniformity. Rellich compactness on `W^{1,2}(B_{1/2}(x))` for general geodesic balls also
 needs either a regularity argument for the domain or a cut-off into `W^{1,2}_0` of a larger ball.
+
+**Resolution (Milestone 10, kernel-checked).** Lemma 2.4 holds with an explicit `δ` that is
+independent of the centre, by a direct argument instead of compactness.
+- Let `w ∈ W^{1,2}_0(B(x,1))` solve `-Δw = f` (Lax–Milgram), and set `h = u − w`. Then `h` is weakly
+  harmonic on all of `B(x,1)`.
+- Friedrichs–Poincaré and the energy estimate give `λ ‖u − h‖_{L²} ≤ 4R² ‖f‖_{L²}`, where `R` is the
+  radius of any Euclidean ball containing `B(x,1)`. This gives `δ = λε/(4R²+1)`.
+- Every geodesic ball `B(x, 1)` lies in a Euclidean ball of radius `1/lowerConst β`, so `R` (and
+  hence `δ`) is uniform in `x`.
+- The hypothesis `‖u‖_{L²(B_1)} ≤ 1` of Lemma 2.4 is not needed.
+- Lean: `CoeffField.harmonic_approximation`, `cone_harmonic_approximation`.
+
+The paper's compactness argument is also formalised, with the cut-off into `W^{1,2}_0` handled as
+above (`exists_tendsto_of_approx_solutions`).
+- Applying Caccioppoli to differences `u_i − u_j` gives **strong** `W^{1,2}` convergence on
+  compactly contained subdomains, so weak compactness is not needed.
+- `harmonic_approximation_of_compactness` derives Lemma 2.4 from it by contradiction.
+
+What remains of S3 concerns Proposition 5.1, not Lemma 2.4: the decomposition
+`h = h_{≤2} + h_{>2}` on balls not centred at the vertex and its bounds (S4).
 
 ### S4. "`L²`-orthogonal to `𝓗_{≤2}`" for balls not centred at the vertex (Lemma 4.3, Prop. 5.1)
 
@@ -390,6 +411,14 @@ recovered, but a complete repair has **not** been established.
 ---
 
 ## D. Remarks (imprecisions that do not affect correctness)
+
+* **`W^{1,2}` versus `W^{2,2}` (§2.1, §2.4).** The paper's assertion that the `W^{1,2}` norms
+  defined by `g` and by the Euclidean metric are equivalent is correct. It is proved in Lean with
+  explicit constants: `(∏β) λ ‖·‖² ≤ ∫ (u² + |∇_g u|²_g) dV_g ≤ (∏β) Λ ‖·‖²`
+  (`intrinsicNormSq_bounds`). The analogous assertion for `W^{2,2}` is false (V10).
+* **The divergence form of `Δ`.** On smooth functions away from the singular set, the operator
+  `div(g⁻¹∇u)` of the weak formulation in the real coordinates is the paper's
+  `Δ = ∑_a Δ_{β_a} + Δ_s`. This is proved in Lean (`divergence_coneInvOp_gradient`).
 
 * **𝒟₂ and "entries of the Hessian".** The paper calls the operators of `𝒟₂` "entries of the
   Hessian", but defines them as **coordinate** operators (p. 2). They differ from the components
