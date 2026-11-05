@@ -34,3 +34,8 @@ public import ConicalKahler.Real.Product
 public import ConicalKahler.Real.D2
 public import ConicalKahler.Real.Bridge
 public import ConicalKahler.Real.Normalisation
+public import ConicalKahler.Sobolev.H1
+public import ConicalKahler.Sobolev.Elliptic
+public import ConicalKahler.Sobolev.Caccioppoli
+public import ConicalKahler.Sobolev.ConeLaplacian
+public import ConicalKahler.Sobolev.Capacity

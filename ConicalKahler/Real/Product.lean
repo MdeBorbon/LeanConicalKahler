@@ -95,6 +95,23 @@ theorem ext_cone_eucl {p q : RealConeModel κ ι} (hc : ∀ a, p.cone a = q.cone
 @[simp] theorem cone_zero (a : κ) : (0 : RealConeModel κ ι).cone a = 0 := by
   apply Complex.ext <;> simp [cone]
 
+@[simp] theorem cone_add (p q : RealConeModel κ ι) (a : κ) :
+    (p + q).cone a = p.cone a + q.cone a := by
+  apply Complex.ext <;> simp [cone]
+
+@[simp] theorem eucl_add (p q : RealConeModel κ ι) (i : ι) :
+    (p + q).eucl i = p.eucl i + q.eucl i := by
+  simp [eucl]
+
+theorem continuous_cone (a : κ) : Continuous fun p : RealConeModel κ ι => p.cone a := by
+  have h : (fun p : RealConeModel κ ι => p.cone a) = fun p =>
+      ((p (Sum.inl (0, a)) : ℝ) : ℂ) + ((p (Sum.inl (1, a)) : ℝ) : ℂ) * Complex.I := by
+    funext p
+    apply Complex.ext <;> simp [cone]
+  rw [h]
+  exact (Complex.continuous_ofReal.comp (PiLp.continuous_apply 2 _ _)).add
+    ((Complex.continuous_ofReal.comp (PiLp.continuous_apply 2 _ _)).mul continuous_const)
+
 @[simp] theorem cone_sub (p q : RealConeModel κ ι) (a : κ) :
     (p - q).cone a = p.cone a - q.cone a := by
   apply Complex.ext <;> simp [cone]
