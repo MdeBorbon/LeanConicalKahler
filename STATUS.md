@@ -1,11 +1,11 @@
 # STATUS
 
-Last updated: 2026-11-04.
+Last updated: 2026-11-05.
 
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 680
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 783
 `ConicalKahler.*` declarations depend only on `propext`, `Classical.choice` and `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
 
@@ -163,6 +163,37 @@ still pass.
 **Not covered.** For `β_i > 1` the condition remains an existence-of-compatible-chart condition.
 The shear counterexample embeds through `isConeAlong_iff_isSNCConeAlong`.
 
+## Milestone 7: the Laplacian and elementary harmonic analysis of the models (third review): COMPLETE
+
+All entries are kernel-checked. The Schauder theory itself is **not** started; see `ROADMAP.md`.
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| **Laplace–Beltrami operator** of the Riemannian metric `g = ω(·, J·)`, reusing upstream `ΔG`; `Δ_g = 2 tr_ω(i∂∂̄)` | `laplaceBeltrami`, `laplaceBeltrami_eq_two_mul_laplacian` | `Laplacian/Model` |
+| complex-trace Laplacian on `U ⊆ ℂⁿ`; `Re ∂_j∂̄_j f = ¼ Δ_{z_j} f` | `laplacian_opens`, `re_complexHessian_diag`, `coordLaplacian` | `Laplacian/Model`, `Laplacian/Polar` |
+| **products of cones and Euclidean factors**: `Δ_g f = ∑_j Δ_{z_j} f / (2 w_j)` | `laplaceBeltrami_modelConeFormOn`, `laplaceBeltrami_modelConeFormOn_split`, `laplacian_modelConeFormOn` | `Laplacian/Model` |
+| second-order chain rule along curves; Euclidean Laplacian in polar coordinates | `deriv_deriv_comp_curve`, `coordLaplacian_polar`, `coordLaplacian_eq_rotate` | `Laplacian/Polar` |
+| **polar formula for the cone**: `F_ρρ + ρ⁻¹F_ρ + (βρ)⁻²F_θθ = β⁻² ρ^{2/β-2} Δ_{z_j} f`; for the model, the `j`-th term is `½(F_ρρ + ρ⁻¹F_ρ + (βρ)⁻²F_θθ)`; for the standard 2D cone this is all of `Δ_g` | `coordLaplacian_conePolar`, `coordLaplacian_div_modelWeight_conePolar`, `laplaceBeltrami_standardCone_polar` | `Laplacian/Polar`, `Laplacian/Model` |
+| **`ρ^{k/β} cos kθ`, `ρ^{k/β} sin kθ` harmonic**, polar form | `coneHarmonicCos`, `coneHarmonicSin`, `coneHarmonicCos_polar_eq_zero`, `coneHarmonicSin_polar_eq_zero` | `Laplacian/ConeHarmonic` |
+| … and as `Re z_j^k`, `Im z_j^k`, for the actual Laplace–Beltrami operator of every model (indeed every Kähler form) | `re_pow_coordSlice_conePolar`, `laplaceBeltrami_re_pow_eq_zero`, `laplaceBeltrami_im_pow_eq_zero` | `Laplacian/ConeHarmonic`, `Laplacian/Model` |
+| pluriharmonic ⇒ harmonic for every Kähler form; `i∂∂̄ Re P = 0` | `laplaceBeltrami_eq_zero_of_ddbar_eq_zero`, `ddbar_re_eq_zero`, `ddbar_im_eq_zero`, `laplaceBeltrami_re_eq_zero` | `Laplacian/Model` |
+| homogeneity of degree `k/β`; cone dilations are homotheties `q ↦ λ² q` of every product of cones | `coneHarmonicCos_homogeneous`, `re_pow_coneDilate`, `coneDilation`, `modelConeQuadratic_coneDilation`, `coneDilation_mul` | `Laplacian/ConeHarmonic`, `Cone/Dilation` |
+| derivatives and estimates: explicit `∂_ρ`, `∂_θ`, `∂²_ρ`, `∂²_θ`; exact gradient norm `(k/β)² ρ^{2k/β-2}`; scale-invariant bounds | `deriv_coneHarmonicCos_rho`, …, `coneHarmonicCos_gradNormSq`, `coneHarmonicCos_bounds`, `coneHarmonicSin_bounds` | `Laplacian/ConeHarmonic` |
+| degree-two functions: `Δ_g ρ_j² = 2`; `ρ_a² − ρ_b²` harmonic | `potentialTerm`, `laplaceBeltrami_potentialTerm`, `laplaceBeltrami_potentialTerm_sub` | `Laplacian/Model` |
+| logarithmic barrier `log |z_j|²` harmonic | `ddbar_log_coordNormSq_eq_zero`, `laplaceBeltrami_log_coordNormSq_eq_zero` | `Laplacian/Model` |
+| tests (`β = 1`; angle `π`; two cones `π`, `2π/3`; cross-check of polar and Kähler routes) | | `ConicalKahlerTest/Laplacian` |
+| **roadmap** to de Borbon–Edwards Thm 1.1: dictionary of normalisations, exact statement, ingredient list with status, reuse survey (calabi-yau, EllipticPDE) | | `ROADMAP.md` |
+
+**Normalisation (checked against the paper).** The paper's metric `dr² + β²r²dθ²` is our Hermitian
+form `q`, with `r = ρ = |z|^β`. Our Riemannian metric is `g = 2q`. So
+`laplaceBeltrami = ½ Δ_paper`, and `Δ_g ρ² = 2` corresponds to the paper's `Δ_β r² = 4`.
+
+**What is not claimed.**
+- Harmonicity is proved pointwise on the regular part, for smooth functions.
+- No weak or `W^{1,2}` statement is made.
+- Nothing is said at the cone locus beyond what the explicit formulas show.
+- The completeness of the list of homogeneous harmonic functions (paper Prop. 3.4) is not proved.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -213,6 +244,15 @@ The shear counterexample embeds through `isConeAlong_iff_isSNCConeAlong`.
   `exists_hyperplane_estimates`, `fderiv_apply_zero_eq_zero_of_tangent` and `norm_apply_zero_le`
   are kept. The hypothesis `p ∈ D` of `ConeComparableIn.exists_restrOpen_of_le_one` is no longer
   needed. It is kept, named `_hp`, so that existing calls are unchanged.
+* **The Laplacian is upstream's.** `laplaceBeltrami ω₀ f` abbreviates
+  `CalabiYau.Riemannian.ΔG ω₀.toRiemannianMetric f` (divergence of the Riemannian gradient, for
+  bundled smooth functions). This adds a dependency on upstream's
+  `CalabiYau.Geometry.Kahler.Riemannian.Laplacian`, which takes about 4 minutes to build from
+  source. `restrictSmooth U hf` bundles a function smooth on `U ⊆ ℂⁿ`.
+* **Partial derivatives in polar or cone coordinates** are one-variable `deriv`s of slices,
+  for example `deriv (fun s => f (coordSlice j w (polarMap (s ^ β⁻¹, θ)))) ρ`.
+* **Holomorphic inputs** are stated as `ContDiffOn ℂ ∞ P U`. Mathlib's "holomorphic ⇒ smooth" is
+  only available in one variable.
 * **Transport of forms** along an equality of open sets (`kahlerCast`) is used to compare
   `KahlerForm n D.complement` with `KahlerForm n D.toSNC.complement`. The two open sets are
   equal but not definitionally so.
@@ -234,13 +274,16 @@ Done since the first review: agreement with `metricInChart` (Milestone 4), `Divi
    invariance within such an atlas. The invariance theorem of Milestone 6 needs *all* `β_i ≤ 1`.
    With a single `β_i > 1` it fails for arbitrary charts (shear counterexample).
 3. **Stronger regularity** (spec §3.5): `IsAsymptoticCone`, weighted Hölder, conormal and
-   polyhomogeneous interfaces. Deliberately not started, as requested. None of these is implied by
-   `IsConeAlong`. Milestone 3 gives a form with `IsConeAlong` that is not Ricci-flat.
+   polyhomogeneous interfaces. None of these is implied by `IsConeAlong`. Milestone 3 gives a form
+   with `IsConeAlong` that is not Ricci-flat. The plan for the Schauder estimates of de
+   Borbon–Edwards, including the function spaces they use, is in `ROADMAP.md` §5.
 4. **Metric-space statements for the flat cone.** The Milestone 3 results are tensor identities
    and deck-group equivariance on covering coordinates (see the README). Still missing: the
    quotient cone as a metric space, the path-length distance, minimality of radial segments, and
    the metric completion of `(ℂ \ {0}, g_β)` with its vertex.
 5. **Bridge** `smoothDivisor_of_regularHolomorphicSection` (holomorphic implicit function theorem).
+6. **Schauder theory** (`ROADMAP.md`): the cone distance, `𝒟₂`, weak solutions, completeness of
+   `𝓗_{≤2+α}`, the `L²` Hessian bound, and the Campanato iteration. None is started.
 
 ## Blockers
 
