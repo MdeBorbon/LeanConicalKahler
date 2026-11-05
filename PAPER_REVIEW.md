@@ -3,9 +3,21 @@
 This document records discrepancies, gaps and ambiguities in the paper that turned up while
 formalising it. It is kept separate from the formalisation. **The target theorem (Theorem 1.1)
 has not been altered.** None of the items below changes its statement. They concern typos,
-normalisations and steps of the proof that need more detail.
+normalisations, and steps of the proof that are wrong as written or need more detail. **No item
+claims that a stated result of the paper (in particular Proposition 2.5 or Theorem 1.1) is false.**
+Where a step of a proof is wrong (V9, V10), the review records what is confirmed, what remains a
+gap (section B), and what is only a proposed repair (section C).
 
-Quotations are verbatim from the arXiv LaTeX source.
+Quotations are verbatim from the LaTeX source of **arXiv:2002.07668v1** (18 February 2020), the
+only arXiv version. The published version (Comment. Math. Helv. 96 (2021), 113–148,
+DOI 10.4171/CMH/509; submitted 24 March 2020) is behind a subscription and has **not** been
+compared. Every item below refers to arXiv v1 only. We do not claim that the journal version
+contains these errors.
+
+Proposition 2.5 is treated in more detail in `research_notes/PROPOSITION_2_5_AUDIT.md`
+(M. de Borbon, with ChatGPT). Its claims were checked independently for this review: see V9, V10,
+the gaps in S1 and the proposed repair in section C. The symbolic computations are reproducible
+with `python3 -I research_notes/prop_2_5_checks.py` (sympy).
 
 ## Status legend
 
@@ -14,6 +26,7 @@ Quotations are verbatim from the arXiv LaTeX source.
 | **Verified (Lean)** | Established by a kernel-checked computation. The declaration is named. Most are in `ConicalKahlerTest/PaperChecks.lean`. |
 | **Verified (computation)** | Established by an explicit hand computation recorded here, not yet in Lean. |
 | **Verified (text)** | An internal inconsistency of the text, visible by comparing two passages. |
+| **Verified (symbolic)** | Established by exact symbolic computation (sympy) in `research_notes/prop_2_5_checks.py`. Not kernel-checked. |
 | **Suspected** | A gap, omission or ambiguity that we believe needs repair. Not established as an error. |
 
 ---
@@ -152,23 +165,148 @@ by `λ^{-j}` puts the disc at distance `λ^{-j} r_a(x)` from the vertex, and the
 In the display bounding `\|Du_k\|_{B(x, \lambda^k)}`, the set `B_{k-1}` is not defined. Presumably
 it is `B(x, λ^{k-1})`.
 
+### V9. Proposition 2.5: a boundary term is missing in the Bochner argument (Verified (symbolic))
+
+The proof applies the Bochner identity to a Dirichlet eigenfunction `u_λ` on `B_1`
+(`-Δu_λ = λu_λ`, `u_λ ∈ W^{1,2}_0(B_1)`):
+
+> "Multiply by `\chi_{\epsilon}` and integrate to get
+> `\int_{B_1} \chi_{\epsilon} |\mbox{Hess}(u_{\lambda})|^2 = \lambda \int_{B_1} \chi_{\epsilon} |\nabla u_{\lambda}|^2 + \frac{1}{2} \int_{B_1} (\Delta \chi_{\epsilon}) |\nabla u|^2`"
+
+and concludes
+
+> "`\int_{B_1} |\mbox{Hess}(u_{\lambda})|^2 = \lambda \int_{B_1} |\nabla u_{\lambda}|^2 = \lambda^2 \int_{B_1} u_{\lambda}^2 = \int_{B_1} f_{\lambda}^2`",
+
+and the same equality for finite sums of eigenfunctions.
+
+**The error.** `χ_ε` cuts off only near the singular set. It equals `1` near the outer sphere `∂B_1`
+away from `S`, so integrating `½ χ_ε Δ|∇u_λ|²` by parts also produces `½∫_{∂B_1} χ_ε ∂_ν|∇u_λ|²`.
+This term is omitted. In the smooth part of the boundary we have `u_λ = 0` and `Δu_λ = -λu_λ = 0`
+on `∂B_1`. Hence `∇u_λ = (∂_ν u_λ) ν` and `∇²u_λ(ν, ν) = -H ∂_ν u_λ`, where `H` is the mean
+curvature. So `½∂_ν|∇u_λ|² = -H (∂_ν u_λ)²`. The unit sphere about the vertex of an
+`m`-dimensional metric cone has `H = m − 1` on its smooth part. Formally (see below for what this
+needs), the correct identity is
+
+  `∫_{B_1} |Hess u_λ|² = λ² ∫_{B_1} u_λ² − (m − 1) ∫_{∂B_1} (∂_ν u_λ)²`,                   (V9.1)
+
+and for finite sums `v_N = ∑ λ_j⁻¹ f_j`, `F_N = −Δv_N = ∑ f_j`:
+
+  `∫_{B_1} |Hess v_N|² = ∫_{B_1} F_N² − (m − 1) ∫_{∂B_1} (∂_ν v_N)² ≤ ∫_{B_1} F_N²`.        (V9.2)
+
+The paper's display also has `|∇u|²` where `|∇u_λ|²` is meant (a typo).
+
+**The counterexample to the stated equality.**
+- Space: `C(S¹_{2πβ}) × ℝ` (`m = 3`, `0 < β < 1`), with `R = (r² + s²)^{1/2}` and `B_1 = {R < 1}`.
+- `v = sin(πR)/R` is a Dirichlet eigenfunction with `λ = π²`. It is a smooth function of
+  `r² + s²` and Lipschitz across the axis.
+- Its integrals:
+
+  | quantity | value |
+  |---|---|
+  | `∫_{B_1} v² dV_g` | `2πβ` |
+  | `∫_{B_1} (Δv)² dV_g` | `2π⁵β` |
+  | `∫_{B_1} |Hess v|² dV_g` (`= 4πβ ∫₀¹ (v''² + 2v'²/R²) R² dR`) | `2π³β(π² − 4)` |
+  | `(m − 1) ∫_{∂B_1} (∂_ν v)² dA_g` (`v'(1) = −π`, `|∂B_1| = 4πβ`) | `8π³β` |
+
+So `∫|Hess v|² = 2π³β(π² − 4) < 2π⁵β = λ² ∫ v²`, and (V9.1) holds exactly. The same failure
+occurs for `β = 1`, i.e. on the Euclidean unit ball of `ℝ³`: the error is in the integration by
+parts, not in the conical geometry.
+
+*Evidence.* `research_notes/prop_2_5_checks.py`, sections 1–2:
+- the Bochner identity on the regular part (`Ric = 0`), for an arbitrary function, in the
+  coordinates `(r, θ, s)` with the Christoffel symbols of `g`;
+- the radial eigenfunction, all four integrals, and identity (V9.1);
+- the formula `|Hess v|² = v''² + 2(v'/R)²`, recomputed from the Christoffel symbols.
+
+*What this does and does not show.*
+- It shows that the displayed **equalities** in the proof of Proposition 2.5 are false. This is a
+  confirmed error in the proof.
+- It does **not** show that Proposition 2.5 or Theorem 1.1 is false. The omitted term has a
+  favourable sign, so (V9.2) gives the inequality `∫|Hess v_N|² ≤ ∫F_N²` that the spectral argument
+  needs. It also gives the Cauchy property of `∑ u_λ`, applied to differences of finite sums.
+- But (V9.1)–(V9.2) are justified here only in the smooth setting. For the cone they also need
+  regularity of eigenfunctions up to `∂B_1` and the control of boundary terms where `∂B_1` meets
+  the singular set (S1). A proof that avoids the outer boundary altogether is in section C.
+
+### V10. §2.4: the intrinsic and Euclidean Hessians are not uniformly equivalent (Verified (symbolic))
+
+> "The Hessian of a function with respect to our singular metric, `\mbox{Hess}(u) = \nabla_g^2 u`,
+> is uniformly equivalent, as a quadratic form, to the Euclidean Hessian. Same as before, we have
+> the usual Sobolev space `W^{2, 2}`, and it is irrelevant whether we use the Euclidean metric or
+> `g` to define its norm."
+
+This is false for `β ≠ 1`. Uniform equivalence of the metric tensors (eq. (2.1)) compares first
+derivatives. The Christoffel symbols of `g` in the real coordinates are unbounded:
+`Γ^r_{θθ} = −β² r` and `Γ^θ_{rθ} = r⁻¹`.
+
+**Counterexample.** On `C(S¹_{2πβ}) × ℝ`, let `u = x = r cos θ`, the first real coordinate of the
+cone factor. Its Euclidean Hessian vanishes, so `u ∈ W^{2,2}_{Euc}(B_1)`. Its intrinsic Hessian is
+`∇²u(e_θ, e_θ) = (β² − 1) cos θ/(β² r)`, with `e_θ = (βr)⁻¹∂_θ`; the other components vanish. So
+`|∇²_g u|² = (β² − 1)² cos²θ/(β⁴ r²)`, and
+
+  `∫_{ε<r<1/2, 0<s<1} |∇²_g u|² dV_g = π (1 − β²)²/β³ · log(1/(2ε)) → ∞`.
+
+So Euclidean `W^{2,2}` does not imply that the intrinsic Hessian is in `L²`, and the two norms are
+not equivalent.
+
+*Qualification (agreeing with the audit).* Here `Δ_g u = (1 − 1/β²) cos θ / r ∉ L²` near the axis,
+so this `u` does **not** contradict Proposition 2.5, whose hypothesis is `Δu ∈ L²`. What fails is
+the identification of the two `W^{2,2}` spaces asserted before the proposition. The proof of
+Proposition 2.5 bounds the **intrinsic** Hessian (via Bochner), so its conclusion should be read
+intrinsically. Whether intrinsic and Euclidean second derivatives agree for solutions of
+`Δ_g u ∈ L²` is open here.
+
+*Evidence.* `research_notes/prop_2_5_checks.py`, section 3: the Christoffel symbols, the Hessian
+components, `|∇²_g u|²`, the divergent integral, and `Δ_g u`.
+
 ---
 
-## B. Suspected gaps and omissions (not verified as errors)
+## B. Gaps and omissions (not verified as errors)
 
-### S1. Proposition 2.5 (the `L²` Hessian bound)
+### S1. Proposition 2.5 (the `L²` Hessian bound): what remains after V9 and V10
 
-* The integration by parts (Bochner formula) on `B_1` drops the boundary terms on `∂B_1`. For
-  Dirichlet eigenfunctions on a ball centred at the vertex these terms seem to have a favourable
-  sign (the ball is convex and its boundary has positive mean curvature on the regular part). If so,
-  the stated equalities `∫|Hess u|² = ∫ f²` should be inequalities `≤`, which still suffice.
-* The cut-off functions `χ_ε` with `∫|Δχ_ε| → 0` are asserted without construction. A logarithmic
-  cut-off in each `r_a` should work.
-* The Lipschitz bound is used up to `∂B_1`, but the cited results are interior estimates or
-  statements on closed spaces.
-* The version for balls not centred at the vertex (§2.5.1) is asserted only. Such balls need not be
-  convex, and for `β < 1/2` they can be annuli (App. A.1). A possible repair: `ηu` has compact
-  support, so the argument can be run on a larger ball centred at the vertex.
+The confirmed errors are V9 and V10. The following are gaps, not errors.
+
+* **Boundary terms in the global argument.** Even with the corrected identity (V9.1), the global
+  route needs:
+  - eigenfunction regularity up to `∂B_1`, including near `∂B_1 ∩ S`, where the sphere is itself
+    conical;
+  - control of the extra boundary terms `∫_{∂B_1} (χ_ε ∂_ν|∇u|² − |∇u|² ∂_ν χ_ε)` inside the
+    tubular neighbourhood of `S`.
+
+  The localised argument (section C) avoids both.
+* **Cut-off functions.** The paper asserts `χ_ε` with `∫|Δχ_ε| → 0` without construction.
+  Lemma 2.2 provides `∫|∇χ|² → 0`, which is a different condition. A logarithmic cut-off in each
+  factor appears to satisfy `∫|∇χ_ε| → 0` and `∫|Δχ_ε| → 0` locally: with `L = log(ε/δ)`, the
+  function `rχ'` is `1/L` on `[δ, ε]` after smoothing. Products over several cone factors also seem
+  to work. Neither has been written out.
+* **Eigenfunction regularity.** The proof uses that eigenfunctions are Lipschitz, citing [Mon17]
+  and [BKMR18, Prop. 5.4] (for `β_a < 1`). Whether these cover Dirichlet eigenfunctions on cone
+  balls (interior and boundary) has not been checked. The localised argument needs only interior
+  bounds.
+* **The weak Hessian.** `W^{2,2}` must be defined intrinsically (V10). Examples: an `L²` covariant
+  Hessian on the regular part, or the closure used in the proof. The weak limit of the Hessians of
+  finite sums must be identified with the Hessian of the solution.
+* **From the intrinsic Hessian to `𝒟₂`.** Most operators of `𝒟₂` are fixed multiples of
+  orthonormal-frame components of the intrinsic Hessian, or traces:
+  - `∂²_r = ∇²(e_r, e_r)`;
+  - `∂²_{rs} = ∇²(e_r, ∂_s)`;
+  - `r⁻¹∂²_{θs} = β ∇²(e_θ, ∂_s)`;
+  - the mixed conical operators, similarly;
+  - `Δ_β + Δ_s = tr ∇²`.
+
+  The two remaining pure conical operators (present only for `β_a < 1/2`) differ by first-order
+  terms:
+  - `r⁻²∂²_θ = β²∇²(e_θ, e_θ) − β² r⁻¹∂_r`;
+  - `r⁻¹∂²_{rθ} = β∇²(e_r, e_θ) + r⁻²∂_θ`.
+
+  These are verified symbolically (`prop_2_5_checks.py`, section 5). Bounding these two operators
+  from an intrinsic Hessian bound needs separate control of `r⁻¹∂_r u` and `r⁻²∂_θ u`.
+* **Uniformity in the centre** (§2.5.1). This is asserted only. Balls `B_1(p)` not centred at the
+  vertex need not be convex, and for `β < 1/2` they can be annuli (App. A.1). Cut-offs used in the
+  proof must have bounded `Δ_g`. Smooth functions of `(r_a², s)` do, but Euclidean-smooth functions
+  that are not even in each cone factor generally do not. For example `Δ_g x = (1 − 1/β²) cos θ / r`
+  (V10). So off-centre balls need their own construction.
 
 ### S2. Lemma 3.3 (expansion of harmonic functions)
 
@@ -212,7 +350,46 @@ invoked as "standard theory" without a reference.
 
 ---
 
-## C. Remarks (imprecisions that do not affect correctness)
+## C. Proposed repair of Proposition 2.5 (not established)
+
+This is the localised Bochner argument of the audit (§5 there). It estimates the **intrinsic**
+Hessian on `B_{1/2}` and never integrates over `∂B_1`.
+
+1. **Reduction.** Let `η₀` be radial about the vertex (a smooth function of
+   `R² = ∑ r_a² + |s|²`), with `η₀ = 1` on `B_{3/4}` and support in `B_1`. Then
+   `Δ_g η₀ = 4R²φ'' + 2mφ'` is bounded. `ũ = η₀u ∈ W^{1,2}_0(B_1)` solves `−Δũ = f̃` with
+   `‖f̃‖_{L²} ≤ C(‖f‖ + ‖u‖)`, by Caccioppoli. This is as in the paper.
+2. **Spectral sums.** `f̃ = ∑ f_j` (Dirichlet eigenfunctions), `v_N = ∑_{j≤N} λ_j⁻¹ f_j`,
+   `F_N = ∑_{j≤N} f_j`. This is as in the paper.
+3. **Localised identity.** For `η₁` radial, with `η₁ = 1` on `B_{1/2}` and support in `B_{3/4}`, on
+   the regular part:
+
+     `η₁²|Hess v_N|² − η₁²F_N² + 2η₁F_N⟨∇η₁, ∇v_N⟩ − ½Δ(η₁²)|∇v_N|² = div_g W`,
+
+   where `W = ½(η₁²∇|∇v_N|² − |∇v_N|²∇η₁²) + η₁²F_N∇v_N`. This is **verified** as a pointwise
+   identity for arbitrary smooth `v`, `η` (`prop_2_5_checks.py`, section 4). Integrating
+   (formally) gives the audit's (5.1). There is no outer boundary term, because `η₁` has compact
+   support in `B_1`.
+4. **Estimate.** Cauchy–Schwarz gives `∫_{B_{1/2}}|Hess v_N|² ≤ C(∫F_N² + ∫|∇v_N|²)`, and
+   orthogonality gives `∫|∇v_N|² = ∑ λ_j⁻¹‖f_j‖² ≤ λ₁⁻¹‖F_N‖²`. So the bound is uniform in `N`.
+   This step is elementary.
+
+**Remaining obligations** before this proves Proposition 2.5:
+- (i) The cut-off lemma (S1): `χ_ε` near all strata `{r_a = 0}`, with `∫|∇χ_ε|`,
+  `∫|Δχ_ε| → 0` on compact sets. Both the `Δχ_ε` terms and the `∇χ_ε` terms, from moving the
+  derivative off `F_N`, must vanish in the limit.
+- (ii) **Interior** boundedness of `v_N`, `F_N`, `∇v_N` on `supp η₁` for each fixed `N`. Check the
+  cited Lipschitz results.
+- (iii) The weak-compactness and identification step for the intrinsic Hessian (S1).
+- (iv) Uniformity in the centre of the ball (S1).
+- (v) The passage from the intrinsic Hessian to the operators of `𝒟₂` (S1).
+
+The audit and this review agree: the evidence suggests that the interior Hessian estimate can be
+recovered, but a complete repair has **not** been established.
+
+---
+
+## D. Remarks (imprecisions that do not affect correctness)
 
 * **𝒟₂ and "entries of the Hessian".** The paper calls the operators of `𝒟₂` "entries of the
   Hessian", but defines them as **coordinate** operators (p. 2). They differ from the components
