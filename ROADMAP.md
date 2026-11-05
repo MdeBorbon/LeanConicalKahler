@@ -139,7 +139,7 @@ omitted) and `[C]` (cited from the literature).
 | Lemma 2.4, harmonic approximation (Rellich and weak limits) | Planned | upstream `rellich_kondrachov_W01p_seq` |
 | Lemma 3.1, spectral theorem on the link | Planned | |
 | Lemma 3.3, expansion of `W^{1,2}` harmonic functions (suspected gap: continuity up to the boundary, `PAPER_REVIEW.md` S2) | Planned | energy-uniqueness repair (`PAPER_REVIEW.md` S2) |
-| **Prop. 2.5**, interior `L²` Hessian bound; uses the cited Lipschitz bound for Dirichlet eigenfunctions [Mon17], [BKMR18, Prop. 5.4] | Planned. **The heaviest analytic input**, and the only deep external regularity result on the main line. The paper drops boundary terms; we suspect its equalities should be `≤` (`PAPER_REVIEW.md` S1). | |
+| **Prop. 2.5**, interior `L²` Hessian bound; uses the cited Lipschitz bound for Dirichlet eigenfunctions [Mon17], [BKMR18, Prop. 5.4] | Planned. **The heaviest analytic input**, and the only deep external regularity result on the main line. The arXiv proof omits an outer boundary term, so its equalities are false (confirmed, `PAPER_REVIEW.md` V9). `W^{2,2}` must be intrinsic (V10). **Audit / possible repair, not proved:** `research_notes/PROPOSITION_2_5_AUDIT.md` and `PAPER_REVIEW.md` §C (localised Bochner argument) | |
 | local `C^{2,α}` regularity off the singular set | Planned | upstream `interiorSchauderEstimate_all` (interior Schauder on `ℂⁿ`) |
 
 ### 3.4 Campanato theory and the iteration
@@ -208,8 +208,11 @@ No incompatible dependency has been added.
    (Lemma 2.3); density of `C_c^∞(reg)` (Lemma 2.2). Reuse upstream `Sobolev.Euclidean.MemW1p`.
 3. **`𝓗_{≤2}` (explicit part):** the rest of Corollary 3.5 for the explicit list.
 4. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables.
-5. **The `L²` Hessian bound** (Prop. 2.5): decide between formalising or assuming the Lipschitz
-   bound for eigenfunctions.
+5. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
+   argument (`PAPER_REVIEW.md` §C, `research_notes/PROPOSITION_2_5_AUDIT.md`). This is not the
+   arXiv proof, which has a false step (V9). Decide between formalising or assuming the Lipschitz
+   bound for eigenfunctions. State the passage to the operators of `𝒟₂` explicitly (two pure
+   conical operators need first-order control).
 6. **Campanato iteration** (Lemmas 2.6, 2.7, 4.1, 4.3, Prop. 5.1, §5).
 7. **The cone distance as a length distance**, wherever the proof needs geodesic properties of
    `d_g` beyond the formulas proved so far.

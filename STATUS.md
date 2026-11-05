@@ -277,6 +277,17 @@ corrections to `ROADMAP.md` are made:
 
 The target theorem is unchanged.
 
+**Addendum: Proposition 2.5 audit (after Milestone 8).** The audit
+`research_notes/PROPOSITION_2_5_AUDIT.md` was checked independently. The symbolic checks are in
+`research_notes/prop_2_5_checks.py` (sympy, not kernel-checked).
+- Confirmed errors in the arXiv proof (`PAPER_REVIEW.md`):
+  - V9: an outer boundary term is missing from the Bochner argument; counterexample
+    `sin(πR)/R` on `C(S¹_{2πβ}) × ℝ`;
+  - V10: the intrinsic and Euclidean `W^{2,2}` are not equivalent; counterexample `r cos θ`.
+- Remaining gaps: S1. The localised Bochner repair (§C) is proposed but not established.
+- Proposition 2.5 and Theorem 1.1 are not claimed false.
+- The journal version (paywalled) has not been compared. arXiv has only v1.
+
 **What is not claimed.**
 - `coneDist`, `ConeTwo` and `ConeProduct` carry a **formally defined** distance (the standard
   formula for Euclidean cones). It is not proved to be the length distance of `g`. Consistent
