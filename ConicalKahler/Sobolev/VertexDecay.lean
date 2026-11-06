@@ -245,4 +245,171 @@ theorem vertex_monotone (hd : 2 ≤ d) (hc : c.IsConical)
 
 end Monotone
 
+/-! ### The cone: decay of harmonic functions orthogonal to `𝓗_{≤2}` -/
+
+section Cone
+
+variable {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq κ] [DecidableEq ι]
+
+/-- **Lemma 4.2 for the cone, with the gap of Proposition 3.4.** Let `0 < β_a < 1`, `μ` as in
+eq. (1.1), and let `u ∈ W^{1,2}(B_1)` be weakly harmonic and `L²(B_1)`-orthogonal to `𝓗_{≤2}` (the
+span of the paper's list). Then `∫_{B_{ρ₁}} u² ≤ (ρ₁/ρ₂)^{2(2+μ) + d} ∫_{B_{ρ₂}} u²`, i.e.
+`‖u‖_{B_{ρ₁}} ≤ (ρ₁/ρ₂)^{2+μ} ‖u‖_{B_{ρ₂}}`, for `0 < ρ₁ ≤ ρ₂ ≤ 1`. -/
+theorem cone_vertex_monotone (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {μ : ℝ} (hμ1 : μ ≤ 1)
+    (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {u : L2Pair volume (ball (0 : 𝔼) 1)}
+    (hu : (coneCoeff β e).IsWeakSolution 0 u)
+    (horth : ∀ P ∈ explicitH2 β, ∫ x in ball (0 : 𝔼) 1, u.fst x * P ((coordIso e).symm x) = 0)
+    {ρ₁ ρ₂ : ℝ} (h1 : 0 < ρ₁) (h12 : ρ₁ ≤ ρ₂) (h2 : ρ₂ ≤ 1) :
+    ∫ x in ball (0 : 𝔼) ρ₁, u.fst x ^ 2 ≤
+      (ρ₁ / ρ₂) ^ (2 * (2 + μ) + d) * ∫ x in ball (0 : 𝔼) ρ₂, u.fst x ^ 2 := by
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+  refine vertex_monotone hd (coneCoeff_isConical β e) hu
+    (fun lam δ' v hE hlam hδ' hlt => ?_) h1 h12 h2
+  have hP : MemLp (homP δ' v) 2 (volume.restrict (ball (0 : 𝔼) 1)) :=
+    memLp_homFun_ball δ' (Lp.memLp v.fst) 1 (by linarith)
+  have hG := memLp_homG_of_isLinkEigen hd hE hlam hδ'
+  have hQ := homPair_isWeakSolution hP hG hd (coneCoeff_isConical β e) hE hlam (R := 1)
+  have hQφ : ((homPair δ' v 1 hP hG).fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+      homFun δ' fun w => v.fst w := hP.coeFn_toLp
+  have h34 := prop_3_4 hd β hβ e hQ hδ' hQφ
+  by_cases h2' : δ' ≤ 2
+  · obtain ⟨Pe, hPe, hPe'⟩ := h34.1 h2'
+    calc ∫ x in ball (0 : 𝔼) 1, u.fst x * homP δ' v x
+        = ∫ x in ball (0 : 𝔼) 1, u.fst x * Pe ((coordIso e).symm x) := by
+          refine integral_congr_ae ?_
+          filter_upwards [hQφ, hPe'] with x hx hx'
+          rw [← hx', hx]
+      _ = 0 := horth Pe hPe
+  · have h0 := h34.2 μ hμ1 hμ (not_le.mp h2') hlt
+    refine integral_eq_zero_of_ae ?_
+    have hz : ((homPair δ' v 1 hP hG).fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] 0 := by
+      rw [h0]
+      exact Lp.coeFn_zero ℝ 2 _
+    filter_upwards [hQφ, hz] with x hx hx'
+    have : homP δ' v x = 0 := by
+      have h' : homFun δ' (fun w => v.fst w) x = 0 := by
+        rw [← hx, hx']
+        rfl
+      exact h'
+    simp [this]
+
+/-- The span of the paper's list in `L²(B_1)` (`β_a ≤ 1`). -/
+def h2ToLp {β : κ → ConeAngle} (hβ : ∀ a, (β a).beta ≤ 1) (e : RealConeIndex κ ι ≃ Fin d) :
+    explicitH2 (ι := ι) β →ₗ[ℝ] Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)) where
+  toFun P := ((explicitH2_le_classicalHarmonic hβ P.2).memLp e isOpen_ball isBounded_ball).toLp _
+  map_add' P Q := by
+    refine Lp.ext ?_
+    filter_upwards [MemLp.coeFn_toLp ((explicitH2_le_classicalHarmonic hβ (P + Q).2).memLp e
+      isOpen_ball isBounded_ball), MemLp.coeFn_toLp ((explicitH2_le_classicalHarmonic hβ P.2).memLp
+      e isOpen_ball isBounded_ball), MemLp.coeFn_toLp ((explicitH2_le_classicalHarmonic hβ
+      Q.2).memLp e isOpen_ball isBounded_ball), Lp.coeFn_add (((explicitH2_le_classicalHarmonic hβ
+      P.2).memLp e isOpen_ball isBounded_ball).toLp _) (((explicitH2_le_classicalHarmonic hβ
+      Q.2).memLp e isOpen_ball isBounded_ball).toLp _)] with x h h₁ h₂ h₃
+    rw [h, h₃, Pi.add_apply, h₁, h₂]
+    rfl
+  map_smul' r P := by
+    refine Lp.ext ?_
+    filter_upwards [MemLp.coeFn_toLp ((explicitH2_le_classicalHarmonic hβ (r • P).2).memLp e
+      isOpen_ball isBounded_ball), MemLp.coeFn_toLp ((explicitH2_le_classicalHarmonic hβ P.2).memLp
+      e isOpen_ball isBounded_ball), Lp.coeFn_smul r (((explicitH2_le_classicalHarmonic hβ
+      P.2).memLp e isOpen_ball isBounded_ball).toLp _)] with x h h₁ h₂
+    rw [h, RingHom.id_apply, h₂, Pi.smul_apply, h₁]
+    rfl
+
+theorem h2ToLp_ae {β : κ → ConeAngle} (hβ : ∀ a, (β a).beta ≤ 1) (e : RealConeIndex κ ι ≃ Fin d)
+    (P : explicitH2 (ι := ι) β) :
+    (h2ToLp hβ e P : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+      fun x => (P : RealConeModel κ ι → ℝ) ((coordIso e).symm x) :=
+  MemLp.coeFn_toLp ((explicitH2_le_classicalHarmonic hβ P.2).memLp e isOpen_ball isBounded_ball)
+
+/-- **Decay at the vertex.** Let `0 < β_a < 1`, `d ≥ 2`, `μ` as in eq. (1.1), and let
+`h ∈ W^{1,2}(B_1)` be weakly harmonic. Let `P ∈ 𝓗_{≤2}` be the `L²(B_1)`-orthogonal projection of
+`h` onto the span of the paper's list. Then `h − P` is orthogonal to `𝓗_{≤2}`,
+`‖h − P‖_{L²(B_1)} ≤ ‖h‖_{L²(B_1)}`, and
+`∫_{B_{ρ₁}} (h − P)² ≤ (ρ₁/ρ₂)^{2(2+μ) + d} ∫_{B_{ρ₂}} (h − P)²` for `0 < ρ₁ ≤ ρ₂ ≤ 1`. -/
+theorem cone_vertex_decay (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {μ : ℝ} (hμ1 : μ ≤ 1)
+    (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {h : L2Pair volume (ball (0 : 𝔼) 1)}
+    (hh : (coneCoeff β e).IsWeakSolution 0 h) :
+    ∃ P ∈ explicitH2 β,
+      (∀ Q ∈ explicitH2 β, ∫ x in ball (0 : 𝔼) 1,
+        (h.fst x - P ((coordIso e).symm x)) * Q ((coordIso e).symm x) = 0) ∧
+      ∫ x in ball (0 : 𝔼) 1, (h.fst x - P ((coordIso e).symm x)) ^ 2 ≤
+        ∫ x in ball (0 : 𝔼) 1, h.fst x ^ 2 ∧
+      ∀ ρ₁ ρ₂ : ℝ, 0 < ρ₁ → ρ₁ ≤ ρ₂ → ρ₂ ≤ 1 →
+        ∫ x in ball (0 : 𝔼) ρ₁, (h.fst x - P ((coordIso e).symm x)) ^ 2 ≤
+          (ρ₁ / ρ₂) ^ (2 * (2 + μ) + d) *
+            ∫ x in ball (0 : 𝔼) ρ₂, (h.fst x - P ((coordIso e).symm x)) ^ 2 := by
+  have hβ' : ∀ a, (β a).beta ≤ 1 := fun a => (hβ a).le
+  set K := LinearMap.range (h2ToLp (ι := ι) hβ' e)
+  have : FiniteDimensional ℝ K := LinearMap.finiteDimensional_range _
+  have : CompleteSpace K := FiniteDimensional.complete ℝ K
+  set p := K.starProjection h.fst
+  obtain ⟨P', hP'⟩ := LinearMap.mem_range.mp (K.starProjection_apply_mem h.fst)
+  set P : RealConeModel κ ι → ℝ := (P' : RealConeModel κ ι → ℝ)
+  have hP : P ∈ explicitH2 β := P'.2
+  obtain ⟨hu', hg', hPw⟩ := isWeakSolution_of_mem_explicitH2 hβ' hP e isOpen_ball isBounded_ball
+  have hpP : (p : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] fun x => P ((coordIso e).symm x) := by
+    have h0 := h2ToLp_ae hβ' e P'
+    rw [hP'] at h0
+    exact h0
+  -- the remainder `u = h − P`
+  set u := h - classicalPair hu' hg'
+  have hu : (coneCoeff β e).IsWeakSolution 0 u := by
+    have := hh.sub hPw
+    rwa [sub_zero] at this
+  have hufst : (u.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+      fun x => h.fst x - P ((coordIso e).symm x) := by
+    have e1 : u.fst = h.fst - hu'.toLp _ := rfl
+    filter_upwards [Lp.coeFn_sub h.fst (hu'.toLp (fun x => P ((coordIso e).symm x))),
+      MemLp.coeFn_toLp hu'] with x hx hx'
+    rw [e1, hx, Pi.sub_apply, hx']
+  have hperp : h.fst - p ∈ Kᗮ := K.sub_starProjection_mem_orthogonal _
+  have horth : ∀ Q ∈ explicitH2 β, ∫ x in ball (0 : 𝔼) 1,
+      (h.fst x - P ((coordIso e).symm x)) * Q ((coordIso e).symm x) = 0 := by
+    intro Q hQ
+    have h0 := (Submodule.mem_orthogonal' K _).mp hperp (h2ToLp hβ' e ⟨Q, hQ⟩)
+      (LinearMap.mem_range_self _ _)
+    rw [L2.inner_def] at h0
+    rw [← h0]
+    refine integral_congr_ae ?_
+    filter_upwards [Lp.coeFn_sub h.fst p, hpP, h2ToLp_ae hβ' e ⟨Q, hQ⟩] with x hx hx' hx''
+    rw [hx, Pi.sub_apply, hx', hx'', RCLike.inner_apply, conj_trivial, mul_comm]
+  refine ⟨P, hP, horth, ?_, fun ρ₁ ρ₂ h1 h12 h2 => ?_⟩
+  · -- `‖h − P‖ ≤ ‖h‖`
+    have hpyth : ‖h.fst‖ ^ 2 = ‖h.fst - p‖ ^ 2 + ‖p‖ ^ 2 := by
+      have hi : ⟪h.fst - p, p⟫_ℝ = 0 :=
+        (Submodule.mem_orthogonal' K _).mp hperp p (K.starProjection_apply_mem h.fst)
+      have := norm_add_sq_eq_norm_sq_add_norm_sq_real hi
+      rw [sub_add_cancel] at this
+      nlinarith [this]
+    have hle : ‖h.fst - p‖ ^ 2 ≤ ‖h.fst‖ ^ 2 := by
+      rw [hpyth]
+      exact le_add_of_nonneg_right (sq_nonneg _)
+    rw [norm_sq_eq_integral_L2, norm_sq_eq_integral_L2] at hle
+    calc ∫ x in ball (0 : 𝔼) 1, (h.fst x - P ((coordIso e).symm x)) ^ 2
+        = ∫ x in ball (0 : 𝔼) 1, ‖(h.fst - p) x‖ ^ 2 := by
+          refine integral_congr_ae ?_
+          filter_upwards [Lp.coeFn_sub h.fst p, hpP] with x hx hx'
+          rw [hx, Pi.sub_apply, hx', Real.norm_eq_abs, sq_abs]
+      _ ≤ ∫ x in ball (0 : 𝔼) 1, ‖h.fst x‖ ^ 2 := hle
+      _ = ∫ x in ball (0 : 𝔼) 1, h.fst x ^ 2 := by
+          simp_rw [Real.norm_eq_abs, sq_abs]
+  · -- the decay of the remainder
+    have hdec := cone_vertex_monotone hd β hβ e hμ1 hμ hu (fun Q hQ => by
+      rw [← horth Q hQ]
+      refine integral_congr_ae ?_
+      filter_upwards [hufst] with x hx
+      rw [hx]) h1 h12 h2
+    have hcongr : ∀ ρ, ρ ≤ 1 → ∫ x in ball (0 : 𝔼) ρ, u.fst x ^ 2 =
+        ∫ x in ball (0 : 𝔼) ρ, (h.fst x - P ((coordIso e).symm x)) ^ 2 := fun ρ hρ =>
+      integral_congr_ae (by
+        filter_upwards [ae_restrict_of_ae_restrict_of_subset (ball_subset_ball hρ) hufst]
+          with x hx
+        rw [hx])
+    rwa [hcongr ρ₁ (h12.trans h2), hcongr ρ₂ h2] at hdec
+
+end Cone
+
 end ConicalKahler.Sobolev
