@@ -657,6 +657,7 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
         ∃ Q : L2Pair volume (ball (0 : 𝔼) 1), c.IsWeakSolution 0 Q ∧ Q.fst = P i) ∧
       (∀ i j, i ≠ j → ⟪P i, P j⟫_ℝ = 0) ∧
       HasSum (fun i => a i • P i) u.fst := by
+  classical
   obtain ⟨s, B, Γ, lam, hB, heig, -⟩ := link_spectral hc
   have := separableSpace_sph (d := d)
   have hcount : Countable s :=
@@ -688,6 +689,76 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
       exact (MemLp.zero : MemLp (0 : 𝔼 → 𝔼) 2 (volume.restrict (ball (0 : 𝔼) 1))).ae_eq
         (Filter.EventuallyEq.symm (ae_restrict_of_ae hz))
   choose a ha using fun i => rayCoeff_eq hd hc (heig i).2 (hroot i) (hP i) (hG i) hu
+  set P : s → Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i => (hP i).toLp _
+  have hpexp : ∀ i, -1 < 2 * δ i + d - 1 := fun i => by linarith [hδ0 i]
+  have hden : ∀ i, (0 : ℝ) < 2 * δ i + d := fun i => by linarith [hδ0 i]
+  have hvfst : ∀ i, (v i).fst = (i : Lp ℝ 2 (sphMeasure d)) := fun i => rfl
+  -- (A) the coefficients
+  have hA : ∀ i, ⟪u.fst, P i⟫_ℝ = a i / (2 * δ i + d) := by
+    intro i
+    rw [L2.inner_def]
+    have e1 : ∫ x in ball (0 : 𝔼) 1, ⟪u.fst x, P i x⟫_ℝ =
+        ∫ x in ball (0 : 𝔼) 1, u.fst x * homP (δ i) (v i) x := by
+      refine integral_congr_ae ?_
+      filter_upwards [(hP i).coeFn_toLp] with x hx
+      rw [hx, RCLike.inner_apply, conj_trivial, mul_comm]
+    rw [e1, integral_ball_mul_homP (Lp.memLp u.fst) (hδ0 i) (v i)]
+    have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ i *
+        rayCoeff u.fst (fun w => (v i).fst w) r) =
+        ∫ r in Ioo (0 : ℝ) 1, a i * r ^ (2 * δ i + d - 1) := by
+      refine integral_congr_ae ?_
+      filter_upwards [ha i, ae_restrict_mem measurableSet_Ioo] with r hr hr01
+      have hr0 : 0 < r := hr01.1
+      rw [hr, ← rpow_sub_one_eq_pow hr0]
+      rw [show r ^ ((d : ℝ) - 1) * (r ^ δ i * (a i * r ^ δ i)) =
+        a i * (r ^ ((d : ℝ) - 1) * r ^ δ i * r ^ δ i) by ring, ← Real.rpow_add hr0,
+        ← Real.rpow_add hr0]
+      congr 2
+      ring
+    rw [e2, integral_const_mul, integral_Ioo_rpow (hpexp i)]
+    field_simp
+    ring_nf
+  -- (B) orthogonality
+  have hon : Orthonormal ℝ (Subtype.val : s → Lp ℝ 2 (sphMeasure d)) := hB ▸ B.orthonormal
+  have hB' : ∀ i j, ⟪P i, P j⟫_ℝ =
+      if i = j then 1 / (2 * δ i + d) else 0 := by
+    intro i j
+    rw [L2.inner_def]
+    have e1 : ∫ x in ball (0 : 𝔼) 1, ⟪P i x, P j x⟫_ℝ =
+        ∫ x in ball (0 : 𝔼) 1, homP (δ i) (v i) x * homP (δ j) (v j) x := by
+      refine integral_congr_ae ?_
+      filter_upwards [(hP i).coeFn_toLp, (hP j).coeFn_toLp] with x hx hx'
+      rw [hx, hx', RCLike.inner_apply, conj_trivial, mul_comm]
+    rw [e1, integral_ball_mul_homP (hP i) (hδ0 j) (v j)]
+    have hray : ∀ r : ℝ, 0 < r → rayCoeff (homP (δ i) (v i)) (fun w => (v j).fst w) r =
+        r ^ δ i * ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ := by
+      intro r hr0
+      rw [rayCoeff, L2.inner_def, ← integral_const_mul]
+      refine integral_congr_ae (Eventually.of_forall fun w => ?_)
+      simp only
+      rw [homP, homFun_smul_sph _ _ hr0, smul_eq_mul, RCLike.inner_apply, conj_trivial, hvfst,
+        hvfst]
+      ring
+    have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ j *
+        rayCoeff (homP (δ i) (v i)) (fun w => (v j).fst w) r) =
+        ∫ r in Ioo (0 : ℝ) 1, ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ *
+          r ^ (δ i + δ j + d - 1) := by
+      refine setIntegral_congr_fun measurableSet_Ioo fun r hr01 => ?_
+      have hr0 : 0 < r := hr01.1
+      rw [hray r hr0, ← rpow_sub_one_eq_pow hr0]
+      rw [show r ^ ((d : ℝ) - 1) * (r ^ δ j * (r ^ δ i *
+        ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ)) =
+        ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ *
+          (r ^ ((d : ℝ) - 1) * r ^ δ j * r ^ δ i) by ring, ← Real.rpow_add hr0,
+        ← Real.rpow_add hr0]
+      congr 2
+      ring
+    rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith [hδ0 i, hδ0 j])]
+    by_cases hij : i = j
+    · subst hij
+      rw [if_pos rfl, real_inner_self_eq_norm_sq, hon.1 i]
+      ring_nf
+    · rw [if_neg hij, hon.2 hij, zero_mul]
   sorry
 
 end Lemma33
