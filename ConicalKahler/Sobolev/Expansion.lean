@@ -639,4 +639,124 @@ theorem div_radField (hf : ContDiff ℝ ∞ f) {x : 𝔼} (hx : x ≠ 0) :
 
 end Radial
 
+/-! ### The key identity -/
+
+section Key
+
+variable {c : CoeffField (EuclideanSpace ℝ (Fin d)) volume}
+
+theorem inner_homG_self {δ : ℝ} {v : LinkPair d} {x : 𝔼} (hx : x ≠ 0)
+    (htan : ⟪v.snd (sphProj x), ((sphProj x : Sph d) : 𝔼)⟫_ℝ = 0) :
+    ⟪homG δ v x, x⟫_ℝ = δ * homP δ v x := by
+  have hn : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx
+  have hxs : x = ‖x‖ • ((sphProj x : Sph d) : 𝔼) := (norm_smul_sphProj (x := x)).symm
+  have hs : ⟪((sphProj x : Sph d) : 𝔼), ((sphProj x : Sph d) : 𝔼)⟫_ℝ = 1 := by
+    rw [real_inner_self_eq_norm_sq, norm_eq_of_mem_sphere (sphProj x), one_pow]
+  have h1 : ‖x‖ ^ (δ - 1) * ‖x‖ = ‖x‖ ^ δ := by
+    rw [← Real.rpow_add_one hn]
+    ring_nf
+  calc ⟪homG δ v x, x⟫_ℝ = ⟪homG δ v x, ‖x‖ • ((sphProj x : Sph d) : 𝔼)⟫_ℝ := by rw [← hxs]
+    _ = ‖x‖ * (‖x‖ ^ (δ - 1) * (δ * v.fst (sphProj x) * 1 + 0)) := by
+        simp only [homG, homFun, homGradProfile, real_inner_smul_left, real_inner_smul_right,
+          inner_add_left, htan, hs, smul_eq_mul]
+    _ = δ * ((‖x‖ ^ (δ - 1) * ‖x‖) * v.fst (sphProj x)) := by ring
+    _ = δ * homP δ v x := by rw [h1, homP, homFun, smul_eq_mul]
+
+theorem CoeffField.IsConical.inner_A_radField (hc : c.IsConical) (f : ℝ → ℝ) (x G : 𝔼) :
+    ⟪c.A x G, radField f x⟫_ℝ = ⟪G, radField f x⟫_ℝ := by
+  rw [c.symm, radField, map_smul, hc.radial]
+
+/-- **The key identity.** Let `u` be weakly harmonic on `B_1`, and `P = |x|^δ φ(x/|x|)` with
+`(φ, Γ)` a link eigenfunction for `λ = δ(δ + d - 2)`. For every `f ∈ C^∞` vanishing outside
+`(ε, ρ) ⊆ (0, 1)`, `∫_{B_1} u P (f'(|x|) + (2δ + d - 1) f(|x|)/|x|) = 0`. -/
+theorem key_identity (hd : 2 ≤ d) (hc : c.IsConical) {lam δ : ℝ} {v : LinkPair d}
+    (hE : IsLinkEigen hc lam v) (hlam : lam = δ * (δ + d - 2))
+    (hP : MemLp (homP δ v) 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    (hG : MemLp (homG δ v) 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    {u : L2Pair volume (ball (0 : 𝔼) 1)} (hu : c.IsWeakSolution 0 u)
+    {f : ℝ → ℝ} (hf : ContDiff ℝ ∞ f) {ε ρ : ℝ} (hε : 0 < ε) (hρ : ρ < 1)
+    (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) :
+    ∫ x in ball (0 : 𝔼) 1, u.fst x * (homP δ v x *
+      (deriv f ‖x‖ + (2 * δ + d - 1) * (f ‖x‖ / ‖x‖))) = 0 := by
+  set P := homPair δ v 1 hP hG
+  have hPsol : c.IsWeakSolution 0 P := homPair_isWeakSolution hP hG hd hc hE hlam
+  have hη := isTestFn_radPrim (d := d) hf hε hρ hsupp
+  have hY := isTestFn_radField (d := d) hf hε hρ hsupp
+  have hW := wronskian c isOpen_ball hu hPsol hη
+  simp_rw [gradient_radPrim hf hε hsupp, hc.inner_A_radField] at hW
+  have hI := integral_mul_inner_vectorField isOpen_ball hu.1 hPsol.1 hY
+  -- bounds
+  obtain ⟨Mf, hMf⟩ : ∃ C, ∀ t, |f t| ≤ C := by
+    obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn
+      (hf.continuous.continuousOn (s := Icc ε ρ))
+    refine ⟨max C 0, fun t => ?_⟩
+    by_cases ht : t ∈ Ioo ε ρ
+    · exact ((Real.norm_eq_abs _).symm.trans_le (hC t (Ioo_subset_Icc_self ht))).trans
+        (le_max_left _ _)
+    · rw [hsupp t ht, abs_zero]
+      exact le_max_right _ _
+  have hMY : ∀ x : 𝔼, ‖radField f x‖ ≤ Mf := fun x => by
+    by_cases hx : x = 0
+    · have : radField f x = 0 := by simp [hx, radField]
+      rw [this, norm_zero]
+      exact (abs_nonneg (f 0)).trans (hMf 0)
+    · have hn : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx
+      have : ‖radField f x‖ = |f ‖x‖| := by
+        simp only [radField, norm_smul, Real.norm_eq_abs, abs_mul, abs_inv, abs_norm, mul_assoc,
+          inv_mul_cancel₀ hn, mul_one]
+      rw [this]
+      exact hMf _
+  have hMD : ∃ C, ∀ x : 𝔼, |∑ k, fderiv ℝ (fun y : 𝔼 => radField f y k) x
+      (EuclideanSpace.single k 1)| ≤ C := by
+    choose M hM using fun k => exists_bound_testFn (hY k)
+    refine ⟨∑ k, M k, fun x => (Finset.abs_sum_le_sum_abs _ _).trans
+      (Finset.sum_le_sum fun k _ => ?_)⟩
+    rw [← Real.norm_eq_abs, ← inner_gradient]
+    exact (norm_inner_le_norm _ _).trans (by simpa using (hM k).2.2 x)
+  obtain ⟨MD, hMD⟩ := hMD
+  have hYm : Measurable fun x : 𝔼 => radField f x := by
+    have := hf.continuous.measurable
+    unfold radField
+    fun_prop
+  have hdivm : Measurable fun x : 𝔼 => ∑ k, fderiv ℝ (fun y : 𝔼 => radField f y k) x
+      (EuclideanSpace.single k 1) :=
+    Finset.measurable_sum _ fun k _ => ((hY k).continuous_fderiv_apply _).measurable
+  have hGY : MemLp (fun x => ⟪P.snd x, radField f x⟫_ℝ) 2 (volume.restrict (ball (0 : 𝔼) 1)) :=
+    (Lp.memLp P.snd).of_le_mul (c := Mf) ((Lp.aestronglyMeasurable P.snd).inner
+      hYm.aestronglyMeasurable) (Eventually.of_forall fun x => by
+        rw [Real.norm_eq_abs, mul_comm]
+        exact (abs_real_inner_le_norm _ _).trans
+          (mul_le_mul_of_nonneg_left (hMY x) (norm_nonneg _)))
+  have hint2 : Integrable (fun x => u.fst x * ⟪P.snd x, radField f x⟫_ℝ)
+      (volume.restrict (ball (0 : 𝔼) 1)) :=
+    integrable_mul_of_memLp_two (Lp.memLp u.fst) hGY
+  have hint3 : Integrable (fun x => u.fst x * P.fst x * ∑ k, fderiv ℝ (fun y => radField f y k)
+      x (EuclideanSpace.single k 1)) (volume.restrict (ball (0 : 𝔼) 1)) :=
+    (integrable_mul_of_memLp_two (Lp.memLp u.fst) (Lp.memLp P.fst)).mul_bdd
+      hdivm.aestronglyMeasurable (c := MD) (Eventually.of_forall fun x => by
+        rw [Real.norm_eq_abs]; exact hMD x)
+  have hint1 : Integrable (fun x => u.fst x * (P.fst x * (∑ k, fderiv ℝ (fun y => radField f y k)
+      x (EuclideanSpace.single k 1)) + ⟪P.snd x, radField f x⟫_ℝ))
+      (volume.restrict (ball (0 : 𝔼) 1)) :=
+    (hint3.add hint2).congr (Eventually.of_forall fun x => by simp only [Pi.add_apply]; ring)
+  -- combine the Wronskian identity and the integration by parts
+  have hsum : ∫ x in ball (0 : 𝔼) 1, (u.fst x * (P.fst x * (∑ k, fderiv ℝ
+      (fun y => radField f y k) x (EuclideanSpace.single k 1)) + ⟪P.snd x, radField f x⟫_ℝ) +
+        u.fst x * ⟪P.snd x, radField f x⟫_ℝ) = 0 := by
+    rw [integral_add hint1 hint2]
+    linarith
+  rw [← hsum]
+  refine integral_congr_ae ?_
+  filter_upwards [hP.coeFn_toLp, hG.coeFn_toLp, ae_restrict_of_ae ae_ne_zero,
+    ae_restrict_of_ae (ae_of_ae_sphere (ae_inner_linkSnd_eq_zero hE.1))] with x hPx hGx hx0 htan
+  have hP1 : P.fst x = homP δ v x := hPx
+  have hG1 : P.snd x = homG δ v x := hGx
+  rw [hP1, hG1, div_radField hf hx0]
+  have hY1 : ⟪homG δ v x, radField f x⟫_ℝ = f ‖x‖ * ‖x‖⁻¹ * (δ * homP δ v x) := by
+    rw [radField, real_inner_smul_right, inner_homG_self hx0 htan]
+  rw [hY1]
+  ring
+
+end Key
+
 end ConicalKahler.Sobolev
