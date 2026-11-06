@@ -506,4 +506,59 @@ theorem lintegral_slice_eq_tsum {ι : Type*} (B : HilbertBasis ι ℝ (Lp ℝ 2 
   funext i
   rw [sq]
 
+theorem ball_ae_eq_shell : (ball (0 : 𝔼) 1 : Set 𝔼) =ᵐ[volume] shell d 0 1 := by
+  rw [ae_eq_set]
+  constructor
+  · refine measure_mono_null (fun x hx => ?_) (measure_singleton (0 : 𝔼))
+    by_contra h0
+    exact hx.2 ⟨norm_pos_iff.mpr h0, mem_ball_zero_iff.mp hx.1⟩
+  · refine measure_mono_null (fun x hx => ?_) (measure_empty (μ := (volume : Measure 𝔼)))
+    exact hx.2 (mem_ball_zero_iff.mpr hx.1.2)
+
+theorem restrict_ball_eq_shell :
+    (volume.restrict (ball (0 : 𝔼) 1)) = volume.restrict (shell d 0 1) :=
+  Measure.restrict_congr_set ball_ae_eq_shell
+
+/-- **`L²(B_1)` norms in terms of ray coefficients** (Parseval on each sphere). For a
+square-integrable `f` on `B_1` and a Hilbert basis `{φ_i}` of `L²(S)`,
+`∫_{B_1} |f|² = ∑_i ∫_0^1 r^{d-1} f_{φ_i}(r)² dr`. -/
+theorem lintegral_ball_eq_tsum {ι : Type*} [Countable ι]
+    (B : HilbertBasis ι ℝ (Lp ℝ 2 (sphMeasure d))) {f : 𝔼 → ℝ} (hf : StronglyMeasurable f)
+    (hf2 : ∫⁻ x in ball (0 : 𝔼) 1, ‖f x‖ₑ ^ 2 < ⊤) :
+    ∫⁻ x in ball (0 : 𝔼) 1, ‖f x‖ₑ ^ 2 =
+      ∑' i, ∫⁻ r in Ioo (0 : ℝ) 1, ENNReal.ofReal (r ^ (d - 1)) *
+        ENNReal.ofReal (rayCoeff f (fun w => B i w) r ^ 2) := by
+  have hmeasG : Measurable fun r : ℝ => ∫⁻ w, ‖f (r • (w : 𝔼))‖ₑ ^ 2 ∂(sphMeasure d) :=
+    Measurable.lintegral_prod_right (f := fun r (w : Sph d) => ‖f (r • (w : 𝔼))‖ₑ ^ 2)
+      ((hf.measurable.comp (measurable_fst.smul (measurable_subtype_coe.comp
+        measurable_snd))).enorm.pow_const 2)
+  rw [restrict_ball_eq_shell, lintegral_shell_polar (hf.measurable.enorm.pow_const 2) le_rfl]
+    at hf2 ⊢
+  -- the slices are square integrable for almost every radius
+  have hfin : ∀ᵐ r ∂(volume.restrict (Ioo (0 : ℝ) 1)),
+      ∫⁻ w, ‖f (r • (w : 𝔼))‖ₑ ^ 2 ∂(sphMeasure d) < ⊤ := by
+    filter_upwards [ae_lt_top ((by fun_prop : Measurable fun r : ℝ =>
+      ENNReal.ofReal (r ^ (d - 1))).mul hmeasG) hf2.ne,
+      ae_restrict_mem measurableSet_Ioo] with r hr hr01
+    have hpos : ENNReal.ofReal (r ^ (d - 1)) ≠ 0 := by
+      rw [ne_eq, ENNReal.ofReal_eq_zero, not_le]
+      exact pow_pos hr01.1 _
+    rcases ENNReal.mul_lt_top_iff.mp hr with h | h | h
+    · exact h.2
+    · exact (hpos h).elim
+    · simp only at h
+      rw [h]
+      exact ENNReal.zero_lt_top
+  have hT := lintegral_tsum (μ := volume.restrict (Ioo (0 : ℝ) 1))
+    (f := fun i r => ENNReal.ofReal (r ^ (d - 1)) *
+      ENNReal.ofReal (rayCoeff f (fun w => B i w) r ^ 2)) fun i =>
+      ((by fun_prop : Measurable fun r : ℝ => ENNReal.ofReal (r ^ (d - 1))).mul
+        (ENNReal.measurable_ofReal.comp
+          ((stronglyMeasurable_rayCoeff hf (Lp.stronglyMeasurable (B i))).measurable.pow_const
+            2))).aemeasurable
+  rw [← hT]
+  refine lintegral_congr_ae ?_
+  filter_upwards [hfin] with r hr
+  rw [ENNReal.tsum_mul_left, lintegral_slice_eq_tsum B hf hr]
+
 end ConicalKahler.Sobolev
