@@ -675,26 +675,35 @@ theorem indicialRoot_spec (lam : ℝ) (hlam : 0 ≤ lam) :
   nlinarith [hs]
 
 /-- The `L²(B_1)` pairing of `f` with `P = |x|^δ φ(x/|x|)` when the ray coefficient of `f` along
+`φ` is `a r^γ`: `∫_{B_1} f P = a / (δ + γ + d)`. -/
+theorem integral_ball_mul_homP_of_rayCoeff' {f : 𝔼 → ℝ}
+    (hf2 : MemLp f 2 (volume.restrict (ball (0 : 𝔼) 1))) {δ γ a : ℝ} (hδ : 0 ≤ δ) (hγ : 0 ≤ γ)
+    (v : LinkPair d)
+    (ha : ∀ᵐ r ∂(volume.restrict (Ioo (0 : ℝ) 1)), rayCoeff f (fun w => v.fst w) r = a * r ^ γ) :
+    ∫ x in ball (0 : 𝔼) 1, f x * homP δ v x = a / (δ + γ + d) := by
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+  rw [integral_ball_mul_homP hf2 hδ v]
+  have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ * rayCoeff f (fun w => v.fst w) r) =
+      ∫ r in Ioo (0 : ℝ) 1, a * r ^ (δ + γ + d - 1) := by
+    refine integral_congr_ae ?_
+    filter_upwards [ha, ae_restrict_mem measurableSet_Ioo] with r hr hr01
+    have hr0 : 0 < r := hr01.1
+    rw [hr, ← rpow_sub_one_eq_pow]
+    rw [show r ^ ((d : ℝ) - 1) * (r ^ δ * (a * r ^ γ)) =
+      a * (r ^ ((d : ℝ) - 1) * r ^ δ * r ^ γ) by ring, ← Real.rpow_add hr0,
+      ← Real.rpow_add hr0]
+    congr 2
+    ring
+  rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith),
+    show δ + γ + d - 1 + 1 = δ + γ + d by ring, mul_one_div]
+
+/-- The `L²(B_1)` pairing of `f` with `P = |x|^δ φ(x/|x|)` when the ray coefficient of `f` along
 `φ` is `a r^δ`: `∫_{B_1} f P = a / (2δ + d)`. -/
 theorem integral_ball_mul_homP_of_rayCoeff {f : 𝔼 → ℝ}
     (hf2 : MemLp f 2 (volume.restrict (ball (0 : 𝔼) 1))) {δ a : ℝ} (hδ : 0 ≤ δ) (v : LinkPair d)
     (ha : ∀ᵐ r ∂(volume.restrict (Ioo (0 : ℝ) 1)), rayCoeff f (fun w => v.fst w) r = a * r ^ δ) :
     ∫ x in ball (0 : 𝔼) 1, f x * homP δ v x = a / (2 * δ + d) := by
-  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
-  rw [integral_ball_mul_homP hf2 hδ v]
-  have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ * rayCoeff f (fun w => v.fst w) r) =
-      ∫ r in Ioo (0 : ℝ) 1, a * r ^ (2 * δ + d - 1) := by
-    refine integral_congr_ae ?_
-    filter_upwards [ha, ae_restrict_mem measurableSet_Ioo] with r hr hr01
-    have hr0 : 0 < r := hr01.1
-    rw [hr, ← rpow_sub_one_eq_pow]
-    rw [show r ^ ((d : ℝ) - 1) * (r ^ δ * (a * r ^ δ)) =
-      a * (r ^ ((d : ℝ) - 1) * r ^ δ * r ^ δ) by ring, ← Real.rpow_add hr0,
-      ← Real.rpow_add hr0]
-    congr 2
-    ring
-  rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith),
-    show 2 * δ + d - 1 + 1 = 2 * δ + d by ring, mul_one_div]
+  rw [integral_ball_mul_homP_of_rayCoeff' hf2 hδ hδ v ha, two_mul]
 
 /-- **The homogeneous harmonic functions are orthogonal in `L²(B_1)` when their link functions
 are**: `∫_{B_1} |x|^δ φ(x̂) |x|^{δ'} ψ(x̂) = ⟪φ, ψ⟫_{L²(S)} / (δ + δ' + d)`. -/
@@ -724,6 +733,28 @@ theorem integral_ball_homP_mul_homP {δ δ' : ℝ} (hδ : 0 ≤ δ) (hδ' : 0 �
     ring
   rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith),
     show δ + δ' + d - 1 + 1 = δ + δ' + d by ring, mul_one_div]
+
+/-- The gradient `|x|^{δ-1}(δφ x̂ + Γ(x̂))` of `ρ^δ φ` is in `L²(B_1)` for a link eigenfunction
+with `λ = δ(δ + d - 2)`, `δ ≥ 0`, `d ≥ 2` (for `δ = 0` the pair has `Γ = 0`). -/
+theorem memLp_homG_of_isLinkEigen (hd : 2 ≤ d) {c : CoeffField 𝔼 volume} {hc : c.IsConical}
+    {lam δ : ℝ} {v : LinkPair d} (hE : IsLinkEigen hc lam v) (hlam : lam = δ * (δ + d - 2))
+    (hδ : 0 ≤ δ) : MemLp (homG δ v) 2 (volume.restrict (ball (0 : 𝔼) 1)) := by
+  have hdpos : (2 : ℝ) ≤ d := by exact_mod_cast hd
+  by_cases h : 0 < 2 * (δ - 1) + d
+  · exact memLp_homFun_ball (δ - 1) (memLp_homGradProfile _ _) 1 h
+  · have hδ0 : δ = 0 := by linarith [not_lt.mp h]
+    have hlam0 : lam = 0 := by rw [hlam, hδ0, zero_mul]
+    rw [hlam0] at hE
+    have hsnd : v.snd = 0 := hE.snd_eq_zero
+    have hprof : homGradProfile δ v =ᵐ[sphMeasure d] 0 := by
+      filter_upwards [Lp.coeFn_zero 𝔼 2 (sphMeasure d)] with w hw
+      rw [homGradProfile, hδ0, zero_mul, zero_smul, zero_add, hsnd, hw, Pi.zero_apply]
+    have hz : homG δ v =ᵐ[volume] 0 := by
+      filter_upwards [homFun_congr_ae hprof (δ - 1)] with x hx
+      rw [homG, hx]
+      simp [homFun]
+    exact (MemLp.zero : MemLp (0 : 𝔼 → 𝔼) 2 (volume.restrict (ball (0 : 𝔼) 1))).ae_eq
+      (Filter.EventuallyEq.symm (ae_restrict_of_ae hz))
 
 /-- **A Parseval criterion for orthogonal expansions** in a real inner product space. If the `P_i`
 are orthogonal with `‖P_i‖² = 1/n_i`, `⟪u, P_i⟫ = a_i/n_i`, and `∑ a_i²/n_i = ‖u‖²`, then
@@ -799,24 +830,8 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
   have hdpos : (2 : ℝ) ≤ d := by exact_mod_cast hd
   have hP : ∀ i, MemLp (homP (δ i) (v i)) 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i =>
     memLp_homFun_ball (δ i) (Lp.memLp (v i).fst) 1 (by linarith [hδ0 i])
-  have hG : ∀ i, MemLp (homG (δ i) (v i)) 2 (volume.restrict (ball (0 : 𝔼) 1)) := by
-    intro i
-    by_cases h : 0 < 2 * (δ i - 1) + d
-    · exact memLp_homFun_ball (δ i - 1) (memLp_homGradProfile _ _) 1 h
-    · have hδi : δ i = 0 := by linarith [hδ0 i, not_lt.mp h]
-      have hlam0 : lam i = 0 := by rw [hroot i, hδi, zero_mul]
-      have hE := (heig i).2
-      rw [hlam0] at hE
-      have hsnd : (v i).snd = 0 := hE.snd_eq_zero
-      have hprof : homGradProfile (δ i) (v i) =ᵐ[sphMeasure d] 0 := by
-        filter_upwards [Lp.coeFn_zero 𝔼 2 (sphMeasure d)] with w hw
-        rw [homGradProfile, hδi, zero_mul, zero_smul, zero_add, hsnd, hw, Pi.zero_apply]
-      have hz : homG (δ i) (v i) =ᵐ[volume] 0 := by
-        filter_upwards [homFun_congr_ae hprof (δ i - 1)] with x hx
-        rw [homG, hx]
-        simp [homFun]
-      exact (MemLp.zero : MemLp (0 : 𝔼 → 𝔼) 2 (volume.restrict (ball (0 : 𝔼) 1))).ae_eq
-        (Filter.EventuallyEq.symm (ae_restrict_of_ae hz))
+  have hG : ∀ i, MemLp (homG (δ i) (v i)) 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i =>
+    memLp_homG_of_isLinkEigen hd (heig i).2 (hroot i) (hδ0 i)
   choose a ha using fun i => rayCoeff_eq hd hc (heig i).2 (hroot i) (hP i) (hG i) hu
   set P : s → Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i => (hP i).toLp _
   have hden : ∀ i, (0 : ℝ) < 2 * δ i + d := fun i => by linarith [hδ0 i]

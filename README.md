@@ -243,9 +243,35 @@ These results hold for every **conical** coefficient field on `ℝ^d` (`A(tx) = 
   - Instead, the Wronskian identity (`wronskian`) tested with radial functions gives the radial
     ODE `u_φ(r) = C r^δ` (`rayCoeff_eq`), and Parseval on spheres gives convergence.
 - **Not proved:**
-  - the completeness of `𝓗_{≤2+α}` (Prop. 3.4);
   - multiplicity one of `λ = 0`;
   - `L²` convergence of the Fourier modes in `θ_a`.
+
+### Completeness of `𝓗_{≤2+α}` (Proposition 3.4)
+
+- **Harmonic cone polynomials.**
+  - These are the functions `∏_a r_a^{k_a/β_a} (cos | sin)(k_a θ_a) · h(r², s)` with `h` killed by
+    a formal Laplacian (`conePoly`, `formalLap`).
+  - They are homogeneous (`conePoly_smul_point`) and weakly harmonic for `β_a ≤ 1`
+    (`isClassicalHarmonic_conePoly`).
+  - The identity `Δ conePoly(p) = conePoly(L_q p)` is proved from a product rule for the polar
+    Laplacian (`paperLaplacian_conePoly`).
+- **Fischer decomposition** `p = ∑ ρ^{2j} h_j` with `h_j` harmonic (`fischer`), from the identity
+  `L_q(ρ² p) = ρ² L_q p + (4m + C₀) p`.
+- **Density on the link.** Restrictions of cone polynomials are dense in `C(S)` and `L²(S)`
+  (`dense_linkPolySpan`, `dense_span_linkPolyLp`). The proof is Stone–Weierstrass, with a product
+  formula for angular modes and the univariate Weierstrass theorem.
+- **Completeness.**
+  - Homogeneous harmonic functions of different degrees have orthogonal link functions
+    (`inner_eq_zero_of_degree_ne`, from the radial ODE of Lemma 3.3).
+  - Hence every weakly harmonic `u ∈ W^{1,2}(B_1)` homogeneous of degree `δ` is a harmonic cone
+    polynomial of degree `δ` (`cone_homogeneous_mem_span`).
+- **Proposition 3.4** (`prop_3_4`, `0 < β_a < 1`).
+  - Homogeneous harmonic functions of degree `≤ 2` lie in the span of the paper's list.
+  - There are none of degree in `(2, 2 + μ)`.
+  - Consequently every term of the Lemma 3.3 expansion has degree `≤ 2` or `≥ 2 + μ`
+    (`cone_expansion_prop_3_4`).
+  - Corollary 3.5 holds for `𝓗_{≤2}` (`corollary_3_5_homogeneous`).
+- No Sturm–Liouville or Frobenius theory is used (`PAPER_REVIEW.md` S7).
 
 ## Normalisation conventions
 
@@ -335,6 +361,10 @@ We use the upstream conventions without change.
 | `ConicalKahler/Sobolev/Expansion.lean` | vertex removability, `ρ^δ φ` on balls, Wronskian identity, radial test functions, key identity |
 | `ConicalKahler/Sobolev/HarmonicExpansion.lean` | ray coefficients, radial ODE, Parseval on spheres, Lemma 3.3 |
 | `ConicalKahler/Sobolev/ConeLink.lean` | the cone Laplacian is conical; Lemmas 3.1 and 3.3 for products of cones |
+| `ConicalKahler/Sobolev/ConePoly.lean` | formal cone polynomials, the formal Laplacian, the Fischer decomposition |
+| `ConicalKahler/Sobolev/ConePolyFn.lean` | cone polynomials as functions: homogeneity, polar Laplacian of products, harmonicity |
+| `ConicalKahler/Sobolev/ConePolyDense.lean` | products of angular modes, density of cone polynomials on the link (Stone–Weierstrass) |
+| `ConicalKahler/Sobolev/Completeness.lean` | orthogonality of degrees, completeness, Proposition 3.4, Corollary 3.5 for `𝓗_{≤2}` |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -347,6 +377,7 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/Compactness.lean` | Rellich, Lemma 2.4, divergence identity, scaling and the spectral theorem on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/WeakHarmonic.lean` | classical ⇔ weak, explicit harmonic functions, Corollary 3.5, rotations and Fourier modes on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/LinkExpansion.lean` | polar coordinates, Lemma 3.1, indicial roots, homogeneous harmonic functions, radial ODE, Lemma 3.3 on `C(S¹_{4π/3}) × ℝ` |
+| `ConicalKahlerTest/Completeness.lean` | Fischer identity, density, Proposition 3.4 with `μ = 1/2`, the expansion with the gap, Corollary 3.5 on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 
