@@ -219,6 +219,34 @@ are globally defined, unlike the flat developing coordinates `r e^{iβθ}`
   - they transform like `cos kθ` and `sin kθ` (`rotLp_cosCoeff`);
   - a function is determined by its modes (`eq_zero_of_modes_eq_zero`).
 
+### The link and Lemma 3.3
+
+These results hold for every **conical** coefficient field on `ℝ^d` (`A(tx) = A(x)`,
+`A(x) x = x`; `CoeffField.IsConical`), and in particular for the cone Laplacian
+(`coneCoeff_isConical`).
+
+- **Polar coordinates** on `ℝ^d` (`integral_polar_iter`), from Mathlib's
+  `homeomorphUnitSphereProd`.
+- **Lemma 3.1** (`link_spectral`, `cone_link_spectral`). `L²` of the link has a Hilbert basis of
+  eigenfunctions of `-Δ_ḡ`, with eigenvalues `λ_i ≥ 0` and finitely many below any bound. The link
+  is the unit sphere. Its Sobolev space `linkW12` is defined by homogeneous extension to shells,
+  and it embeds compactly into `L²` (`isCompactOperator_linkFst`).
+- **Homogeneous harmonic functions** (§3.2):
+  - if `φ` is a link eigenfunction with `λ = δ(δ + d − 2)`, then `ρ^δ φ` is weakly harmonic off
+    the vertex (`homogeneous_harmonic`);
+  - for `δ ≥ 0` and `d ≥ 2` it is weakly harmonic on balls through the vertex
+    (`homPair_isWeakSolution`, by vertex removability `isWeakSolution_of_punctured`).
+- **Lemma 3.3** (`expansion`, `cone_expansion`). For `d ≥ 2`, every weakly harmonic
+  `u ∈ W^{1,2}(B_1)` is the `L²(B_1)`-sum `∑ a_i ρ^{δ_i} φ_i` of mutually orthogonal, weakly
+  harmonic, homogeneous functions of degrees `δ_i ≥ 0`.
+  - The proof uses neither the maximum principle (`PAPER_REVIEW.md` S2) nor Frobenius theory.
+  - Instead, the Wronskian identity (`wronskian`) tested with radial functions gives the radial
+    ODE `u_φ(r) = C r^δ` (`rayCoeff_eq`), and Parseval on spheres gives convergence.
+- **Not proved:**
+  - the completeness of `𝓗_{≤2+α}` (Prop. 3.4);
+  - multiplicity one of `λ = 0`;
+  - `L²` convergence of the Fourier modes in `θ_a`.
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -299,6 +327,14 @@ We use the upstream conventions without change.
 | `ConicalKahler/Sobolev/Corollary35.lean` | the paper's list of `𝓗_{≤2}`, Corollary 3.5 for its span |
 | `ConicalKahler/Sobolev/Rotation.lean` | isometries and weak solutions, rotations of the cone factors, symmetric Dirichlet problem |
 | `ConicalKahler/Sobolev/FourierModes.lean` | continuity of the rotation action, Fourier modes in `θ_a`, Fourier uniqueness |
+| `ConicalKahler/Sobolev/Polar.lean` | polar coordinates on `ℝ^d`, the radial projection, homogeneous extensions |
+| `ConicalKahler/Sobolev/FormSpectral.lean` | spectral theorem for coercive symmetric forms with compact dense embedding |
+| `ConicalKahler/Sobolev/Link.lean` | conical coefficient fields, the link Sobolev space, the link form, Rellich on the link |
+| `ConicalKahler/Sobolev/LinkSpectral.lean` | tangential gradients, density, link eigenfunctions, Lemma 3.1 |
+| `ConicalKahler/Sobolev/Homogeneous.lean` | radial averages, tangentiality, product rule, `ρ^δ φ` weakly harmonic off the vertex |
+| `ConicalKahler/Sobolev/Expansion.lean` | vertex removability, `ρ^δ φ` on balls, Wronskian identity, radial test functions, key identity |
+| `ConicalKahler/Sobolev/HarmonicExpansion.lean` | ray coefficients, radial ODE, Parseval on spheres, Lemma 3.3 |
+| `ConicalKahler/Sobolev/ConeLink.lean` | the cone Laplacian is conical; Lemmas 3.1 and 3.3 for products of cones |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -310,6 +346,7 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/Sobolev.lean` | constants, existence, Poincaré, Caccioppoli and density on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/Compactness.lean` | Rellich, Lemma 2.4, divergence identity, scaling and the spectral theorem on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/WeakHarmonic.lean` | classical ⇔ weak, explicit harmonic functions, Corollary 3.5, rotations and Fourier modes on `C(S¹_{4π/3}) × ℝ` |
+| `ConicalKahlerTest/LinkExpansion.lean` | polar coordinates, Lemma 3.1, indicial roots, homogeneous harmonic functions, radial ODE, Lemma 3.3 on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 

@@ -308,14 +308,14 @@ The confirmed errors are V9 and V10. The following are gaps, not errors.
   that are not even in each cone factor generally do not. For example `Δ_g x = (1 − 1/β²) cos θ / r`
   (V10). So off-centre balls need their own construction.
 
-### S2. Lemma 3.3 (expansion of harmonic functions)
+### S2. Lemma 3.3 (expansion of harmonic functions) (resolved in Lean, Milestone 12)
 
 The proof applies the maximum principle (Lemma 3.2), which needs continuity up to the boundary
 and `C²` off the singular set, to a `W^{1,2}` function whose boundary trace is only `H^{1/2}`.
 Convergence of the series is not discussed. A proof by energy uniqueness in `W^{1,2}_0` plus
 separation of variables would avoid the issue.
 
-**Progress (Milestone 11, kernel-checked; Lemma 3.3 itself is not yet proved).**
+**Progress (Milestone 11, kernel-checked).**
 - The energy replacement of Lemma 3.2 is proved: a weakly harmonic function in `W^{1,2}_0(Ω)` on a
   bounded `Ω` vanishes, and two weak solutions with the same right-hand side whose difference is in
   `W^{1,2}_0` agree (`eq_zero_of_isWeakSolution_zero_of_mem_H01`,
@@ -325,8 +325,23 @@ separation of variables would avoid the issue.
   determine the function (`isWeakSolution_angMode`, `rotLp_cosCoeff`, `eq_zero_of_modes_eq_zero`).
 - The explicit homogeneous harmonic functions used in §3 are weakly harmonic on every bounded open
   set, including near the singular set (`IsClassicalHarmonic.isWeakSolution`).
-- Still missing for Lemma 3.3: the spectral theory of the link (Lemma 3.1), the radial ODE for the
-  coefficients and the convergence of the expansion.
+- Still missing for Lemma 3.3 after Milestone 11: the spectral theory of the link (Lemma 3.1), the
+  radial ODE for the coefficients and the convergence of the expansion.
+
+**Resolution (Milestone 12, kernel-checked).** Lemma 3.3 is proved without the maximum principle
+(`expansion`, `cone_expansion`). For a conical coefficient field and `d ≥ 2`, every weakly harmonic
+`u ∈ W^{1,2}(B_1)` is `u = ∑ a_i ρ^{δ_i} φ_i` in `L²(B_1)`, with `{φ_i}` a Hilbert basis of link
+eigenfunctions (Lemma 3.1, `link_spectral`), `δ_i ≥ 0` and each term weakly harmonic on `B_1`. The
+argument is:
+1. `ρ^δ φ` is weakly harmonic on `ℝ^d \ {0}` when `λ = δ(δ + d − 2)` (`homogeneous_harmonic`), and
+   the vertex is removable for `d ≥ 2` (`isWeakSolution_of_punctured`).
+2. The Wronskian identity `∫ P⟨A∇u, ∇η⟩ = ∫ u⟨A∇P, ∇η⟩` for weakly harmonic `u, P`
+   (`wronskian`), tested with radial `η = F(|x|)` that is constant near the vertex, gives
+   `(r^{−δ} u_φ)' = 0` weakly on `(0, 1)` (`key_identity`, `rayCoeff_eq`). This step replaces both
+   the maximum principle and the Frobenius analysis of the radial ODE: the singular solution
+   `r^{2−d−δ}` is excluded because `u` is harmonic across the vertex.
+3. Parseval on each sphere gives the coefficients and the `L²(B_1)` convergence (unconditional).
+Convergence in `W^{1,2}` or locally uniformly is not proved.
 
 ### S3. Uniformity in Lemma 2.4 and Proposition 5.1 (resolved for Lemma 2.4, in Lean)
 
@@ -375,6 +390,11 @@ step should be checked at `β_a = 1/2`.
 
 The statement has `0 = λ₀ < λ₁`, but the proof only gives `λ₀ ≤ λ₁`. Strict inequality needs the
 link to be connected (multiplicity one of the eigenvalue `0`). This holds here but is not argued.
+
+**Lean status (Milestone 12).** Lemma 3.1 is proved without the strict inequality
+(`link_spectral`): a Hilbert basis of `L²(S)` of eigenfunctions, `λ_i ≥ 0`, finitely many below any
+bound, and constants have `λ = 0` (`linkEigen_const`). Multiplicity one of `λ = 0` is not proved,
+and Lemma 3.3 does not need it.
 
 ### S7. Lemma 2.7 and §3.3
 

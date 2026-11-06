@@ -674,7 +674,99 @@ theorem indicialRoot_spec (lam : ℝ) (hlam : 0 ≤ lam) :
   unfold indicialRoot
   nlinarith [hs]
 
-set_option maxHeartbeats 1000000 in
+/-- The `L²(B_1)` pairing of `f` with `P = |x|^δ φ(x/|x|)` when the ray coefficient of `f` along
+`φ` is `a r^δ`: `∫_{B_1} f P = a / (2δ + d)`. -/
+theorem integral_ball_mul_homP_of_rayCoeff {f : 𝔼 → ℝ}
+    (hf2 : MemLp f 2 (volume.restrict (ball (0 : 𝔼) 1))) {δ a : ℝ} (hδ : 0 ≤ δ) (v : LinkPair d)
+    (ha : ∀ᵐ r ∂(volume.restrict (Ioo (0 : ℝ) 1)), rayCoeff f (fun w => v.fst w) r = a * r ^ δ) :
+    ∫ x in ball (0 : 𝔼) 1, f x * homP δ v x = a / (2 * δ + d) := by
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+  rw [integral_ball_mul_homP hf2 hδ v]
+  have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ * rayCoeff f (fun w => v.fst w) r) =
+      ∫ r in Ioo (0 : ℝ) 1, a * r ^ (2 * δ + d - 1) := by
+    refine integral_congr_ae ?_
+    filter_upwards [ha, ae_restrict_mem measurableSet_Ioo] with r hr hr01
+    have hr0 : 0 < r := hr01.1
+    rw [hr, ← rpow_sub_one_eq_pow]
+    rw [show r ^ ((d : ℝ) - 1) * (r ^ δ * (a * r ^ δ)) =
+      a * (r ^ ((d : ℝ) - 1) * r ^ δ * r ^ δ) by ring, ← Real.rpow_add hr0,
+      ← Real.rpow_add hr0]
+    congr 2
+    ring
+  rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith),
+    show 2 * δ + d - 1 + 1 = 2 * δ + d by ring, mul_one_div]
+
+/-- **The homogeneous harmonic functions are orthogonal in `L²(B_1)` when their link functions
+are**: `∫_{B_1} |x|^δ φ(x̂) |x|^{δ'} ψ(x̂) = ⟪φ, ψ⟫_{L²(S)} / (δ + δ' + d)`. -/
+theorem integral_ball_homP_mul_homP {δ δ' : ℝ} (hδ : 0 ≤ δ) (hδ' : 0 ≤ δ') (v w : LinkPair d) :
+    ∫ x in ball (0 : 𝔼) 1, homP δ v x * homP δ' w x = ⟪v.fst, w.fst⟫_ℝ / (δ + δ' + d) := by
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+  have hP := memLp_homFun_ball δ (Lp.memLp v.fst) 1 (by linarith)
+  rw [integral_ball_mul_homP hP hδ' w]
+  have hray : ∀ r : ℝ, 0 < r →
+      rayCoeff (homP δ v) (fun y => w.fst y) r = r ^ δ * ⟪v.fst, w.fst⟫_ℝ := by
+    intro r hr0
+    rw [rayCoeff, L2.inner_def, ← integral_const_mul]
+    refine integral_congr_ae (Eventually.of_forall fun y => ?_)
+    simp only
+    rw [homP, homFun_smul_sph _ _ hr0, smul_eq_mul, RCLike.inner_apply, conj_trivial]
+    ring
+  have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ' *
+      rayCoeff (homP δ v) (fun y => w.fst y) r) =
+      ∫ r in Ioo (0 : ℝ) 1, ⟪v.fst, w.fst⟫_ℝ * r ^ (δ + δ' + d - 1) := by
+    refine setIntegral_congr_fun measurableSet_Ioo fun r hr01 => ?_
+    have hr0 : 0 < r := hr01.1
+    rw [hray r hr0, ← rpow_sub_one_eq_pow]
+    rw [show r ^ ((d : ℝ) - 1) * (r ^ δ' * (r ^ δ * ⟪v.fst, w.fst⟫_ℝ)) =
+      ⟪v.fst, w.fst⟫_ℝ * (r ^ ((d : ℝ) - 1) * r ^ δ' * r ^ δ) by ring, ← Real.rpow_add hr0,
+      ← Real.rpow_add hr0]
+    congr 2
+    ring
+  rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith),
+    show δ + δ' + d - 1 + 1 = δ + δ' + d by ring, mul_one_div]
+
+/-- **A Parseval criterion for orthogonal expansions** in a real inner product space. If the `P_i`
+are orthogonal with `‖P_i‖² = 1/n_i`, `⟪u, P_i⟫ = a_i/n_i`, and `∑ a_i²/n_i = ‖u‖²`, then
+`u = ∑ a_i P_i` (unconditional convergence). -/
+theorem hasSum_of_parseval {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {u : E}
+    {P : ι → E} {a n : ι → ℝ} (hA : ∀ i, ⟪u, P i⟫_ℝ = a i / n i)
+    (hself : ∀ i, ⟪P i, P i⟫_ℝ = 1 / n i) (horth : ∀ i j, i ≠ j → ⟪P i, P j⟫_ℝ = 0)
+    (hC : HasSum (fun i => a i ^ 2 / n i) (‖u‖ ^ 2)) :
+    HasSum (fun i => a i • P i) u := by
+  classical
+  set cf : ι → ℝ := fun i => a i ^ 2 / n i
+  have hS : ∀ F : Finset ι, ‖u - ∑ i ∈ F, a i • P i‖ ^ 2 = ‖u‖ ^ 2 - ∑ i ∈ F, cf i := by
+    intro F
+    have hinner : ⟪u, ∑ i ∈ F, a i • P i⟫_ℝ = ∑ i ∈ F, cf i := by
+      rw [inner_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [real_inner_smul_right, hA]
+      simp only [cf]
+      ring
+    have hsq : ⟪∑ i ∈ F, a i • P i, ∑ j ∈ F, a j • P j⟫_ℝ = ∑ i ∈ F, cf i := by
+      rw [sum_inner]
+      refine Finset.sum_congr rfl fun i hi => ?_
+      rw [inner_sum, Finset.sum_eq_single i (fun j _ hji => by
+          rw [real_inner_smul_left, real_inner_smul_right, horth i j (Ne.symm hji), mul_zero,
+            mul_zero]) (fun h => (h hi).elim),
+        real_inner_smul_left, real_inner_smul_right, hself]
+      simp only [cf]
+      ring
+    rw [norm_sub_sq_real, hinner, ← real_inner_self_eq_norm_sq (∑ i ∈ F, a i • P i), hsq]
+    ring
+  have hT : Tendsto (fun F : Finset ι => ∑ i ∈ F, cf i) atTop (𝓝 (‖u‖ ^ 2)) := hC
+  change Tendsto (fun F : Finset ι => ∑ i ∈ F, a i • P i) atTop (𝓝 u)
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  have heq : (fun F : Finset ι => ‖∑ i ∈ F, a i • P i - u‖) =
+      fun F => √(‖u‖ ^ 2 - ∑ i ∈ F, cf i) := by
+    funext F
+    rw [norm_sub_rev, ← hS F, Real.sqrt_sq (norm_nonneg _)]
+  rw [heq]
+  have hlim := ((Real.continuous_sqrt.tendsto _).comp (tendsto_const_nhds.sub hT) :
+    Tendsto (fun F : Finset ι => √(‖u‖ ^ 2 - ∑ i ∈ F, cf i)) atTop
+      (𝓝 (√(‖u‖ ^ 2 - ‖u‖ ^ 2))))
+  rwa [sub_self, Real.sqrt_zero] at hlim
+
 /-- **Lemma 3.3 (expansion of harmonic functions).** Let `c` be conical, `d ≥ 2`, and let
 `u ∈ W^{1,2}(B_1)` be weakly harmonic. Then there are a Hilbert basis `{φ_i}` of `L²(S)` of link
 eigenfunctions (eigenvalues `λ_i = δ_i (δ_i + d - 2)`, `δ_i ≥ 0`), and coefficients `a_i`, such that
@@ -727,34 +819,16 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
         (Filter.EventuallyEq.symm (ae_restrict_of_ae hz))
   choose a ha using fun i => rayCoeff_eq hd hc (heig i).2 (hroot i) (hP i) (hG i) hu
   set P : s → Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i => (hP i).toLp _
-  have hpexp : ∀ i, -1 < 2 * δ i + d - 1 := fun i => by linarith [hδ0 i]
   have hden : ∀ i, (0 : ℝ) < 2 * δ i + d := fun i => by linarith [hδ0 i]
   have hvfst : ∀ i, (v i).fst = (i : Lp ℝ 2 (sphMeasure d)) := fun i => rfl
   -- (A) the coefficients
   have hA : ∀ i, ⟪u.fst, P i⟫_ℝ = a i / (2 * δ i + d) := by
     intro i
-    rw [L2.inner_def]
-    have e1 : ∫ x in ball (0 : 𝔼) 1, ⟪u.fst x, P i x⟫_ℝ =
-        ∫ x in ball (0 : 𝔼) 1, u.fst x * homP (δ i) (v i) x := by
-      refine integral_congr_ae ?_
-      filter_upwards [(hP i).coeFn_toLp] with x hx
-      rw [hx, RCLike.inner_apply, conj_trivial, mul_comm]
-    rw [e1, integral_ball_mul_homP (Lp.memLp u.fst) (hδ0 i) (v i)]
-    have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ i *
-        rayCoeff u.fst (fun w => (v i).fst w) r) =
-        ∫ r in Ioo (0 : ℝ) 1, a i * r ^ (2 * δ i + d - 1) := by
-      refine integral_congr_ae ?_
-      filter_upwards [ha i, ae_restrict_mem measurableSet_Ioo] with r hr hr01
-      have hr0 : 0 < r := hr01.1
-      rw [hr, ← rpow_sub_one_eq_pow]
-      rw [show r ^ ((d : ℝ) - 1) * (r ^ δ i * (a i * r ^ δ i)) =
-        a i * (r ^ ((d : ℝ) - 1) * r ^ δ i * r ^ δ i) by ring, ← Real.rpow_add hr0,
-        ← Real.rpow_add hr0]
-      congr 2
-      ring
-    rw [e2, integral_const_mul, integral_Ioo_rpow (hpexp i)]
-    field_simp
-    ring_nf
+    rw [L2.inner_def,
+      ← integral_ball_mul_homP_of_rayCoeff (Lp.memLp u.fst) (hδ0 i) (v i) (ha i)]
+    refine integral_congr_ae ?_
+    filter_upwards [(hP i).coeFn_toLp] with x hx
+    rw [hx, RCLike.inner_apply, conj_trivial, mul_comm]
   -- (B) orthogonality
   have hon : Orthonormal ℝ (Subtype.val : s → Lp ℝ 2 (sphMeasure d)) := hB ▸ B.orthonormal
   have hB' : ∀ i j, ⟪P i, P j⟫_ℝ =
@@ -766,36 +840,12 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
       refine integral_congr_ae ?_
       filter_upwards [(hP i).coeFn_toLp, (hP j).coeFn_toLp] with x hx hx'
       rw [hx, hx', RCLike.inner_apply, conj_trivial, mul_comm]
-    rw [e1, integral_ball_mul_homP (hP i) (hδ0 j) (v j)]
-    have hray : ∀ r : ℝ, 0 < r → rayCoeff (homP (δ i) (v i)) (fun w => (v j).fst w) r =
-        r ^ δ i * ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ := by
-      intro r hr0
-      rw [rayCoeff, L2.inner_def, ← integral_const_mul]
-      refine integral_congr_ae (Eventually.of_forall fun w => ?_)
-      simp only
-      rw [homP, homFun_smul_sph _ _ hr0, smul_eq_mul, RCLike.inner_apply, conj_trivial, hvfst,
-        hvfst]
-      ring
-    have e2 : ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ j *
-        rayCoeff (homP (δ i) (v i)) (fun w => (v j).fst w) r) =
-        ∫ r in Ioo (0 : ℝ) 1, ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ *
-          r ^ (δ i + δ j + d - 1) := by
-      refine setIntegral_congr_fun measurableSet_Ioo fun r hr01 => ?_
-      have hr0 : 0 < r := hr01.1
-      rw [hray r hr0, ← rpow_sub_one_eq_pow]
-      rw [show r ^ ((d : ℝ) - 1) * (r ^ δ j * (r ^ δ i *
-        ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ)) =
-        ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ *
-          (r ^ ((d : ℝ) - 1) * r ^ δ j * r ^ δ i) by ring, ← Real.rpow_add hr0,
-        ← Real.rpow_add hr0]
-      congr 2
-      ring
-    rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith [hδ0 i, hδ0 j])]
+    rw [e1, integral_ball_homP_mul_homP (hδ0 i) (hδ0 j), hvfst, hvfst]
     by_cases hij : i = j
     · subst hij
       rw [ite_eq_left rfl, real_inner_self_eq_norm_sq, hon.1 i]
       ring_nf
-    · rw [ite_eq_right hij, hon.2 hij, zero_mul]
+    · rw [ite_eq_right hij, hon.2 hij, zero_div]
   -- (C) Parseval for `u`
   set cf : s → ℝ := fun i => a i ^ 2 / (2 * δ i + d)
   have hcf0 : ∀ i, 0 ≤ cf i := fun i => div_nonneg (sq_nonneg _) (hden i).le
@@ -812,43 +862,13 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
   have hnorm : ‖u.fst‖ ^ 2 = ∑' i, cf i := by
     rw [norm_sq_eq_lintegral, hl, ENNReal.tsum_toReal_eq fun i => ENNReal.ofReal_ne_top, hcf]
   have hC : HasSum cf (‖u.fst‖ ^ 2) := hnorm ▸ hsumm.hasSum
-  -- (D) the partial sums
-  have hS : ∀ F : Finset s, ‖u.fst - ∑ i ∈ F, a i • P i‖ ^ 2 = ‖u.fst‖ ^ 2 - ∑ i ∈ F, cf i := by
-    intro F
-    have hinner : ⟪u.fst, ∑ i ∈ F, a i • P i⟫_ℝ = ∑ i ∈ F, cf i := by
-      rw [inner_sum]
-      refine Finset.sum_congr rfl fun i _ => ?_
-      rw [real_inner_smul_right, hA]
-      simp only [cf]
-      ring
-    have hself : ⟪∑ i ∈ F, a i • P i, ∑ j ∈ F, a j • P j⟫_ℝ = ∑ i ∈ F, cf i := by
-      rw [sum_inner]
-      refine Finset.sum_congr rfl fun i hi => ?_
-      rw [inner_sum, Finset.sum_eq_single i (fun j _ hji => by
-          rw [real_inner_smul_left, real_inner_smul_right, hB', ite_eq_right (Ne.symm hji),
-            mul_zero, mul_zero]) (fun h => (h hi).elim),
-        real_inner_smul_left, real_inner_smul_right, hB', ite_eq_left rfl]
-      simp only [cf]
-      ring
-    rw [norm_sub_sq_real, hinner, ← real_inner_self_eq_norm_sq (∑ i ∈ F, a i • P i), hself]
-    ring
+  have horth : ∀ i j, i ≠ j → ⟪P i, P j⟫_ℝ = 0 := fun i j hij => by rw [hB', ite_eq_right hij]
   refine ⟨s, B, Γ, lam, δ, a, P, hB, fun i => ⟨hδ0 i, hroot i, (heig i).2, (hP i).coeFn_toLp,
     homPair (δ i) (v i) 1 (hP i) (hG i),
-    homPair_isWeakSolution (hP i) (hG i) hd hc (heig i).2 (hroot i), rfl⟩,
-    fun i j hij => by rw [hB', ite_eq_right hij], ?_⟩
-  -- the partial sums converge
-  have hT : Tendsto (fun F : Finset s => ∑ i ∈ F, cf i) atTop (𝓝 (‖u.fst‖ ^ 2)) := hC
-  change Tendsto (fun F : Finset s => ∑ i ∈ F, a i • P i) atTop (𝓝 u.fst)
-  rw [tendsto_iff_norm_sub_tendsto_zero]
-  have heq : (fun F : Finset s => ‖∑ i ∈ F, a i • P i - u.fst‖) =
-      fun F => √(‖u.fst‖ ^ 2 - ∑ i ∈ F, cf i) := by
-    funext F
-    rw [norm_sub_rev, ← hS F, Real.sqrt_sq (norm_nonneg _)]
-  rw [heq]
-  have hlim := ((Real.continuous_sqrt.tendsto _).comp (tendsto_const_nhds.sub hT) :
-    Tendsto (fun F : Finset s => √(‖u.fst‖ ^ 2 - ∑ i ∈ F, cf i)) atTop
-      (𝓝 (√(‖u.fst‖ ^ 2 - ‖u.fst‖ ^ 2))))
-  rwa [sub_self, Real.sqrt_zero] at hlim
+    homPair_isWeakSolution (hP i) (hG i) hd hc (heig i).2 (hroot i), rfl⟩, horth, ?_⟩
+  -- (D) the partial sums converge
+  exact hasSum_of_parseval (n := fun i => 2 * δ i + d) hA
+    (fun i => by rw [hB', ite_eq_left rfl]) horth hC
 
 end Lemma33
 
