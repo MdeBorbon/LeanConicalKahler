@@ -5,7 +5,7 @@ Last updated: 2026-11-06.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1840
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 2124
 `ConicalKahler.*` declarations (library and tests) depend only on `propext`, `Classical.choice` and
 `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
@@ -500,6 +500,92 @@ tests in `ConicalKahlerTest/WeakHarmonic` (model `C(S¹_{4π/3}) × ℝ`, `β = 
   paper's range `β < 1` for all `k ≥ 1`.
 - Corollary 3.5's bound uses Lebesgue measure on `B_1`; `dV_g = (∏β_a) dx` changes only `C`.
 
+(Lemma 3.3 was proved in Milestone 12, below.)
+
+## Milestone 12: the link and Lemma 3.3: COMPLETE (Fourier-mode convergence deferred)
+
+All entries are kernel-checked. Files `Sobolev/Polar`, `Sobolev/FormSpectral`, `Sobolev/Link`,
+`Sobolev/LinkSpectral`, `Sobolev/Homogeneous`, `Sobolev/Expansion`, `Sobolev/HarmonicExpansion`,
+`Sobolev/ConeLink`; tests in `ConicalKahlerTest/LinkExpansion` (model `C(S¹_{4π/3}) × ℝ`).
+
+The results are proved for an arbitrary **conical** coefficient field on `ℝ^d`
+(`CoeffField.IsConical`: `A(tx) = A(x)` for `t > 0` and `A(x) x = x`), then specialised to the
+cone Laplacian `A = g⁻¹` (`coneCoeff_isConical`). The link is the unit sphere `S^{d−1}` with the
+metric induced by `g`. Its functions are realised as functions on the Euclidean sphere, with the
+surface measure `σ` (`sphMeasure`); see "Decisions" below.
+
+**1. Polar coordinates and homogeneous extensions.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| polar coordinates `∫_{ℝ^d} g = ∫_S ∫_0^∞ r^{d−1} g(rw) dr dσ(w)`, for integrals, lintegrals, integrability, both orders (Mathlib `homeomorphUnitSphereProd`) | `integral_polar`, `lintegral_polar`, `integrable_polar_iff`, `integral_polar_iter`, `integral_polar_iter_symm` | `Sobolev/Polar` |
+| the radial projection `x ↦ x/|x|` is quasi-measure-preserving; `σ`-null sets ⇔ cone-null sets | `sphProj`, `quasiMeasurePreserving_sphProj`, `ae_of_ae_sphere`, `ae_sphere_of_ae` | `Sobolev/Polar` |
+| homogeneous extension `|x|^k Ψ(x/|x|)`: `L²` on shells (and balls when `2k + d > 0`), as a CLM `L²(S) → L²(shell)` | `homFun`, `memLp_homFun`, `homL`, `memLp_homFun_ball` | `Sobolev/Polar`, `Sobolev/Expansion` |
+
+**2. Lemma 3.1 (spectral decomposition on the link).**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| abstract spectral theorem for a coercive symmetric form `b` on `V ↪ H` with compact dense embedding: `K = (B⁻¹)ᵀ` compact, symmetric, injective; Hilbert basis of eigenvectors | `formSol`, `formK`, `isCompactOperator_formK`, `isSymmetric_formK`, `injective_formK`, `formK_eigen`, `exists_hilbertBasis_eigenvectors` | `Sobolev/FormSpectral` |
+| conical fields: `A` restricted to `S` gives a bounded, symmetric, coercive multiplication operator on `L²(S; ℝ^d)` | `CoeffField.IsConical`, `CoeffField.sphMulOp`, `inner_sphMulOp_comm`, `lam_mul_norm_sq_le_sphMulOp` | `Sobolev/Link` |
+| **link Sobolev space** `W^{1,2}(S)`: pairs `(φ, Γ) ∈ L²(S) × L²(S; ℝ^d)` with `|x|^{-1}Γ(x̂)` the weak gradient of `φ(x̂)` on every shell; closed | `LinkPair`, `linkW12`, `mem_linkW12`, `isClosed_linkW12` | `Sobolev/Link` |
+| the link form `∫_S ⟨AΓ, Θ⟩ + ∫_S φψ` is coercive | `linkForm`, `linkForm₀`, `isCoercive_linkForm₀` | `Sobolev/Link` |
+| **Rellich on the link**: `W^{1,2}(S) → L²(S)` is compact (via Rellich on the shell `{1 < |x| < 4}` and a radial cut-off) | `isCompactOperator_linkFst` | `Sobolev/Link` |
+| **density**: smooth functions restricted to `S` are dense in `L²(S)` (Stone–Weierstrass); their tangential gradients give link pairs | `tangGrad`, `smoothLinkPair_mem`, `denseRange_linkFst` | `Sobolev/LinkSpectral` |
+| link eigenfunctions `-Δ_ḡ φ = λφ` (weak form); `λ ≥ 0`; constants have `λ = 0` | `IsLinkEigen`, `IsLinkEigen.nonneg`, `linkEigen_const` | `Sobolev/LinkSpectral` |
+| **Lemma 3.1**: a Hilbert basis `{φ_i}` of `L²(S)` of link eigenfunctions, `λ_i ≥ 0`, finitely many below any `Λ` | `link_spectral`, `cone_link_spectral` | `Sobolev/LinkSpectral`, `Sobolev/ConeLink` |
+
+**3. Homogeneous harmonic functions (§3.2, indicial roots).**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| the tangential part of a link gradient: `⟨Γ(w), w⟩ = 0` for `σ`-a.e. `w` | `ae_inner_linkSnd_eq_zero` | `Sobolev/Homogeneous` |
+| radial averages of test functions are smooth; integration by parts along rays | `radAvg`, `contDiff_radAvg`, `integral_ray_deriv` | `Sobolev/Homogeneous` |
+| `P = |x|^δ φ(x̂)` has weak gradient `|x|^{δ−1}(δφ(x̂)x̂ + Γ(x̂))` off `0` (product rule) | `homP`, `homG`, `homP_integral` | `Sobolev/Homogeneous` |
+| **`(φ, Γ)` link eigenfunction with `λ = δ(δ + d − 2)` ⇒ `ρ^δ φ` weakly harmonic on `ℝ^d \ {0}`** | `homogeneous_harmonic`, `cone_homogeneous_harmonic` | `Sobolev/Homogeneous`, `Sobolev/ConeLink` |
+| **vertex removability** (`d ≥ 2`): `W^{1,2}` and weak harmonicity extend across `{0}` | `mem_W12_of_punctured`, `isWeakSolution_of_punctured` | `Sobolev/Expansion` |
+| `ρ^δ φ ∈ W^{1,2}(B_R)` and is weakly harmonic on `B_R` (`δ ≥ 0`, `d ≥ 2`) | `homPair`, `homPair_mem_W12`, `homPair_isWeakSolution` | `Sobolev/Expansion` |
+| the nonnegative indicial root `δ = (−(d−2) + √((d−2)² + 4λ))/2` | `indicialRoot`, `indicialRoot_nonneg`, `indicialRoot_spec` | `Sobolev/HarmonicExpansion` |
+
+**4. Lemma 3.3 (expansion of harmonic functions).**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| products with test functions stay in `W^{1,2}_0`; **Wronskian identity** `∫ P⟨A∇u, ∇η⟩ = ∫ u⟨A∇P, ∇η⟩` for weakly harmonic `u, P` | `exists_smulPair_mem_H01`, `wronskian` | `Sobolev/Expansion` |
+| radial test functions `F(|x|)` with `F' = f`, and the field `f(|x|) x̂`; `div` formula | `radPrim`, `radField`, `isTestFn_radField`, `div_radField` | `Sobolev/Expansion` |
+| **key identity** `∫_{B_1} u P (f'(|x|) + (2δ + d − 1) f(|x|)/|x|) = 0` | `key_identity` | `Sobolev/Expansion` |
+| ray coefficients `u_φ(r) = ∫_S u(rw) φ(w) dσ`; du Bois-Reymond lemma on `(0, 1)` | `rayCoeff`, `ae_eq_const_of_integral_mul_deriv_eq_zero` | `Sobolev/HarmonicExpansion` |
+| **radial ODE**: `u_φ(r) = C r^δ` for a.e. `r ∈ (0, 1)` | `rayCoeff_eq` | `Sobolev/HarmonicExpansion` |
+| Parseval on each sphere and `∫_{B_1} u² = ∑_i ∫_0^1 r^{d−1} u_{φ_i}(r)² dr` | `lintegral_slice_eq_tsum`, `lintegral_ball_eq_tsum` | `Sobolev/HarmonicExpansion` |
+| `∫_{B_1} ρ^δ φ ρ^{δ'} ψ = ⟪φ, ψ⟫/(δ + δ' + d)`; a Parseval criterion for orthogonal series | `integral_ball_homP_mul_homP`, `integral_ball_mul_homP_of_rayCoeff`, `hasSum_of_parseval` | `Sobolev/HarmonicExpansion` |
+| **Lemma 3.3**: weakly harmonic `u ∈ W^{1,2}(B_1)` (`d ≥ 2`, conical `A`) is `u = ∑_i a_i ρ^{δ_i} φ_i` in `L²(B_1)` (unconditional `HasSum`); each term weakly harmonic, `δ_i ≥ 0`, `λ_i = δ_i(δ_i + d − 2)`, mutually orthogonal | `expansion`, `cone_expansion` | `Sobolev/HarmonicExpansion`, `Sobolev/ConeLink` |
+| the cone Laplacian is conical: `g⁻¹(tx) = g⁻¹(x)`, `g⁻¹(x) x = x` | `coneCoeffA_self`, `coneCoeff_isConical` | `Sobolev/ConeLink` |
+
+The proof of Lemma 3.3 does **not** use the maximum principle (Lemma 3.2); see `PAPER_REVIEW.md`
+S2. Separation of variables is done in weak form. The Wronskian identity with `P = ρ^δ φ` is
+tested against radial functions `η = F(|x|)` that vanish near `|x| = 1` but are only *constant*
+near the vertex, so the equation for `u` across the vertex is used. This gives
+`∫_0^1 r^{−δ} u_φ(r) k'(r) dr = 0` for all test functions `k` on `(0, 1)`, so `r^{−δ}u_φ` is
+constant (du Bois-Reymond). The second root `r^{2−d−δ}` never appears, because the Wronskian with
+`r^δ` is first order. The coefficients and convergence then follow from Parseval on each sphere.
+
+**What is not claimed.**
+- **Orthogonality and `L²` convergence of the Fourier modes in `θ_a`** (Milestone 11) are not
+  proved. They are no longer needed for Lemma 3.3, which is proved by expanding in link
+  eigenfunctions directly.
+- **Multiplicity one of `λ = 0`** (connectedness of the link, `PAPER_REVIEW.md` S6) is not proved.
+  Lemma 3.3 does not need it.
+- **Proposition 3.4 (completeness of `𝓗_{≤2+α}`) is not proved.** Lemma 3.3 reduces it to the
+  identification of the link eigenfunctions with `λ ≤ (2 + μ)(2 + μ + d − 2)`. That needs the
+  separation of variables on the join `S¹_{β_1} * ⋯ * S^{k−1}`, which is not formalised.
+- The eigenvalues are indexed by the Hilbert basis set `s ⊆ L²(S)`, not by `ℕ` in increasing
+  order. "Finitely many below any `Λ`" is the content of `λ_i → ∞`.
+- Lemma 3.3 is stated on the unit ball `B_1` with Lebesgue measure. Other radii follow by the
+  scaling of Milestone 10, which is not restated here. Convergence in `W^{1,2}` and locally uniform
+  convergence are not proved.
+- `d ≥ 2` is assumed for vertex removability. The paper's models have `d = 2n + k ≥ 2`, except
+  `ℝ¹`.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -626,6 +712,24 @@ tests in `ConicalKahlerTest/WeakHarmonic` (model `C(S¹_{4π/3}) × ℝ`, `β = 
 * **Rotations** act by `u ↦ u ∘ R_t` on `L²(Ω)` (`isoLp`), for domains with `R_t⁻¹(Ω) = Ω`. Fourier
   modes are `L²`-valued interval integrals over `[0, 2π]` (Bochner), without normalising factors.
 
+* **The link (Milestone 12).** The link of the cone is realised as the Euclidean unit sphere
+  `S^{d−1} ⊆ ℝ^d` with Mathlib's surface measure `σ` (`sphMeasure d = volume.toSphere`), not as a
+  Riemannian manifold. The link metric `ḡ` enters only through the restriction of `A = g⁻¹` to
+  `S`. For the cone, `dV_ḡ` and `σ` differ by the constant `∏β_a`, so eigenfunctions and
+  eigenvalues are unchanged.
+* **Link Sobolev space by homogeneous extension.** `W^{1,2}(S)` (`linkW12`) is not defined via
+  charts on `S`. A pair `(φ, Γ)` is in it when `(φ(x̂), |x|^{−1}Γ(x̂))` lies in `W^{1,2}` of every
+  shell `{1/(n+1) < |x| < n+1}`. `Γ` plays the role of the tangential gradient, and is proved
+  tangential (`ae_inner_linkSnd_eq_zero`). `linkW12` is marked `irreducible`, because unfolding the
+  `iInf` makes elaboration very slow.
+* **Conical coefficient fields** (`CoeffField.IsConical`): `A(tx) = A(x)` for `t > 0` and
+  `A(x) x = x`. The second condition says that the radial vector is `g`-orthogonal to the link and
+  `g`-unit; it makes the Laplacian split as `∂_r² + (d−1)/r ∂_r + r^{−2}Δ_ḡ`. Lemmas 3.1 and 3.3 are
+  proved for this class.
+* **Lemma 3.3's output** is a `HasSum` in `L²(B_1)` over the Hilbert-basis index set (unconditional
+  convergence). Each `P_i` is given as an `L²` class together with a weak solution `Q` with
+  `Q.fst = P_i` and the formula `P_i = ρ^{δ_i} φ_i` almost everywhere.
+
 Supporting lemmas re-proved locally because the upstream versions are `private`:
 `ConicalKahler.ddbar_congr` (upstream `KahlerForm.ddbar_eq_of_eventuallyEq`) and
 `ConicalKahler.mddbar_opens` (upstream `KahlerForm.mddbar_restrict_open`).
@@ -637,7 +741,7 @@ Done since the first review: agreement with `metricInChart` (Milestone 4), `Divi
 the real cone geometry with `𝒟₂` (Milestone 8), Sobolev spaces and weak solutions
 (Milestone 9), compactness, harmonic approximation, scaling and the Dirichlet spectral
 theorem (Milestone 10), and weak harmonic functions on the models with Corollary 3.5 for the
-paper's list (Milestone 11).
+paper's list (Milestone 11), and the link spectral theory with Lemma 3.3 (Milestone 12).
 
 1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
@@ -663,12 +767,15 @@ paper's list (Milestone 11).
    the centre), scaling, the bridges with `g`, `dV_g` and `paperLaplacian`, and the Dirichlet
    spectral theorem (Milestone 10); classical ⇔ weak solutions, the explicit harmonic functions,
    Corollary 3.5 for the paper's list, energy uniqueness, rotations and Fourier modes in `θ_a`
-   (Milestone 11). Next: the spectral theory of the link (Lemma 3.1), Lemma 3.3 and the
-   completeness of `𝓗_{≤2+α}` (Prop. 3.4), the `L²` Hessian bound (by the localised Bochner
-   argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
+   (Milestone 11); polar coordinates, the link Sobolev space and Lemma 3.1, homogeneous harmonic
+   functions, vertex removability and Lemma 3.3 (Milestone 12). Next: the completeness of
+   `𝓗_{≤2+α}` (Prop. 3.4) by separation of variables on the join link, the `L²` Hessian bound (by
+   the localised Bochner argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
    Smaller items:
    - interior regularity of weak solutions off `S` (Weyl lemma / Schauder for weak solutions);
-   - orthogonality and `L²` convergence of the Fourier modes in `θ_a` (Parseval for `u`);
+   - orthogonality and `L²` convergence of the Fourier modes in `θ_a` (Parseval for `u`); not
+     needed for Lemma 3.3 any more;
+   - multiplicity one of the link eigenvalue `0` (connectedness of the link);
    - Caccioppoli with cut-offs that are Lipschitz for `d_g`, which gives the ratio `2` between
      geodesic balls;
    - eigenvalues of `G` as a sequence, with an orthonormal basis of eigenfunctions.
@@ -689,3 +796,5 @@ None blocking. Technical notes:
   second derivative.
 * `ω` cannot be used as a variable name in files that `open scoped ContDiff` (it is analyticity
   notation). Kähler forms are named `ω₀`, as upstream does.
+* Instance search for `SecondCountableTopology (Lp ℝ 2 (sphMeasure d))` exceeds the default
+  `maxSize` of 128, so the separability of `L²(S)` is built by hand (`separableSpace_sph`).
