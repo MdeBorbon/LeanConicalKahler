@@ -283,6 +283,17 @@ theorem integrable_homFun_mul (k : ℝ) {Ψ : Sph d → ℝ} (hΨ : MemLp Ψ 2 (
   refine hon.integrable_of_forall_notMem_eq_zero fun x hx => ?_
   rw [hsupp x hx, mul_zero]
 
+/-- The same, with the bound only on the shell. -/
+theorem integrable_homFun_mul' (k : ℝ) {Ψ : Sph d → ℝ} (hΨ : MemLp Ψ 2 (sphMeasure d))
+    {g : 𝔼 → ℝ} (hg : Measurable g) {C : ℝ} {a b : ℝ} (ha : 0 < a)
+    (hC : ∀ x ∈ shell d a b, |g x| ≤ C) (hsupp : ∀ x ∉ shell d a b, g x = 0) :
+    Integrable (fun x => homFun k Ψ x * g x) := by
+  refine integrable_homFun_mul k hΨ hg (C := max C 0) (fun x => ?_) ha hsupp
+  by_cases hx : x ∈ shell d a b
+  · exact (hC x hx).trans (le_max_left _ _)
+  · rw [hsupp x hx, abs_zero]
+    exact le_max_right _ _
+
 theorem ae_ne_zero : ∀ᵐ x : 𝔼, x ≠ 0 := by
   rw [ae_iff]
   simp
@@ -484,5 +495,178 @@ theorem ae_inner_linkSnd_eq_zero {v : LinkPair d} (hv : v ∈ linkW12 d) :
   filter_upwards [hae, ae_ne_zero] with x h hx0
   have := h hx0
   rwa [homFun, Real.rpow_zero, one_smul] at this
+
+/-! ### The homogeneous extension of degree `δ` and its weak gradient -/
+
+theorem exists_bound_norm_rpow_on_shell {a : ℝ} (ha : 0 < a) {b : ℝ} (k : ℝ) :
+    ∃ C, ∀ x ∈ shell d a b, |‖x‖ ^ k| ≤ C := by
+  have hcont : ContinuousOn (fun r : ℝ => r ^ k) (Icc a b) := fun r hr =>
+    (Real.continuousAt_rpow_const r k (Or.inl (ha.trans_le hr.1).ne')).continuousWithinAt
+  obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hcont
+  exact ⟨C, fun x hx => (Real.norm_eq_abs _).symm.trans_le (hC _ ⟨hx.1.le, hx.2.le⟩)⟩
+
+/-- A smooth function on an open `U` times a test function on `U` is a test function. -/
+theorem IsTestFn.contDiffOn_mul {U : Set 𝔼} (hU : IsOpen U) {ϑ ψ : 𝔼 → ℝ} (hϑ : IsTestFn U ϑ)
+    (hψ : ContDiffOn ℝ ∞ ψ U) : IsTestFn U (fun x => ψ x * ϑ x) := by
+  refine ⟨contDiff_iff_contDiffAt.mpr fun x => ?_, hϑ.hasCompactSupport.mul_left,
+    (tsupport_mul_subset_right).trans hϑ.tsupport_subset⟩
+  by_cases hx : x ∈ tsupport ϑ
+  · exact ((hψ x (hϑ.tsupport_subset hx)).contDiffAt
+      (hU.mem_nhds (hϑ.tsupport_subset hx))).mul hϑ.contDiff.contDiffAt
+  · refine contDiffAt_const (c := (0 : ℝ)).congr_of_eventuallyEq ?_
+    filter_upwards [(isClosed_tsupport ϑ).isOpen_compl.mem_nhds hx] with y hy
+    rw [image_eq_zero_of_notMem_tsupport hy, mul_zero]
+
+theorem contDiffOn_norm_rpow (δ : ℝ) : ContDiffOn ℝ ∞ (fun x : 𝔼 => ‖x‖ ^ δ) {0}ᶜ := fun x hx =>
+  ((contDiffAt_norm ℝ hx).rpow_const_of_ne (norm_ne_zero_iff.mpr hx)).contDiffWithinAt
+
+theorem fderiv_norm_rpow {x : 𝔼} (hx : x ≠ 0) (δ : ℝ) (e : 𝔼) :
+    fderiv ℝ (fun y : 𝔼 => ‖y‖ ^ δ) x e = δ * ‖x‖ ^ (δ - 2) * ⟪x, e⟫_ℝ := by
+  have hn : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx
+  have h := (Real.hasDerivAt_rpow_const (p := δ) (Or.inl hn)).comp_hasFDerivAt x
+    (hasFDerivAt_norm_of_ne hx)
+  rw [show (fun y : 𝔼 => ‖y‖ ^ δ) = (fun t : ℝ => t ^ δ) ∘ fun y : 𝔼 => ‖y‖ from rfl, h.fderiv]
+  simp only [smul_apply, innerSL_apply_apply, smul_eq_mul]
+  have h2 : ‖x‖ ^ (δ - 1) = ‖x‖ ^ (δ - 2) * ‖x‖ := by
+    rw [← Real.rpow_add_one hn]
+    ring_nf
+  rw [h2]
+  field_simp
+
+/-- The gradient profile `Ξ(w) = δ φ(w) w + Γ(w)` of `|x|^δ φ(x/|x|)`. -/
+def homGradProfile (δ : ℝ) (v : LinkPair d) (w : Sph d) : 𝔼 := (δ * v.fst w) • (w : 𝔼) + v.snd w
+
+/-- **The homogeneous extension of degree `δ`** of a link function, `P(x) = |x|^δ φ(x/|x|)`. -/
+abbrev homP (δ : ℝ) (v : LinkPair d) : 𝔼 → ℝ := homFun δ fun w => v.fst w
+
+/-- Its gradient, `|x|^{δ-1} (δ φ(x̂) x̂ + Γ(x̂))`. -/
+abbrev homG (δ : ℝ) (v : LinkPair d) : 𝔼 → 𝔼 := homFun (δ - 1) (homGradProfile δ v)
+
+theorem memLp_homGradProfile (δ : ℝ) (v : LinkPair d) :
+    MemLp (homGradProfile δ v) 2 (sphMeasure d) := by
+  refine MemLp.add ?_ (Lp.memLp v.snd)
+  refine ((Lp.memLp v.fst).const_mul δ).of_le_mul (c := 1) ?_ (Eventually.of_forall fun w => ?_)
+  · exact (((Lp.memLp v.fst).const_mul δ).aestronglyMeasurable.smul
+      continuous_subtype_val.aestronglyMeasurable)
+  · rw [norm_smul, norm_eq_of_mem_sphere w, mul_one, one_mul]
+
+theorem inner_homG {δ : ℝ} {v : LinkPair d} {x : 𝔼} (hx : x ≠ 0) (e : 𝔼) :
+    ⟪homG δ v x, e⟫_ℝ = δ * ‖x‖ ^ (δ - 2) * homFun 0 (fun w => v.fst w) x * ⟪x, e⟫_ℝ +
+      ‖x‖ ^ δ * ⟪homFun (-1) (fun w => v.snd w) x, e⟫_ℝ := by
+  have hn : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx
+  simp only [homG, homFun, homGradProfile, Real.rpow_zero, one_smul, Real.rpow_neg_one,
+    inner_add_left, real_inner_smul_left, sphProj_coe hx, inner_smul_left, RCLike.conj_to_real]
+  have h1 : ‖x‖ ^ (δ - 1) = ‖x‖ ^ (δ - 2) * ‖x‖ := by
+    rw [← Real.rpow_add_one hn]
+    ring_nf
+  have h2 : ‖x‖ ^ δ = ‖x‖ ^ (δ - 2) * ‖x‖ * ‖x‖ := by
+    rw [← Real.rpow_add_one hn, ← Real.rpow_add_one hn]
+    ring_nf
+  rw [h1, h2]
+  field_simp
+
+/-- **The weak gradient of `|x|^δ φ(x/|x|)`** on `ℝ^d \ {0}`: for test functions `ϑ` supported
+away from `0`, `∫ P ∂_e ϑ = -∫ ϑ ⟨G, e⟫` with `G = |x|^{δ-1} (δ φ(x̂) x̂ + Γ(x̂))`. -/
+theorem homP_integral {v : LinkPair d} (hv : v ∈ linkW12 d) (δ : ℝ) {ϑ : 𝔼 → ℝ}
+    (hϑ : IsTestFn {0}ᶜ ϑ) (e : 𝔼) :
+    ∫ x, homP δ v x * fderiv ℝ ϑ x e = -∫ x, ϑ x * ⟪homG δ v x, e⟫_ℝ := by
+  obtain ⟨a, b, ha, hab, hsupp⟩ := exists_shell_of_isTestFn hϑ
+  have hout : ∀ x ∉ shell d a b, x ∉ tsupport ϑ := fun x hx h => hx (hsupp h)
+  have hϑ' := hϑ.contDiffOn_mul isOpen_compl_singleton (contDiffOn_norm_rpow δ)
+  have hlink := linkPair_integral hv hϑ' e
+  -- the derivative of `|x|^δ ϑ`
+  have hD : ∀ x : 𝔼, x ≠ 0 → fderiv ℝ (fun y => ‖y‖ ^ δ * ϑ y) x e =
+      ‖x‖ ^ δ * fderiv ℝ ϑ x e + ϑ x * (δ * ‖x‖ ^ (δ - 2) * ⟪x, e⟫_ℝ) := by
+    intro x hx
+    have h1 : HasFDerivAt (fun y : 𝔼 => ‖y‖ ^ δ) (fderiv ℝ (fun y : 𝔼 => ‖y‖ ^ δ) x) x :=
+      (((contDiffAt_norm ℝ (n := 1) hx).rpow_const_of_ne (norm_ne_zero_iff.mpr hx)).differentiableAt
+        one_ne_zero).hasFDerivAt
+    rw [show (fun y : 𝔼 => ‖y‖ ^ δ * ϑ y) = (fun y : 𝔼 => ‖y‖ ^ δ) * ϑ from rfl,
+      (h1.mul (hϑ.differentiable x).hasFDerivAt).fderiv]
+    simp only [ContinuousLinearMap.add_apply, ContinuousLinearMap.smul_apply, smul_eq_mul]
+    rw [fderiv_norm_rpow hx]
+  -- bounds on the shell
+  obtain ⟨C₀, hC₀⟩ := exists_bound_norm_rpow_on_shell (d := d) ha (b := b) δ
+  obtain ⟨C₂, hC₂⟩ := exists_bound_norm_rpow_on_shell (d := d) ha (b := b) (δ - 2)
+  obtain ⟨M, hM0, hMϑ, hMg⟩ := exists_bound_testFn hϑ
+  obtain ⟨M', -, -, hMg'⟩ := exists_bound_testFn hϑ'
+  have hsh : ∀ x ∈ shell d a b, ‖x‖ ≤ b := fun x hx => hx.2.le
+  -- the three integrands
+  have hg1 : Integrable fun x => homFun 0 (fun w => v.fst w) x *
+      fderiv ℝ (fun y => ‖y‖ ^ δ * ϑ y) x e := by
+    refine integrable_homFun_mul' 0 (Lp.memLp v.fst) (hϑ'.continuous_fderiv_apply e).measurable
+      (C := M' * ‖e‖) (a := a) (b := b) ha (fun x _ => ?_) fun x hx => ?_
+    · rw [← Real.norm_eq_abs, ← inner_gradient]
+      exact (norm_inner_le_norm _ _).trans (by gcongr; exact hMg' x)
+    · rw [fderiv_eq_zero_of_notMem_tsupport fun h => hout x hx
+        (tsupport_mul_subset_right h), ContinuousLinearMap.zero_apply]
+  have hg2 : Integrable fun x => homFun 0 (fun w => v.fst w) x *
+      (ϑ x * (δ * ‖x‖ ^ (δ - 2) * ⟪x, e⟫_ℝ)) := by
+    refine integrable_homFun_mul' 0 (Lp.memLp v.fst)
+      (hϑ.continuous.measurable.mul (by fun_prop))
+      (C := M * (|δ| * C₂ * (b * ‖e‖))) (a := a) (b := b) ha (fun x hx => ?_) fun x hx => ?_
+    · simp only [abs_mul]
+      have h1 := hMϑ x
+      have h2 := hC₂ x hx
+      have h3 : |⟪x, e⟫_ℝ| ≤ b * ‖e‖ :=
+        (abs_real_inner_le_norm _ _).trans (by gcongr; exact hsh x hx)
+      have hC₂0 : 0 ≤ C₂ := (abs_nonneg _).trans h2
+      gcongr
+    · rw [image_eq_zero_of_notMem_tsupport (hout x hx), zero_mul]
+  have hg3 : Integrable fun x => homFun 0 (fun w => v.fst w) x *
+      (‖x‖ ^ δ * fderiv ℝ ϑ x e) := by
+    refine integrable_homFun_mul' 0 (Lp.memLp v.fst)
+      ((by fun_prop : Measurable fun x : 𝔼 => ‖x‖ ^ δ).mul
+        (hϑ.continuous_fderiv_apply e).measurable)
+      (C := C₀ * (M * ‖e‖)) (a := a) (b := b) ha (fun x hx => ?_) fun x hx => ?_
+    · rw [abs_mul]
+      have h1 : |fderiv ℝ ϑ x e| ≤ M * ‖e‖ := by
+        rw [← Real.norm_eq_abs, ← inner_gradient]
+        exact (norm_inner_le_norm _ _).trans (by gcongr; exact hMg x)
+      exact mul_le_mul (hC₀ x hx) h1 (abs_nonneg _) ((abs_nonneg _).trans (hC₀ x hx))
+    · rw [fderiv_eq_zero_of_notMem_tsupport (hout x hx), ContinuousLinearMap.zero_apply,
+        mul_zero]
+  -- the vector field term
+  have hmemLp_e : MemLp (fun w => ⟪v.snd w, e⟫_ℝ) 2 (sphMeasure d) :=
+    (Lp.memLp v.snd).of_le_mul (c := ‖e‖)
+      ((Lp.aestronglyMeasurable v.snd).inner aestronglyMeasurable_const)
+      (Eventually.of_forall fun w => by
+        rw [Real.norm_eq_abs, mul_comm]
+        exact abs_real_inner_le_norm _ _)
+  have hg4 : Integrable fun x => ‖x‖ ^ δ * ϑ x * ⟪homFun (-1) (fun w => v.snd w) x, e⟫_ℝ := by
+    have := integrable_homFun_mul' (-1) hmemLp_e
+      ((by fun_prop : Measurable fun x : 𝔼 => ‖x‖ ^ δ).mul hϑ.continuous.measurable)
+      (C := C₀ * M) (a := a) (b := b) ha (fun x hx => by
+        rw [Pi.mul_apply, abs_mul]
+        exact mul_le_mul (hC₀ x hx) (hMϑ x) (abs_nonneg _) ((abs_nonneg _).trans (hC₀ x hx)))
+      fun x hx => by rw [Pi.mul_apply, image_eq_zero_of_notMem_tsupport (hout x hx), mul_zero]
+    refine this.congr (Eventually.of_forall fun x => ?_)
+    simp only [homFun, inner_smul_left, RCLike.conj_to_real, Pi.mul_apply, smul_eq_mul]
+    ring
+  -- assemble
+  have hL : ∫ x, homP δ v x * fderiv ℝ ϑ x e =
+      ∫ x, homFun 0 (fun w => v.fst w) x * (‖x‖ ^ δ * fderiv ℝ ϑ x e) := by
+    congr 1
+    funext x
+    simp only [homP, homFun, Real.rpow_zero, one_smul, smul_eq_mul]
+    ring
+  have h13 : ∫ x, homFun 0 (fun w => v.fst w) x * (‖x‖ ^ δ * fderiv ℝ ϑ x e) =
+      (∫ x, homFun 0 (fun w => v.fst w) x * fderiv ℝ (fun y => ‖y‖ ^ δ * ϑ y) x e) -
+        ∫ x, homFun 0 (fun w => v.fst w) x * (ϑ x * (δ * ‖x‖ ^ (δ - 2) * ⟪x, e⟫_ℝ)) := by
+    rw [← integral_sub hg1 hg2]
+    refine integral_congr_ae ?_
+    filter_upwards [ae_ne_zero] with x hx
+    rw [hD x hx]
+    ring
+  have hR : ∫ x, ϑ x * ⟪homG δ v x, e⟫_ℝ =
+      (∫ x, homFun 0 (fun w => v.fst w) x * (ϑ x * (δ * ‖x‖ ^ (δ - 2) * ⟪x, e⟫_ℝ))) +
+        ∫ x, ‖x‖ ^ δ * ϑ x * ⟪homFun (-1) (fun w => v.snd w) x, e⟫_ℝ := by
+    rw [← integral_add hg2 hg4]
+    refine integral_congr_ae ?_
+    filter_upwards [ae_ne_zero] with x hx
+    rw [inner_homG hx]
+    ring
+  rw [hL, h13, hR, hlink]
+  ring
 
 end ConicalKahler.Sobolev
