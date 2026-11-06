@@ -37,7 +37,10 @@ The paper and this project normalise differently. Every entry below is backed by
 | `dV_g = (∏ β_a) dx` (p. 5) | `productConeVolume β` (Lebesgue with density `√det g`); on `ℝ^d`: `coneVolume β e` | `productConeVolume_eq`, `det_productConeGram`, `coneVolume_eq` |
 | `Δ` in divergence form, `div(g⁻¹ ∇u)` (§2.2 weak formulation) | `coneCoeff β e` (`A = g⁻¹`), `divergence` | `divergence_coneInvOp_gradient` (`div(g⁻¹∇u) = paperLaplacian` at regular points, `u ∈ C²`) |
 | `W^{1,2}` norm defined by `g` and `dV_g` (§2.1) | `intrinsicNormSq β e` (built from `productConeMetric`, `coneInvOp`, `productConeVolume`) | `intrinsicNormSq_eq`, `intrinsicNormSq_bounds` (equivalent to the Euclidean norm) |
-| `𝒟₂` (p. 2) | `D2Op β ι`, `D2Op.apply` (coordinate operators) | `D2Op.apply_factor_eq_zero`, `sharp_holderExponent` |
+| `𝒟₂` (p. 2) | `D2Op β ι`, `D2Op.apply` (coordinate operators) | `D2Op.apply_factor_eq_zero`, `sharp_holderExponent`, `D2Op.apply_add` (linear on `C²` germs) |
+| the list spanning `𝓗_{≤2}` (Prop. 3.4) | `explicitH2 β` (span of `h2Generators β`) on the real model | `corollary_3_5`, `isWeakSolution_of_mem_explicitH2` |
+| rotations `θ_a ↦ θ_a + t` of a cone factor | `coneRot a t` (real model), `rotE e a t` (`ℝ^d`) | `coneInvOp_coneRot`, `coneCoeffA_rotE` |
+| separation of variables in `θ_a` (§3.3) | Fourier modes `cosCoeff k`, `sinCoeff k` of `t ↦ u ∘ R_t` | `isWeakSolution_angMode`, `rotLp_cosCoeff`, `eq_zero_of_modes_eq_zero` |
 | the terms of `μ` (eq. (1.1)) | `holderExponentBound β_a` (`1/β - 1` or `1/β - 2`) | `sharp_holderExponent` |
 | angles `0 < β_a < 1` | models for all `β > 0`; chart invariance for `β ≤ 1` | `IsQuasiIsometricSNCCone.forall_chart_of_le_one` |
 
@@ -112,11 +115,12 @@ omitted) and `[C]` (cited from the literature).
 | `1`, `s_i`, `r_a^{1/β_a} cos θ_a` (Prop. 3.4(1)–(2)) harmonic | **Proved** as `Re`/`Im` of `z_j` (`k = 1`) |
 | barrier `ε ∑_a log r_a` harmonic off `S` (Lemma 3.2) | **Proved**: `laplaceBeltrami_log_coordNormSq_eq_zero` |
 | pluriharmonic functions are harmonic for every Kähler form | **Proved**: `laplaceBeltrami_eq_zero_of_ddbar_eq_zero`, `laplaceBeltrami_re_eq_zero` |
-| **completeness**: `𝓗_{≤2}` is *exactly* the list of Prop. 3.4, and there is no homogeneous harmonic function of degree in `(2, 2+μ)` | Planned. This is the hard part of §3: the spectral theorem on the link (Lemma 3.1), Sturm–Liouville and Frobenius theory for (3.2) (§§3.3–3.4), and induction on `n`. A Fourier decomposition in each `θ_a` may be a more elementary route. |
+| the paper's list of Prop. 3.4 is weakly harmonic on every bounded open set | **Proved** (Milestone 11): `explicitH2`, `isWeakSolution_of_mem_explicitH2`; more generally `r^{k/β} cos kθ`, `r^{k/β} sin kθ` (`β ≤ k`) via `IsClassicalHarmonic.isWeakSolution` |
+| **completeness**: `𝓗_{≤2}` is *exactly* the list of Prop. 3.4, and there is no homogeneous harmonic function of degree in `(2, 2+μ)` | Planned. This is the hard part of §3: the spectral theorem on the link (Lemma 3.1), Sturm–Liouville and Frobenius theory for (3.2) (§§3.3–3.4), and induction on `n`. **Started** (Milestone 11): the decomposition of weak solutions into Fourier modes in each `θ_a` (`isWeakSolution_angMode`, `rotLp_cosCoeff`, `eq_zero_of_modes_eq_zero`). |
 | `𝒟₂` as coordinate operators (p. 2) | **Defined**: `D2Op`, `D2Op.apply`, `pd`, `coneLaplacian`, `paperLaplacian` |
 | harmonic examples in the paper's coordinates, including `r^{1/β} s cos θ` (p. 3) | **Proved**: `paperLaplacian_harmonicCos`, `paperLaplacian_mixedExample` |
 | optimality of the exponent (p. 3, items 1–2): `D u ~ r^{γ} cos θ` is not `α`-Hölder for `α > γ = holderExponentBound β` | **Proved**: `sharp_holderExponent`, `not_holderNearVertex_radialCosFn`; exclusion of pure conical operators for `β ≥ 1/2` (including `β = 1/2`): `not_holderNearVertex_pure_of_half_le` |
-| Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}` | **Partly proved**: for `β_a ≥ 1/2`, every `D ∈ 𝒟₂` annihilates every `Δ_{β_a}`-harmonic function of `(r_a, θ_a)` alone (`D2Op.apply_factor_eq_zero`). The rest of the list (`s_i`, degree-2 functions) is planned. |
+| Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}`, with `|τ| ≤ C ‖P‖_{L²(B_1)}` (3.3) | **Proved for the span of the paper's list** (Milestone 11): `corollary_3_5_const`, `corollary_3_5` (`β_a ≤ 1`). It becomes the paper's statement once completeness (Prop. 3.4) is proved. |
 | Lemma 2.2: log cut-off with small Dirichlet energy | Planned (explicit) |
 | Lemma 4.2, monotonicity at the vertex | Planned (elementary given the expansion) |
 
@@ -143,8 +147,11 @@ omitted) and `[C]` (cited from the literature).
 | Lemma 2.4, harmonic approximation | **Done** (Milestone 10). Direct proof with explicit `δ = λε/(4R²+1)`, uniform in the centre: `harmonic_approximation`, `cone_harmonic_approximation` (cone balls). The paper's compactness argument: `exists_tendsto_of_approx_solutions` (strong `W^{1,2}` convergence), `harmonic_approximation_of_compactness` | |
 | scaled estimates of §2.5.1 | **Partly done**: scaling of weak solutions, of the energy and of scaled norms; scaled Caccioppoli `exists_caccioppoli_ball_scaled` (Euclidean balls, any centre). The scaled Hessian estimate needs Prop. 2.5 | |
 | spectral theorem for the Dirichlet problem on bounded domains (needed for Prop. 2.5) | **Done** (Milestone 10): `CoeffField.dirichletG` compact, symmetric, positive, injective; `dirichletG_eigenspaces_dense`, `finiteDimensional_eigenspace_dirichletG`, `dirichletG_eigen` | Mathlib `orthogonalComplement_iSup_eigenspaces_eq_bot` |
+| classical solutions off `S` in `W^{1,2}` are weak solutions, and conversely for `C²` weak solutions; `S` is removable for `W^{1,2}` | **Done** (Milestone 11): `cone_isWeakSolution_of_classical`, `cone_classical_of_isWeakSolution`, `mem_W12_of_regular` | `dense_testSubmodule_regular` (reused) |
+| rotation symmetry: weak solutions, the Dirichlet problem and the operator `G` commute with the rotations of each cone factor | **Done** (Milestone 11): `cone_isWeakSolution_rot`, `cone_dirichlet_rot_invariant`, `dirichletG_isoLp` | |
 | Lemma 3.1, spectral theorem on the link | Planned. The Dirichlet theorem above is for domains of `ℝ^d`, not for the link | |
-| Lemma 3.3, expansion of `W^{1,2}` harmonic functions (suspected gap: continuity up to the boundary, `PAPER_REVIEW.md` S2) | Planned | energy-uniqueness repair (`PAPER_REVIEW.md` S2) |
+| Lemma 3.2, maximum principle (used only in Lemma 3.3) | **Replaced** by energy uniqueness (Milestone 11): `eq_zero_of_isWeakSolution_zero_of_mem_H01` | `PAPER_REVIEW.md` S2 |
+| Lemma 3.3, expansion of `W^{1,2}` harmonic functions (suspected gap: continuity up to the boundary, `PAPER_REVIEW.md` S2) | **Partly done** (Milestone 11): energy uniqueness; Fourier modes in each `θ_a` (weakly harmonic, transform like `cos kθ`/`sin kθ`, determine `u`). Planned: link eigenfunctions, the radial ODE, convergence | energy-uniqueness repair (`PAPER_REVIEW.md` S2) |
 | **Prop. 2.5**, interior `L²` Hessian bound; uses the cited Lipschitz bound for Dirichlet eigenfunctions [Mon17], [BKMR18, Prop. 5.4] | Planned. **The heaviest analytic input**, and the only deep external regularity result on the main line. The arXiv proof omits an outer boundary term, so its equalities are false (confirmed, `PAPER_REVIEW.md` V9). `W^{2,2}` must be intrinsic (V10). **Audit / possible repair, not proved:** `research_notes/PROPOSITION_2_5_AUDIT.md` and `PAPER_REVIEW.md` §C (localised Bochner argument) | |
 | local `C^{2,α}` regularity off the singular set | Planned | upstream `interiorSchauderEstimate_all` (interior Schauder on `ℂⁿ`) |
 
@@ -214,23 +221,26 @@ No incompatible dependency has been added.
    intrinsic norm and `div(g⁻¹∇u) = Δ_paper`; Lemma 2.4 uniform in the centre (and the paper's
    compactness argument); dilations, scaled norms and the scaled Caccioppoli inequality; the
    spectral theorem for the Dirichlet problem. See `STATUS.md`.
-4. **Weak harmonic functions on the models** (recommended Milestone 11):
-   - classical solutions on the regular part that lie in `W^{1,2}` are weak solutions (integration
-     by parts with the divergence identity, plus density);
-   - hence the explicit harmonic functions of §3 (`r^{k/β} cos kθ`, `s_i`, the degree-2 list) are
-     weakly harmonic;
-   - interior regularity off the singular set (upstream interior Schauder on `ℂⁿ`, or Weyl's lemma);
-   - Fourier decomposition in the angles `θ_a` of weak harmonic functions on vertex-centred balls,
-     towards Lemma 3.3 by energy uniqueness (`PAPER_REVIEW.md` S2) instead of the maximum principle;
-   - the rest of Corollary 3.5 for the explicit list.
-5. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables.
-6. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
+4. **Weak harmonic functions on the models** (Milestone 11, **done** except interior regularity):
+   classical ⇔ weak solutions off `S`; the explicit harmonic functions are weakly harmonic;
+   Corollary 3.5 for the span of the paper's list; energy uniqueness; rotations, the symmetric
+   Dirichlet problem and the Fourier modes in `θ_a`. Interior regularity off `S` (Weyl's lemma) was
+   not attempted. See `STATUS.md`.
+5. **The link and Lemma 3.3** (recommended Milestone 12):
+   - Lemma 3.1 on the link, with `L²(link)` realised as `0`-homogeneous functions on the cone (no
+     manifold structure needed): Lax–Milgram, Rellich on an annulus, Mathlib's spectral theorem;
+   - homogeneous harmonic functions `ρ^d φ` ⇔ link eigenfunctions with `λ = d(d + m − 2)`;
+   - Lemma 3.3 for weakly harmonic `u ∈ W^{1,2}(B_1)` by the radial ODE and energy uniqueness;
+   - orthogonality and `L²` convergence of the Fourier modes in `θ_a` (link eigenfunctions can be
+     chosen as joint eigenfunctions of the rotations).
+6. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables (§§3.3–3.4).
+7. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
    argument (`PAPER_REVIEW.md` §C, `research_notes/PROPOSITION_2_5_AUDIT.md`). This is not the
    arXiv proof, which has a false step (V9). Decide between formalising or assuming the Lipschitz
    bound for eigenfunctions. State the passage to the operators of `𝒟₂` explicitly (two pure
    conical operators need first-order control).
-7. **Campanato iteration** (Lemmas 2.6, 2.7, 4.1, 4.3, Prop. 5.1, §5).
-8. **The cone distance as a length distance**, wherever the proof needs geodesic properties of
+8. **Campanato iteration** (Lemmas 2.6, 2.7, 4.1, 4.3, Prop. 5.1, §5).
+9. **The cone distance as a length distance**, wherever the proof needs geodesic properties of
    `d_g` beyond the formulas proved so far.
 
 **Issues in the paper** are recorded separately in `PAPER_REVIEW.md`, which distinguishes errors

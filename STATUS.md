@@ -1,11 +1,11 @@
 # STATUS
 
-Last updated: 2026-11-05.
+Last updated: 2026-11-06.
 
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1560
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 1840
 `ConicalKahler.*` declarations (library and tests) depend only on `propext`, `Classical.choice` and
 `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
@@ -430,6 +430,76 @@ Mathlib already has the spectral theorem for compact symmetric operators).
 - `𝒟₂` operators are not touched in this milestone. They remain coordinate operators, distinct
   from covariant Hessian components.
 
+## Milestone 11: weak harmonic functions on the models (seventh review): COMPLETE
+
+All entries are kernel-checked. Files `Real/D2Linear`, `Sobolev/Classical`,
+`Sobolev/ExplicitHarmonic`, `Sobolev/Corollary35`, `Sobolev/Rotation`, `Sobolev/FourierModes`;
+tests in `ConicalKahlerTest/WeakHarmonic` (model `C(S¹_{4π/3}) × ℝ`, `β = 2/3`).
+
+**1. Classical and weak solutions.** `S = ⋃_a {r_a = 0}` is the singular set (`coneSingular`).
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| integration by parts `∫ u ∂_w φ = -∫ (∂_w u) φ` for `u ∈ C¹(U)`, `U` open, `supp φ ⊆ U` | `integral_mul_fderiv_eq_neg_of_contDiffOn` | `Sobolev/Classical` |
+| **removability of `S` for `W^{1,2}`**: the weak-gradient identity against test functions supported in `Ω \ S` implies it on `Ω` (reuses `dense_testSubmodule_regular`) | `mem_W12_of_regular` | `Sobolev/Classical` |
+| `u ∈ C¹(Ω \ S)`, `u, ∇u ∈ L²(Ω)` ⇒ `(u, ∇u) ∈ W^{1,2}(Ω)` | `classicalPair`, `classicalPair_mem_W12` | `Sobolev/Classical` |
+| `∫ ⟨A∇u, ∇φ⟩ = -∫ div(A∇u) φ` for test functions off `S` | `dirichletForm_classicalPair_graph` | `Sobolev/Classical` |
+| **classical ⇒ weak**, any coefficient field: flux `C¹` off `S` and `-div(A∇u) = f` there | `isWeakSolution_of_classical` | `Sobolev/Classical` |
+| **weak ⇒ classical** for `u` with `C¹` flux off `S` and `f` continuous there (fundamental lemma) | `classical_of_isWeakSolution` | `Sobolev/Classical` |
+| the flux `g⁻¹∇u` on `ℝ^d`; it is `C¹` off `S` for `u ∈ C²`; its divergence is `paperLaplacian` | `coneFlux`, `contDiffOn_coneFlux`, `divergence_coneFlux`, `divergence_coordIso` | `Sobolev/Classical` |
+| **for the cone Laplacian**: `u ∈ C²(Ω \ S)`, `u, ∇u ∈ L²(Ω)`: `-Δu = f` classically on the regular part ⇔ `-div(g⁻¹∇u) = f` weakly on `Ω` | `cone_isWeakSolution_of_classical`, `cone_classical_of_isWeakSolution` | `Sobolev/Classical` |
+| **energy uniqueness** (replaces the maximum principle of Lemma 3.2 in Lemma 3.3, `PAPER_REVIEW.md` S2) | `eq_of_isWeakSolution_of_sub_mem_H01`, `eq_zero_of_isWeakSolution_zero_of_mem_H01` | `Sobolev/Classical` |
+
+**2. The explicit harmonic functions are weakly harmonic.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| locality and linearity of `pd`, `coneLaplacian`, `paperLaplacian`, `D2Op.apply` on `C²` germs; `pd = DU(e_k)`, `pd∘pd = D²U(e_k, e_l)`; smoothness of `toModel` | `pd_congr`, `D2Op.apply_congr`, `pd_eq_fderiv`, `pd_pd_eq_fderiv`, `D2Op.apply_add`, `paperLaplacian_sum`, `PolarPoint.contDiff_toModel` | `Real/D2Linear` |
+| `Δ(r_b²) = 4`, `Δ(s_i s_j) = 2δ_ij` (paper's normalisation); `r^{k/β} sin kθ` harmonic | `paperLaplacian_r_sq`, `paperLaplacian_s_mul`, `paperLaplacian_harmonicSin` | `Real/D2Linear` |
+| homogeneous functions: `Df(tw) = t^{γ-1} Df(w)` and `|Df(w)| ≤ M |w|^{γ-1}` | `fderiv_smul_of_homogeneous`, `exists_norm_fderiv_le_of_homogeneous` | `Sobolev/ExplicitHarmonic` |
+| `r^{k/b} cos kθ = |w|^{k/b-k} Re(w^k)` in the real coordinate `w`: polar form, homogeneity, smoothness off `0`, bound | `harmCosC`, `harmSinC`, `harmCosC_polarMap`, `harmCosC_smul`, `abs_harmCosC_le` | `Sobolev/ExplicitHarmonic` |
+| `IsClassicalHarmonic β P`: `C²` and harmonic on the regular part, bounded with bounded gradient on bounded sets; a subspace | `IsClassicalHarmonic`, `classicalHarmonic` | `Sobolev/ExplicitHarmonic` |
+| **every `IsClassicalHarmonic` function is weakly harmonic on every bounded open `Ω`**, which may meet `S` | `IsClassicalHarmonic.isWeakSolution` (with `memLp`, `memLp_gradient`) | `Sobolev/ExplicitHarmonic` |
+| members: constants, `s_i`, `r_a^{k/β_a} cos kθ_a`, `r_a^{k/β_a} sin kθ_a` (for `β_a ≤ k`), `∑ c_a r_a² + ∑ Q_{ij} s_i s_j` with `2∑c_a + tr Q = 0` | `isClassicalHarmonic_const`, `_eucl`, `_harmCos`, `_harmSin`, `_quadFn` | `Sobolev/ExplicitHarmonic` |
+
+**3. The paper's list of `𝓗_{≤2}` and Corollary 3.5.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| the span of the paper's list (Prop. 3.4): `1`, `s_i`, `r_a^{1/β_a} cos θ_a`, `r_a^{1/β_a} sin θ_a` (`β_a ≥ 1/2`), `𝓗_2(ℝ^{m−2n})`, `r_a² − r_b²`, `r_a² − 2s_i²` | `h2Generators`, `explicitH2`, `quadS_mem_explicitH2`, `rsq_sub_rsq_mem_explicitH2`, `rsq_sub_two_ssq_mem_explicitH2` | `Sobolev/Corollary35` |
+| finite-dimensional; weakly harmonic on bounded open sets (`β_a ≤ 1`) | `finiteDimensional_explicitH2`, `isWeakSolution_of_mem_explicitH2` | `Sobolev/Corollary35` |
+| **Corollary 3.5 (constancy)**: `D P` is constant on the regular part for all `D ∈ 𝒟₂` | `corollary_3_5_const` | `Sobolev/Corollary35` |
+| **Corollary 3.5 (eq. (3.3))**: `|τ| ≤ C ‖P‖_{L²(B_1)}` with `C = C(D, β)` (`β_a ≤ 1`) | `corollary_3_5` | `Sobolev/Corollary35` |
+
+**4. Rotations and Fourier modes in the angles `θ_a`.**
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| linear isometries `L` of `ℝ^d` transport `L²`, `W^{1,2}`, `W^{1,2}_0` (`∇(u∘L) = L⁻¹(∇u∘L)`) and the weak solutions of `L`-equivariant coefficient fields | `isoLp`, `isoPair`, `isoPair_mem_W12`, `isoPair_mem_H01`, `CoeffField.IsWeakSolution.isoPair` | `Sobolev/Rotation` |
+| the rotations `θ_a ↦ θ_a + t` (`coneRot`, `rotE`); **`g⁻¹` is equivariant**; vertex balls are invariant | `coneInvOp_coneRot`, `coneCoeffA_rotE`, `rotE_preimage_ball` | `Sobolev/Rotation` |
+| rotations map weak solutions to weak solutions; **symmetric Dirichlet problem**: invariant `Ω`, `f` ⇒ invariant solution | `cone_isWeakSolution_rot`, `cone_dirichlet_rot_invariant`, `cone_dirichlet_rot_invariant_ae` | `Sobolev/Rotation` |
+| the Dirichlet operator `G` commutes with the rotations; its eigenspaces are invariant | `dirichletG_isoLp`, `isoLp_mem_eigenspace_dirichletG` | `Sobolev/Rotation` |
+| the rotations act **continuously** on `L²(Ω)` and on pairs (Mathlib `Lp.compMeasurePreserving_continuous`) | `rotLp`, `rotPair`, `continuous_rotLp`, `continuous_rotPair` | `Sobolev/FourierModes` |
+| **the Fourier modes `C_k u = ∫_0^{2π} cos(kt) u∘R_t`, `S_k u` of a weak solution are weak solutions** (with the modes of `f`); modes of weakly harmonic functions are weakly harmonic | `cosCoeff`, `sinCoeff`, `isWeakSolution_angMode`, `isWeakSolution_cosMode`, `isWeakSolution_zero_angMode` | `Sobolev/FourierModes` |
+| **the modes transform like `cos kθ`, `sin kθ`**: `C_k u ∘ R_s = cos(ks) C_k u + sin(ks) S_k u` | `rotLp_cosCoeff`, `rotLp_sinCoeff` | `Sobolev/FourierModes` |
+| **Fourier uniqueness**: `u` is determined by its modes (Mathlib's Parseval identity on `[0, 2π]`) | `eq_zero_of_fourier_real`, `eq_zero_of_modes_eq_zero`, `eq_zero_of_harmonic_modes_eq_zero` | `Sobolev/FourierModes` |
+
+**What is not claimed.**
+- **Proposition 3.4 (completeness) is not proved.** `explicitH2` is the span of the paper's list;
+  that it contains every homogeneous harmonic function of degree `≤ 2`, and that there is none of
+  degree in `(2, 2 + μ)`, remains open. Corollary 3.5 is proved for `explicitH2`, so it becomes
+  the paper's Corollary 3.5 once completeness is known.
+- **Lemma 3.3 is not proved.** Its uniqueness step is now available in energy form, and the
+  decomposition of weak solutions into Fourier modes in one angle `θ_a` is proved. Still missing:
+  the radial/spherical part (the link eigenfunctions, Lemma 3.1) and the convergence of the
+  expansion. The Fourier modes are not shown to be orthogonal or to sum to `u` in `L²`; what is
+  proved is that `u` is determined by them.
+- **Interior regularity off `S` is not proved.** `cone_classical_of_isWeakSolution` assumes that
+  `u` is `C²` off `S`; there is no Weyl lemma or Schauder theory for weak solutions yet.
+- The weak harmonicity of `r^{k/β} cos kθ` is proved for `β ≤ k` (bounded gradient); this covers the
+  paper's range `β < 1` for all `k ≥ 1`.
+- Corollary 3.5's bound uses Lebesgue measure on `B_1`; `dV_g = (∏β_a) dx` changes only `C`.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -542,6 +612,20 @@ Mathlib already has the spectral theorem for compact symmetric operators).
 * **`set_option linter.unusedSectionVars false`** is set in the `Sobolev/` files. Many small lemmas
   share one typeclass context, and not every lemma uses all of it. It disables a style lint only.
 
+* **Classical solutions (Milestone 11).** `classicalPair hu hg = (u, ∇u)` uses the classical
+  gradient `gradient u`, which takes junk values on the null set `S`. Classical hypotheses are
+  stated on `Ω \ S` in the coordinates of `ℝ^d`, and the Laplacian condition in polar coordinates
+  (`paperLaplacian`) at all regular polar points `c` with `coordIso e c.toModel ∈ Ω`.
+* **`IsClassicalHarmonic`** asks for `C²` on the regular part, measurability, and bounds for `P` and
+  `DP` on bounded sets. It is a sufficient condition for weak harmonicity designed for the explicit
+  functions; it is not a definition of harmonicity.
+* **The paper's list of `𝓗_{≤2}`** (`explicitH2`) is a span of explicit functions on the real model.
+  Item 3 is encoded as the quadratics `∑ c_a r_a² + ∑ Q_{ij} s_i s_j` with `2∑c_a + tr Q = 0`, whose
+  span equals that of `𝓗_2(ℝ^{m−2n})`, `r_a² − r_b²`, `r_a² − 2s_i²` (the latter three are proved
+  members).
+* **Rotations** act by `u ↦ u ∘ R_t` on `L²(Ω)` (`isoLp`), for domains with `R_t⁻¹(Ω) = Ω`. Fourier
+  modes are `L²`-valued interval integrals over `[0, 2π]` (Bochner), without normalising factors.
+
 Supporting lemmas re-proved locally because the upstream versions are `private`:
 `ConicalKahler.ddbar_congr` (upstream `KahlerForm.ddbar_eq_of_eventuallyEq`) and
 `ConicalKahler.mddbar_opens` (upstream `KahlerForm.mddbar_restrict_open`).
@@ -551,8 +635,9 @@ Supporting lemmas re-proved locally because the upstream versions are `private`:
 Done since the first review: agreement with `metricInChart` (Milestone 4), `Divisors/SNC`
 (Milestone 5), SNC chart invariance for `β_i ≤ 1` (Milestone 6), the Laplacian (Milestone 7), and
 the real cone geometry with `𝒟₂` (Milestone 8), Sobolev spaces and weak solutions
-(Milestone 9), and compactness, harmonic approximation, scaling and the Dirichlet spectral
-theorem (Milestone 10).
+(Milestone 9), compactness, harmonic approximation, scaling and the Dirichlet spectral
+theorem (Milestone 10), and weak harmonic functions on the models with Corollary 3.5 for the
+paper's list (Milestone 11).
 
 1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
@@ -576,19 +661,20 @@ theorem (Milestone 10).
    and `𝒟₂` (Milestone 8); `W^{1,2}`, `W^{1,2}_0`, weak solutions, Friedrichs–Poincaré,
    existence and uniqueness, Caccioppoli and density (Milestone 9); Rellich, Lemma 2.4 (uniform in
    the centre), scaling, the bridges with `g`, `dV_g` and `paperLaplacian`, and the Dirichlet
-   spectral theorem (Milestone 10). Next: homogeneous harmonic functions (completeness of
-   `𝓗_{≤2+α}`, Prop. 3.4, Lemma 3.3), the `L²` Hessian bound (by the localised Bochner argument,
-   `PAPER_REVIEW.md` §C), and the Campanato iteration.
-   Smaller items from Milestone 10:
-   - classical solutions on the regular part that lie in `W^{1,2}` are weak solutions
-     (integration by parts against test functions supported away from `S`);
+   spectral theorem (Milestone 10); classical ⇔ weak solutions, the explicit harmonic functions,
+   Corollary 3.5 for the paper's list, energy uniqueness, rotations and Fourier modes in `θ_a`
+   (Milestone 11). Next: the spectral theory of the link (Lemma 3.1), Lemma 3.3 and the
+   completeness of `𝓗_{≤2+α}` (Prop. 3.4), the `L²` Hessian bound (by the localised Bochner
+   argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
+   Smaller items:
+   - interior regularity of weak solutions off `S` (Weyl lemma / Schauder for weak solutions);
+   - orthogonality and `L²` convergence of the Fourier modes in `θ_a` (Parseval for `u`);
    - Caccioppoli with cut-offs that are Lipschitz for `d_g`, which gives the ratio `2` between
      geodesic balls;
    - eigenvalues of `G` as a sequence, with an orthonormal basis of eigenfunctions.
 7. **Smaller items from Milestone 8.**
    - Full `γ`-Hölder continuity of `r^γ cos θ` for the cone distance (only the estimate at the
      vertex is proved).
-   - The rest of Corollary 3.5 (`D P` constant for the remaining functions of `𝓗_{≤2}`).
    - The Laplacian normalisation for products, restated in real coordinates.
    - `fderiv` of `ConeWeights.realChart` as a whole.
 

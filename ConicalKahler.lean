@@ -34,6 +34,7 @@ public import ConicalKahler.Real.Product
 public import ConicalKahler.Real.D2
 public import ConicalKahler.Real.Bridge
 public import ConicalKahler.Real.Normalisation
+public import ConicalKahler.Real.D2Linear
 public import ConicalKahler.Sobolev.H1
 public import ConicalKahler.Sobolev.Elliptic
 public import ConicalKahler.Sobolev.Caccioppoli
@@ -47,3 +48,8 @@ public import ConicalKahler.Sobolev.ConeApprox
 public import ConicalKahler.Sobolev.Divergence
 public import ConicalKahler.Sobolev.Scaling
 public import ConicalKahler.Sobolev.Spectral
+public import ConicalKahler.Sobolev.Classical
+public import ConicalKahler.Sobolev.ExplicitHarmonic
+public import ConicalKahler.Sobolev.Corollary35
+public import ConicalKahler.Sobolev.Rotation
+public import ConicalKahler.Sobolev.FourierModes

@@ -192,6 +192,33 @@ are globally defined, unlike the flat developing coordinates `r e^{iβθ}`
 - **The spectral theorem for the Dirichlet problem**: the solution operator is compact, symmetric,
   positive and injective, and its eigenspaces span `L²(Ω)` (`CoeffField.dirichletG_eigenspaces_dense`).
 
+### Weak harmonic functions on the models
+
+- **Classical and weak solutions.**
+  - A function that is `C²` off the singular set `S`, with `u, ∇u ∈ L²`, and solves `-Δu = f`
+    classically there is a weak solution on all of `Ω`, including near `S`
+    (`cone_isWeakSolution_of_classical`).
+  - Conversely, such a weak solution satisfies the equation pointwise
+    (`cone_classical_of_isWeakSolution`).
+  - `S` is removable for `W^{1,2}` (`mem_W12_of_regular`, `classicalPair_mem_W12`).
+- **The explicit harmonic functions are weakly harmonic** on every bounded open set:
+  - `r^{k/β} cos kθ` and `r^{k/β} sin kθ` (for `β ≤ k`), the coordinates `s_i`, and the harmonic
+    quadratics (`IsClassicalHarmonic.isWeakSolution`);
+  - in particular the span of the paper's list of `𝓗_{≤2}` (`explicitH2`).
+- **Corollary 3.5** for the span of the paper's list: every `D ∈ 𝒟₂` maps it to constants `τ`
+  with `|τ| ≤ C ‖P‖_{L²(B_1)}` (`corollary_3_5`). That this span is all of `𝓗_{≤2}` (Prop. 3.4) is
+  not proved.
+- **Energy uniqueness**, which replaces the maximum principle in Lemma 3.3: a weakly harmonic
+  function in `W^{1,2}_0` vanishes (`eq_zero_of_isWeakSolution_zero_of_mem_H01`).
+- **Rotations of the cone factors**:
+  - they preserve the weak formulation (`cone_isWeakSolution_rot`);
+  - the Dirichlet problem is rotation-symmetric (`cone_dirichlet_rot_invariant`);
+  - the Dirichlet solution operator commutes with them (`dirichletG_isoLp`).
+- **Fourier modes in `θ_a`**:
+  - the modes of a weak solution are weak solutions (`isWeakSolution_angMode`);
+  - they transform like `cos kθ` and `sin kθ` (`rotLp_cosCoeff`);
+  - a function is determined by its modes (`eq_zero_of_modes_eq_zero`).
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -266,6 +293,12 @@ We use the upstream conventions without change.
 | `ConicalKahler/Sobolev/Divergence.lean` | `div(g⁻¹∇u)` equals the paper's Laplacian at regular points |
 | `ConicalKahler/Sobolev/Scaling.lean` | dilations, scaled norms, scaled Caccioppoli |
 | `ConicalKahler/Sobolev/Spectral.lean` | Dirichlet solution operator, spectral theorem |
+| `ConicalKahler/Real/D2Linear.lean` | locality and linearity of `pd` and `𝒟₂`; quadratic monomials |
+| `ConicalKahler/Sobolev/Classical.lean` | integration by parts off `S`, removability of `S`, classical ⇔ weak solutions, energy uniqueness |
+| `ConicalKahler/Sobolev/ExplicitHarmonic.lean` | `IsClassicalHarmonic`; the explicit harmonic functions are weakly harmonic |
+| `ConicalKahler/Sobolev/Corollary35.lean` | the paper's list of `𝓗_{≤2}`, Corollary 3.5 for its span |
+| `ConicalKahler/Sobolev/Rotation.lean` | isometries and weak solutions, rotations of the cone factors, symmetric Dirichlet problem |
+| `ConicalKahler/Sobolev/FourierModes.lean` | continuity of the rotation action, Fourier modes in `θ_a`, Fourier uniqueness |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -276,6 +309,7 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/RealCone.lean` | cone distances, area `πβρ²` of a cone disk, odd dimension, `𝒟₂` membership, sharpness |
 | `ConicalKahlerTest/Sobolev.lean` | constants, existence, Poincaré, Caccioppoli and density on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/Compactness.lean` | Rellich, Lemma 2.4, divergence identity, scaling and the spectral theorem on `C(S¹_π) × ℝ` |
+| `ConicalKahlerTest/WeakHarmonic.lean` | classical ⇔ weak, explicit harmonic functions, Corollary 3.5, rotations and Fourier modes on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
 
