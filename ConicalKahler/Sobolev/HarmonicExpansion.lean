@@ -619,6 +619,42 @@ section Lemma33
 
 variable {c : CoeffField (EuclideanSpace ℝ (Fin d)) volume}
 
+/-- `∫_0^1 r^{d-1} f(r)² dr = a² / (2δ + d)` when `f(r) = a r^δ` almost everywhere. -/
+theorem lintegral_sq_of_ae_eq_rpow {f : ℝ → ℝ} {a δ : ℝ} (hδ : 0 ≤ δ)
+    (hf : ∀ᵐ r ∂(volume.restrict (Ioo (0 : ℝ) 1)), f r = a * r ^ δ) :
+    ∫⁻ r in Ioo (0 : ℝ) 1, ENNReal.ofReal (r ^ (d - 1)) * ENNReal.ofReal (f r ^ 2) =
+      ENNReal.ofReal (a ^ 2 / (2 * δ + d)) := by
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+  have hp : -1 < 2 * δ + d - 1 := by linarith
+  have hint : IntegrableOn (fun r : ℝ => a ^ 2 * r ^ (2 * δ + d - 1)) (Ioo 0 1) := by
+    have := (intervalIntegral.intervalIntegrable_rpow' (a := 0) (b := 1)
+      (r := 2 * δ + d - 1) hp).1
+    exact (this.mono_set Ioo_subset_Ioc_self).const_mul _
+  calc ∫⁻ r in Ioo (0 : ℝ) 1, ENNReal.ofReal (r ^ (d - 1)) * ENNReal.ofReal (f r ^ 2)
+      = ∫⁻ r in Ioo (0 : ℝ) 1, ENNReal.ofReal (a ^ 2 * r ^ (2 * δ + d - 1)) := by
+        refine lintegral_congr_ae ?_
+        filter_upwards [hf, ae_restrict_mem measurableSet_Ioo] with r hr hr01
+        have hr0 : 0 < r := hr01.1
+        have h1 : r ^ (d - 1) = r ^ ((d : ℝ) - 1) := (rpow_sub_one_eq_pow hr0).symm
+        have h2 : (r ^ δ) ^ 2 = r ^ (2 * δ) := by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul hr0.le]
+          ring_nf
+        have h3 : r ^ ((d : ℝ) - 1) * r ^ (2 * δ) = r ^ (2 * δ + d - 1) := by
+          rw [← Real.rpow_add hr0]
+          ring_nf
+        have hreal : r ^ (d - 1) * (a * r ^ δ) ^ 2 = a ^ 2 * r ^ (2 * δ + d - 1) := by
+          rw [mul_pow, h1, h2, ← h3]
+          ring
+        rw [hr, ← ENNReal.ofReal_mul (pow_nonneg hr0.le _), hreal]
+    _ = ENNReal.ofReal (a ^ 2 / (2 * δ + d)) := by
+        rw [← ofReal_integral_eq_lintegral_ofReal hint (by
+          filter_upwards [ae_restrict_mem measurableSet_Ioo] with r hr
+          exact mul_nonneg (sq_nonneg _) (Real.rpow_nonneg hr.1.le _)),
+          integral_const_mul, integral_Ioo_rpow hp]
+        congr 1
+        rw [show 2 * δ + d - 1 + 1 = 2 * δ + d by ring]
+        ring
+
 /-- The nonnegative indicial root `δ ≥ 0` of `δ (δ + d - 2) = λ`. -/
 def indicialRoot (d : ℕ) (lam : ℝ) : ℝ := (-((d : ℝ) - 2) + √(((d : ℝ) - 2) ^ 2 + 4 * lam)) / 2
 
@@ -638,6 +674,7 @@ theorem indicialRoot_spec (lam : ℝ) (hlam : 0 ≤ lam) (hd : 2 ≤ d) :
   unfold indicialRoot
   nlinarith [hs]
 
+set_option maxHeartbeats 1000000 in
 /-- **Lemma 3.3 (expansion of harmonic functions).** Let `c` be conical, `d ≥ 2`, and let
 `u ∈ W^{1,2}(B_1)` be weakly harmonic. Then there are a Hilbert basis `{φ_i}` of `L²(S)` of link
 eigenfunctions (eigenvalues `λ_i = δ_i (δ_i + d - 2)`, `δ_i ≥ 0`), and coefficients `a_i`, such that
@@ -759,7 +796,59 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
       rw [if_pos rfl, real_inner_self_eq_norm_sq, hon.1 i]
       ring_nf
     · rw [if_neg hij, hon.2 hij, zero_mul]
-  sorry
+  -- (C) Parseval for `u`
+  set cf : s → ℝ := fun i => a i ^ 2 / (2 * δ i + d)
+  have hcf0 : ∀ i, 0 ≤ cf i := fun i => div_nonneg (sq_nonneg _) (hden i).le
+  have hterm : ∀ i : s, ∫⁻ r in Ioo (0 : ℝ) 1, ENNReal.ofReal (r ^ (d - 1)) *
+      ENNReal.ofReal (rayCoeff u.fst (fun w => (i : Lp ℝ 2 (sphMeasure d)) w) r ^ 2) =
+        ENNReal.ofReal (cf i) := fun i =>
+    lintegral_sq_of_ae_eq_rpow (d := d) (hδ0 i) (ha i)
+  have hl := lintegral_ball_eq_tsum B (Lp.stronglyMeasurable u.fst) (lintegral_sq_lt_top u.fst)
+  rw [hB, tsum_congr hterm] at hl
+  have hfin : ∑' i, ENNReal.ofReal (cf i) ≠ ⊤ := hl ▸ (lintegral_sq_lt_top u.fst).ne
+  have hcf : (fun i => (ENNReal.ofReal (cf i)).toReal) = cf :=
+    funext fun i => ENNReal.toReal_ofReal (hcf0 i)
+  have hsumm : Summable cf := hcf ▸ ENNReal.summable_toReal hfin
+  have hnorm : ‖u.fst‖ ^ 2 = ∑' i, cf i := by
+    rw [norm_sq_eq_lintegral, hl, ENNReal.tsum_toReal_eq fun i => ENNReal.ofReal_ne_top, hcf]
+  have hC : HasSum cf (‖u.fst‖ ^ 2) := hnorm ▸ hsumm.hasSum
+  -- (D) the partial sums
+  have hS : ∀ F : Finset s, ‖u.fst - ∑ i ∈ F, a i • P i‖ ^ 2 = ‖u.fst‖ ^ 2 - ∑ i ∈ F, cf i := by
+    intro F
+    have hinner : ⟪u.fst, ∑ i ∈ F, a i • P i⟫_ℝ = ∑ i ∈ F, cf i := by
+      rw [inner_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [real_inner_smul_right, hA]
+      simp only [cf]
+      ring
+    have hself : ⟪∑ i ∈ F, a i • P i, ∑ j ∈ F, a j • P j⟫_ℝ = ∑ i ∈ F, cf i := by
+      rw [sum_inner]
+      refine Finset.sum_congr rfl fun i hi => ?_
+      rw [inner_sum, Finset.sum_eq_single i (fun j _ hji => by
+          rw [real_inner_smul_left, real_inner_smul_right, hB', if_neg (Ne.symm hji),
+            mul_zero, mul_zero]) (fun h => (h hi).elim),
+        real_inner_smul_left, real_inner_smul_right, hB', if_pos rfl]
+      simp only [cf]
+      ring
+    rw [norm_sub_sq_real, hinner, ← real_inner_self_eq_norm_sq (∑ i ∈ F, a i • P i), hself]
+    ring
+  refine ⟨s, B, Γ, lam, δ, a, P, hB, fun i => ⟨hδ0 i, hroot i, (heig i).2, (hP i).coeFn_toLp,
+    homPair (δ i) (v i) 1 (hP i) (hG i),
+    homPair_isWeakSolution (hP i) (hG i) hd hc (heig i).2 (hroot i), rfl⟩,
+    fun i j hij => by rw [hB', if_neg hij], ?_⟩
+  -- the partial sums converge
+  have hT : Tendsto (fun F : Finset s => ∑ i ∈ F, cf i) atTop (𝓝 (‖u.fst‖ ^ 2)) := hC
+  change Tendsto (fun F : Finset s => ∑ i ∈ F, a i • P i) atTop (𝓝 u.fst)
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  have heq : (fun F : Finset s => ‖∑ i ∈ F, a i • P i - u.fst‖) =
+      fun F => √(‖u.fst‖ ^ 2 - ∑ i ∈ F, cf i) := by
+    funext F
+    rw [norm_sub_rev, ← hS F, Real.sqrt_sq (norm_nonneg _)]
+  rw [heq]
+  have hlim := ((Real.continuous_sqrt.tendsto _).comp (tendsto_const_nhds.sub hT) :
+    Tendsto (fun F : Finset s => √(‖u.fst‖ ^ 2 - ∑ i ∈ F, cf i)) atTop
+      (𝓝 (√(‖u.fst‖ ^ 2 - ‖u.fst‖ ^ 2))))
+  rwa [sub_self, Real.sqrt_zero] at hlim
 
 end Lemma33
 

@@ -39,7 +39,6 @@ coercive on `linkW12`. The paper's operator `-Δ_ḡ` is the form `∫_S ⟨A Γ
 noncomputable section
 
 set_option linter.unusedSectionVars false
-set_option pp.rawOnError true
 
 open MeasureTheory Filter Topology InnerProductSpace Set Metric
 open scoped ContDiff ENNReal
