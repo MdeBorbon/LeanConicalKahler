@@ -334,4 +334,207 @@ theorem mul_prod_comp_tA_mem (G : κ → C(ℝ, ℝ)) (s : Finset κ) {f : C(Sph
 
 end Closure
 
+section Algebra
+
+variable (β : κ → ConeAngle) (e : RealConeIndex κ ι ≃ Fin d)
+
+/-- `t ↦ t^q` as a continuous map, `q ≥ 0`. -/
+def rpowCM {q : ℝ} (hq : 0 ≤ q) : C(ℝ, ℝ) := ⟨fun t => t ^ q, Real.continuous_rpow_const hq⟩
+
+/-- **Products of two generators lie in `W`.** -/
+theorem linkPoly_mul_mem (k k' : κ → ℕ) (ε ε' : κ → Bool) (p p' : MvPolynomial (κ ⊕ ι) ℝ) :
+    linkPoly β e k ε p * linkPoly β e k' ε' p' ∈ linkPolyClosure β e := by
+  classical
+  choose c₁ c₂ k₁ k₂ m ε₁ hmul using fun a => exists_modeFn_mul (β a).pos (k a) (k' a) (ε a) (ε' a)
+  have hq : ∀ a, 0 ≤ (m a : ℝ) / (β a).beta := fun a => div_nonneg (Nat.cast_nonneg _) (β a).pos.le
+  set Gf : κ → Bool → C(ℝ, ℝ) := fun a j => bif j then 1 else rpowCM (hq a)
+  set Kf : (κ → Bool) → κ → ℕ := fun J a => bif J a then k₁ a else k₂ a
+  set Cf : (κ → Bool) → ℝ := fun J => ∏ a, (bif J a then c₁ a else c₂ a)
+  have hclaim : linkPoly β e k ε p * linkPoly β e k' ε' p' =
+      ∑ J : κ → Bool, Cf J • (linkPoly β e (Kf J) ε₁ (p * p') * ∏ a, (Gf a (J a)).comp (tA e a)) := by
+    ext w
+    set y := (coordIso e).symm (w : 𝔼)
+    simp only [ContinuousMap.mul_apply, ContinuousMap.coe_sum, Finset.sum_apply,
+      ContinuousMap.smul_apply, ContinuousMap.coe_prod, Finset.prod_apply, ContinuousMap.comp_apply,
+      linkPoly_apply, smul_eq_mul]
+    rw [conePoly, conePoly]
+    have hfac : modeProd β k ε y * modeProd β k' ε' y =
+        ∏ a, ∑ j : Bool, (bif j then c₁ a * modeFn (β a).beta (k₁ a) (ε₁ a) (y.cone a) else
+          c₂ a * modeFn (β a).beta (k₂ a) (ε₁ a) (y.cone a) *
+            (‖y.cone a‖ ^ 2) ^ ((m a : ℝ) / (β a).beta)) := by
+      rw [modeProd, modeProd, ← Finset.prod_mul_distrib]
+      refine Finset.prod_congr rfl fun a _ => ?_
+      rw [hmul a, Fintype.sum_bool]
+      simp only [Bool.cond_true, Bool.cond_false]
+    have hterm : ∀ J : κ → Bool, ∏ a, (bif J a then c₁ a * modeFn (β a).beta (k₁ a) (ε₁ a) (y.cone a)
+        else c₂ a * modeFn (β a).beta (k₂ a) (ε₁ a) (y.cone a) *
+          (‖y.cone a‖ ^ 2) ^ ((m a : ℝ) / (β a).beta)) =
+        Cf J * (modeProd β (Kf J) ε₁ y * ∏ a, (Gf a (J a)) (tA e a w)) := by
+      intro J
+      rw [modeProd, ← mul_assoc, ← Finset.prod_mul_distrib, ← Finset.prod_mul_distrib]
+      refine Finset.prod_congr rfl fun a _ => ?_
+      simp only [Kf, Gf]
+      cases J a
+      · simp [rpowCM, tA, sphRestrict, y]
+      · simp
+    calc modeProd β k ε y * eval (polyArg y) p * (modeProd β k' ε' y * eval (polyArg y) p')
+        = (modeProd β k ε y * modeProd β k' ε' y) * eval (polyArg y) (p * p') := by
+          rw [eval_mul]
+          ring
+      _ = ∑ J : κ → Bool, Cf J * (modeProd β (Kf J) ε₁ y * eval (polyArg y) (p * p') *
+            ∏ a, (Gf a (J a)) (tA e a w)) := by
+          rw [hfac, Finset.prod_univ_sum, Fintype.piFinset_univ, Finset.sum_mul]
+          refine Finset.sum_congr rfl fun J _ => ?_
+          rw [hterm J]
+          ring
+  rw [hclaim]
+  refine Submodule.sum_mem _ fun J _ => Submodule.smul_mem _ _ ?_
+  exact mul_prod_comp_tA_mem β e (fun a => Gf a (J a)) Finset.univ
+    (span_le_closure β e (linkPoly_mem_span β e _ _ _))
+
+theorem span_mul_span_mem {f g : C(Sph d, ℝ)} (hf : f ∈ linkPolySpan β e)
+    (hg : g ∈ linkPolySpan β e) : f * g ∈ linkPolyClosure β e := by
+  induction hf using Submodule.span_induction with
+  | mem f hf =>
+    obtain ⟨k, ε, p, rfl⟩ := hf
+    induction hg using Submodule.span_induction with
+    | mem g hg =>
+      obtain ⟨k', ε', p', rfl⟩ := hg
+      exact linkPoly_mul_mem β e k k' ε ε' p p'
+    | zero => simp
+    | add g g' _ _ h h' => rw [mul_add]; exact Submodule.add_mem _ h h'
+    | smul c g _ h => rw [mul_smul_comm]; exact Submodule.smul_mem _ c h
+  | zero => simp
+  | add f f' _ _ h h' => rw [add_mul]; exact Submodule.add_mem _ h h'
+  | smul c f _ h => rw [smul_mul_assoc]; exact Submodule.smul_mem _ c h
+
+/-- **`W` is closed under multiplication.** -/
+theorem closure_mul_mem {f g : C(Sph d, ℝ)} (hf : f ∈ linkPolyClosure β e)
+    (hg : g ∈ linkPolyClosure β e) : f * g ∈ linkPolyClosure β e := by
+  have h1 : ∀ f ∈ linkPolySpan β e, f * g ∈ linkPolyClosure β e := fun f hf =>
+    map_closure_mem β e (T := fun g => f * g) (continuous_const.mul continuous_id)
+      (fun g hg => span_mul_span_mem β e hf hg) hg
+  exact map_closure_mem β e (T := fun f => f * g) (continuous_id.mul continuous_const) h1 hf
+
+theorem linkPoly_one : linkPoly β e (fun _ => 0) (fun _ => true) (1 : MvPolynomial (κ ⊕ ι) ℝ) = 1 := by
+  ext w
+  simp [linkPoly_apply, conePoly, modeProd, modeFn_zero]
+
+/-- `W` as a subalgebra of `C(S, ℝ)`. -/
+def linkPolyAlg : Subalgebra ℝ C(Sph d, ℝ) where
+  carrier := linkPolyClosure β e
+  mul_mem' := closure_mul_mem β e
+  add_mem' := Submodule.add_mem _
+  algebraMap_mem' r := by
+    rw [Algebra.algebraMap_eq_smul_one, ← linkPoly_one β e]
+    exact Submodule.smul_mem _ r (span_le_closure β e (linkPoly_mem_span β e _ _ _))
+
+/-- `ζ(w) = |w|^{1/b - 1} w`, the complex coordinate of a cone factor. -/
+def zetaMap (b : ℝ) (w : ℂ) : ℂ := ((‖w‖ ^ (1 / b - 1) : ℝ) : ℂ) * w
+
+theorem norm_zetaMap {b : ℝ} (hb : 0 < b) (w : ℂ) : ‖zetaMap b w‖ = ‖w‖ ^ (1 / b) := by
+  by_cases hw : w = 0
+  · subst hw
+    simp [zetaMap]
+    rw [Real.zero_rpow (inv_pos.mpr hb).ne']
+  have hn : 0 < ‖w‖ := norm_pos_iff.mpr hw
+  rw [zetaMap, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+    abs_of_nonneg (Real.rpow_nonneg hn.le _), ← Real.rpow_add_one hn.ne']
+  ring_nf
+
+theorem injective_zetaMap {b : ℝ} (hb : 0 < b) : Function.Injective (zetaMap b) := by
+  intro w w' h
+  have hn : ‖w‖ = ‖w'‖ := by
+    have h1 := norm_zetaMap hb w
+    rw [h, norm_zetaMap hb w'] at h1
+    exact (Real.rpow_left_injOn (one_div_pos.mpr hb).ne' (norm_nonneg w') (norm_nonneg w) h1).symm
+  by_cases hw : w = 0
+  · subst hw
+    rw [norm_zero, eq_comm, norm_eq_zero] at hn
+    exact hn.symm
+  have hn0 : (‖w‖ ^ (1 / b - 1) : ℝ) ≠ 0 := (Real.rpow_pos_of_pos (norm_pos_iff.mpr hw) _).ne'
+  rw [zetaMap, zetaMap, ← hn] at h
+  exact mul_left_cancel₀ (Complex.ofReal_ne_zero.mpr hn0) h
+
+theorem harmCosC_one (b : ℝ) (w : ℂ) : harmCosC b 1 w = (zetaMap b w).re := by
+  simp [harmCosC, zetaMap, one_div]
+
+theorem harmSinC_one (b : ℝ) (w : ℂ) : harmSinC b 1 w = (zetaMap b w).im := by
+  simp [harmSinC, zetaMap, one_div]
+
+theorem modeProd_single (a : κ) (ε : κ → Bool) (hε : ∀ a', a' ≠ a → ε a' = true)
+    (y : RealConeModel κ ι) :
+    modeProd β (Pi.single a 1) ε y = modeFn (β a).beta 1 (ε a) (y.cone a) := by
+  rw [modeProd, Finset.prod_eq_single a (fun a' _ h => by
+      rw [Pi.single_eq_of_ne h, modeFn_zero, hε a' h]; rfl) (fun h => (h (Finset.mem_univ a)).elim),
+    Pi.single_eq_same]
+
+theorem linkPolyAlg_separatesPoints : (linkPolyAlg β e).SeparatesPoints := by
+  intro w w' hww'
+  have hy : (coordIso e).symm (w : 𝔼) ≠ (coordIso e).symm (w' : 𝔼) := fun h =>
+    hww' (Subtype.ext ((coordIso e).symm.injective h))
+  set y := (coordIso e).symm (w : 𝔼)
+  set y' := (coordIso e).symm (w' : 𝔼)
+  have hmem : ∀ k ε (p : MvPolynomial (κ ⊕ ι) ℝ),
+      (⇑(linkPoly β e k ε p)) ∈ (fun f : C(Sph d, ℝ) => (f : Sph d → ℝ)) ''
+        (linkPolyAlg β e : Set C(Sph d, ℝ)) := fun k ε p =>
+    ⟨_, span_le_closure β e (linkPoly_mem_span β e k ε p), rfl⟩
+  by_cases hc : ∀ a, y.cone a = y'.cone a
+  · have hi : ∃ i, y.eucl i ≠ y'.eucl i := by
+      by_contra! h
+      exact hy (ext_cone_eucl hc h)
+    obtain ⟨i, hi⟩ := hi
+    refine ⟨_, hmem (fun _ => 0) (fun _ => true) (X (Sum.inr i)), ?_⟩
+    simpa [linkPoly_apply, conePoly, modeProd, modeFn_zero, polyArg] using hi
+  · simp only [not_forall] at hc
+    obtain ⟨a, ha⟩ := hc
+    have hz : zetaMap (β a).beta (y.cone a) ≠ zetaMap (β a).beta (y'.cone a) := fun h =>
+      ha (injective_zetaMap (β a).pos h)
+    by_cases hre : (zetaMap (β a).beta (y.cone a)).re = (zetaMap (β a).beta (y'.cone a)).re
+    · have him : (zetaMap (β a).beta (y.cone a)).im ≠ (zetaMap (β a).beta (y'.cone a)).im :=
+        fun h => hz (Complex.ext hre h)
+      refine ⟨_, hmem (Pi.single a 1) (Function.update (fun _ => true) a false) 1, ?_⟩
+      simp only [linkPoly_apply, conePoly, map_one, mul_one]
+      rw [modeProd_single β a _ (fun a' h => by simp [Function.update_of_ne h]),
+        modeProd_single β a _ (fun a' h => by simp [Function.update_of_ne h])]
+      simp only [Function.update_self, modeFn, Bool.cond_false]
+      rw [harmSinC_one, harmSinC_one]
+      exact him
+    · refine ⟨_, hmem (Pi.single a 1) (fun _ => true) 1, ?_⟩
+      simp only [linkPoly_apply, conePoly, map_one, mul_one]
+      rw [modeProd_single β a _ (fun _ _ => rfl), modeProd_single β a _ (fun _ _ => rfl)]
+      simp only [modeFn, Bool.cond_true]
+      rw [harmCosC_one, harmCosC_one]
+      exact hre
+
+/-- **The restrictions of cone polynomials are dense in `C(S)`** (Stone–Weierstrass). -/
+theorem dense_linkPolySpan : Dense (linkPolySpan β e : Set C(Sph d, ℝ)) := by
+  have h := ContinuousMap.subalgebra_topologicalClosure_eq_top_of_separatesPoints _
+    (linkPolyAlg_separatesPoints β e)
+  have hc : IsClosed (linkPolyAlg β e : Set C(Sph d, ℝ)) := isClosed_closure β e
+  have h' : (linkPolyClosure β e : Set C(Sph d, ℝ)) = univ := by
+    have := congrArg (fun A : Subalgebra ℝ C(Sph d, ℝ) => (A : Set C(Sph d, ℝ))) h
+    simp only [Subalgebra.topologicalClosure_coe, hc.closure_eq, Algebra.coe_top] at this
+    exact this
+  rw [dense_iff_closure_eq, ← Submodule.topologicalClosure_coe]
+  exact h'
+
+/-- **The restrictions of cone polynomials span a dense subspace of `L²(S)`.** -/
+theorem dense_span_linkPolyLp :
+    Dense (Submodule.span ℝ (ContinuousMap.toLp 2 (sphMeasure d) ℝ '' linkPolyGens β e) :
+      Set (Lp ℝ 2 (sphMeasure d))) := by
+  have hT := ContinuousMap.toLp_denseRange (p := 2) (μ := sphMeasure d) (𝕜 := ℝ) (E := ℝ)
+    (α := Sph d) (by norm_num)
+  have hD := hT.dense_image (ContinuousMap.toLp 2 (sphMeasure d) ℝ).continuous
+    (dense_linkPolySpan β e)
+  refine hD.mono ?_
+  rintro _ ⟨f, hf, rfl⟩
+  have : ContinuousMap.toLp 2 (sphMeasure d) ℝ f ∈
+      (linkPolySpan β e).map (ContinuousMap.toLp 2 (sphMeasure d) ℝ (E := ℝ)).toLinearMap :=
+    ⟨f, hf, rfl⟩
+  rw [linkPolySpan, Submodule.map_span] at this
+  exact this
+
+end Algebra
+
 end ConicalKahler.Sobolev
