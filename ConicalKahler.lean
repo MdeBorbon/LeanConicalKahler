@@ -53,3 +53,11 @@ public import ConicalKahler.Sobolev.ExplicitHarmonic
 public import ConicalKahler.Sobolev.Corollary35
 public import ConicalKahler.Sobolev.Rotation
 public import ConicalKahler.Sobolev.FourierModes
+public import ConicalKahler.Sobolev.Polar
+public import ConicalKahler.Sobolev.FormSpectral
+public import ConicalKahler.Sobolev.Link
+public import ConicalKahler.Sobolev.LinkSpectral
+public import ConicalKahler.Sobolev.Homogeneous
+public import ConicalKahler.Sobolev.Expansion
+public import ConicalKahler.Sobolev.HarmonicExpansion
+public import ConicalKahler.Sobolev.ConeLink

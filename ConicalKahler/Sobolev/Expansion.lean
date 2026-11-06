@@ -142,7 +142,7 @@ theorem shellWeight_zero_ne_top (R k : ℝ) (h : 0 < 2 * k + d) : shellWeight d 
   refine setLIntegral_mono_ae' measurableSet_Ioo (Eventually.of_forall fun r hr => ?_)
   have hr0 : 0 < r := hr.1
   have heq : (r ^ k) ^ 2 * r ^ (d - 1) = r ^ (2 * k + d - 1) := by
-    rw [← rpow_sub_one_eq_pow hr0, ← Real.rpow_natCast (r ^ k) 2, ← Real.rpow_mul hr0.le,
+    rw [← rpow_sub_one_eq_pow, ← Real.rpow_natCast (r ^ k) 2, ← Real.rpow_mul hr0.le,
       ← Real.rpow_add hr0]
     congr 1
     push_cast
@@ -203,14 +203,14 @@ theorem homPair_mem_W12 (hd : 2 ≤ d) (hv : v ∈ linkW12 d) :
   have hφ0 : IsTestFn {0}ᶜ φ := hφ.mono fun x hx => hx.2
   rw [homPair, WithLp.toLp_fst, WithLp.toLp_snd, inner_toLp_real, inner_toLp]
   have z1 : ∀ x, x ∉ tsupport φ → homP δ v x * fderiv ℝ φ x w = 0 := fun x hx => by
-    rw [fderiv_eq_zero_of_notMem_tsupport hx, ContinuousLinearMap.zero_apply, mul_zero]
+    rw [fderiv_eq_zero_of_notMem_tsupport hx, zero_apply, mul_zero]
   have z2 : ∀ x, x ∉ tsupport φ → ⟪homG δ v x, φ x • w⟫_ℝ = 0 := fun x hx => by
     rw [image_eq_zero_of_notMem_tsupport hx, zero_smul, inner_zero_right]
   rw [integral_ball_eq_of_isTestFn hφ z1, integral_ball_eq_of_isTestFn hφ z2]
   rw [homP_integral hv δ hφ0 w]
   congr 1
   refine integral_congr_ae (Eventually.of_forall fun x => ?_)
-  simp only [inner_smul_right, mul_comm]
+  simp only [inner_smul_right]
 
 /-- **`P` is weakly harmonic on the ball** (`d ≥ 2`): `P = |x|^δ φ(x/|x|)` with `(φ, Γ)` a link
 eigenfunction for `λ = δ(δ + d - 2)`. -/
@@ -265,7 +265,7 @@ theorem integral_mul_inner_of_mem_H01 {u ζ : L2Pair volume Ω} (hu : u ∈ W12 
   have hmem : ζ ∈ closure (testSubmodule volume Ω Ω : Set (L2Pair volume Ω)) := by
     rwa [H01, ← SetLike.mem_coe, Submodule.topologicalClosure_coe] at hζ
   have h := closure_minimal hsub hclosed hmem
-  simp only [mem_setOf_eq] at h
+  simp only [mem_ofPred_eq] at h
   rw [L2.inner_def, L2.inner_def] at h
   have e1 : ∫ x in Ω, ⟪u.fst x, (L₁ ζ.snd) x⟫_ℝ = ∫ x in Ω, u.fst x * ⟪ζ.snd x, e⟫_ℝ := by
     refine integral_congr_ae ?_
@@ -347,7 +347,7 @@ theorem exists_smulPair_mem_H01 (hΩ : IsOpen Ω) {v : L2Pair volume Ω} (hv : v
         filter_upwards [isOpen_interior.mem_nhds hx'] with y hy
         exact hχ1 y (interior_subset hy)
       rw [gradient_eq_zero_of_eventuallyEq_const hχx, hχ1 x (interior_subset hx')]
-      simp only [zero_add, zero_sub, smul_neg, smul_smul, smul_add, smul_sub]
+      simp only [zero_add, zero_sub, smul_neg, smul_smul]
       module
     · have hηx : η =ᶠ[𝓝 x] fun _ => (0 : ℝ) := by
         filter_upwards [(isClosed_tsupport η).isOpen_compl.mem_nhds hx] with y hy
@@ -493,7 +493,7 @@ theorem contDiff_of_contDiffOn_compl_zero {g : 𝔼 → ℝ} (hg : ContDiffOn �
     exact contDiffAt_const.congr_of_eventuallyEq h0
   · exact (hg x hx).contDiffAt (isOpen_compl_singleton.mem_nhds hx)
 
-theorem contDiffOn_norm_compl : ContDiffOn ℝ ∞ (fun x : 𝔼 => ‖x‖) {0}ᶜ := fun x hx =>
+theorem contDiffOn_norm_compl : ContDiffOn ℝ ∞ (fun x : 𝔼 => ‖x‖) {0}ᶜ := fun _ hx =>
   (contDiffAt_norm ℝ hx).contDiffWithinAt
 
 variable {f : ℝ → ℝ} {ε ρ : ℝ}
@@ -511,7 +511,7 @@ theorem contDiff_radPrim (hf : ContDiff ℝ ∞ f) : ContDiff ℝ ∞ (radPrim f
   rw [this]
   exact hf
 
-theorem radPrim_eq_zero (hf : Continuous f) (hρ : ρ ≤ 1)
+theorem radPrim_eq_zero (hρ : ρ ≤ 1)
     (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) {r : ℝ} (hr : ρ ≤ r) : radPrim f r = 0 := by
   rw [radPrim]
   refine intervalIntegral.integral_zero_ae (Eventually.of_forall fun t ht => hsupp t ?_)
@@ -540,7 +540,7 @@ theorem isTestFn_radPrim (hf : ContDiff ℝ ∞ f) (hε : 0 < ε) (hρ : ρ < 1)
     (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) :
     IsTestFn (ball (0 : 𝔼) 1) (fun x => radPrim f ‖x‖) := by
   have hzero : ∀ x : 𝔼, x ∉ closedBall (0 : 𝔼) ρ → radPrim f ‖x‖ = 0 := fun x hx =>
-    radPrim_eq_zero hf.continuous hρ.le hsupp (by
+    radPrim_eq_zero hρ.le hsupp (by
       rw [mem_closedBall_zero_iff, not_le] at hx
       exact hx.le)
   refine ⟨contDiff_of_contDiffOn_compl_zero ((contDiff_radPrim hf).comp_contDiffOn
@@ -571,7 +571,7 @@ theorem gradient_radPrim (hf : ContDiff ℝ ∞ f) (hε : 0 < ε)
       h.fderiv]
     apply (toDual ℝ 𝔼).injective
     ext v
-    simp [radField, real_inner_smul_left, mul_assoc]
+    simp [radField, mul_assoc]
 
 theorem radField_eq_zero {x : 𝔼} (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) (hx : ‖x‖ ∉ Ioo ε ρ) :
     radField f x = 0 := by
@@ -632,7 +632,7 @@ theorem div_radField (hf : ContDiff ℝ ∞ f) {x : 𝔼} (hx : x ≠ 0) :
     rw [fderiv_eq_sum_coord x x]
     exact Finset.sum_congr rfl fun k _ => mul_comm _ _]
   rw [hh.fderiv]
-  simp only [ContinuousLinearMap.smul_apply, innerSL_apply_apply, real_inner_self_eq_norm_sq,
+  simp only [smul_apply, innerSL_apply_apply, real_inner_self_eq_norm_sq,
     smul_eq_mul, g]
   field_simp
   ring
@@ -658,7 +658,7 @@ theorem inner_homG_self {δ : ℝ} {v : LinkPair d} {x : 𝔼} (hx : x ≠ 0)
   calc ⟪homG δ v x, x⟫_ℝ = ⟪homG δ v x, ‖x‖ • ((sphProj x : Sph d) : 𝔼)⟫_ℝ := by rw [← hxs]
     _ = ‖x‖ * (‖x‖ ^ (δ - 1) * (δ * v.fst (sphProj x) * 1 + 0)) := by
         simp only [homG, homFun, homGradProfile, real_inner_smul_left, real_inner_smul_right,
-          inner_add_left, htan, hs, smul_eq_mul]
+          inner_add_left, htan, hs]
     _ = δ * ((‖x‖ ^ (δ - 1) * ‖x‖) * v.fst (sphProj x)) := by ring
     _ = δ * homP δ v x := by rw [h1, homP, homFun, smul_eq_mul]
 

@@ -53,21 +53,21 @@ abbrev polarMeasure (d : ℕ) : Measure (Sph d × Ioi (0 : ℝ)) :=
 theorem finrank_euclidean : Module.finrank ℝ 𝔼 = d := finrank_euclideanSpace_fin
 
 /-- The polar map `(ω, r) ↦ r ω`. -/
-def polarMap (p : Sph d × Ioi (0 : ℝ)) : 𝔼 := (p.2 : ℝ) • (p.1 : 𝔼)
+def sphPolarMap (p : Sph d × Ioi (0 : ℝ)) : 𝔼 := (p.2 : ℝ) • (p.1 : 𝔼)
 
-theorem polarMap_eq (p : Sph d × Ioi (0 : ℝ)) :
-    polarMap p = ((homeomorphUnitSphereProd 𝔼).symm p : 𝔼) := by
-  simp [polarMap]
+theorem sphPolarMap_eq (p : Sph d × Ioi (0 : ℝ)) :
+    sphPolarMap p = ((homeomorphUnitSphereProd 𝔼).symm p : 𝔼) := by
+  simp [sphPolarMap]
 
-theorem continuous_polarMap : Continuous (polarMap (d := d)) := by
-  unfold polarMap
+theorem continuous_sphPolarMap : Continuous (sphPolarMap (d := d)) := by
+  unfold sphPolarMap
   fun_prop
 
-theorem measurable_polarMap : Measurable (polarMap (d := d)) :=
-  continuous_polarMap.measurable
+theorem measurable_sphPolarMap : Measurable (sphPolarMap (d := d)) :=
+  continuous_sphPolarMap.measurable
 
-theorem norm_polarMap (p : Sph d × Ioi (0 : ℝ)) : ‖polarMap p‖ = p.2 := by
-  rw [polarMap, norm_smul, norm_eq_of_mem_sphere p.1, mul_one, Real.norm_eq_abs,
+theorem norm_sphPolarMap (p : Sph d × Ioi (0 : ℝ)) : ‖sphPolarMap p‖ = p.2 := by
+  rw [sphPolarMap, norm_smul, norm_eq_of_mem_sphere p.1, mul_one, Real.norm_eq_abs,
     abs_of_pos p.2.2]
 
 variable [NeZero d]
@@ -75,48 +75,48 @@ variable [NeZero d]
 /-- **Polar coordinates**, Bochner integral version:
 `∫_{ℝ^d} g = ∫_{S × (0,∞)} g(r ω) d(σ ⊗ r^{d-1} dr)`. -/
 theorem integral_polar {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G] (g : 𝔼 → G) :
-    ∫ x, g x = ∫ p, g (polarMap p) ∂polarMeasure d := by
+    ∫ x, g x = ∫ p, g (sphPolarMap p) ∂polarMeasure d := by
   have hmp := (volume : Measure 𝔼).measurePreserving_homeomorphUnitSphereProd
   rw [finrank_euclidean] at hmp
   calc ∫ x, g x = ∫ x : ({(0 : 𝔼)}ᶜ : Set 𝔼), g x.1 ∂((volume : Measure 𝔼).comap Subtype.val) := by
         rw [integral_subtype_comap (measurableSet_singleton _).compl, restrict_compl_singleton]
-    _ = ∫ x : ({(0 : 𝔼)}ᶜ : Set 𝔼), g (polarMap (homeomorphUnitSphereProd 𝔼 x))
+    _ = ∫ x : ({(0 : 𝔼)}ᶜ : Set 𝔼), g (sphPolarMap (homeomorphUnitSphereProd 𝔼 x))
           ∂((volume : Measure 𝔼).comap Subtype.val) := by
         congr 1
         funext x
-        rw [polarMap_eq, Homeomorph.symm_apply_apply]
-    _ = ∫ p, g (polarMap p) ∂polarMeasure d :=
-        hmp.integral_comp (Homeomorph.measurableEmbedding _) (fun p => g (polarMap p))
+        rw [sphPolarMap_eq, Homeomorph.symm_apply_apply]
+    _ = ∫ p, g (sphPolarMap p) ∂polarMeasure d :=
+        hmp.integral_comp (Homeomorph.measurableEmbedding _) (fun p => g (sphPolarMap p))
 
 /-- **Polar coordinates**, Lebesgue integral version. -/
 theorem lintegral_polar (g : 𝔼 → ℝ≥0∞) :
-    ∫⁻ x, g x = ∫⁻ p, g (polarMap p) ∂polarMeasure d := by
+    ∫⁻ x, g x = ∫⁻ p, g (sphPolarMap p) ∂polarMeasure d := by
   have hmp := (volume : Measure 𝔼).measurePreserving_homeomorphUnitSphereProd
   rw [finrank_euclidean] at hmp
   calc ∫⁻ x, g x = ∫⁻ x : ({(0 : 𝔼)}ᶜ : Set 𝔼), g x.1 ∂((volume : Measure 𝔼).comap Subtype.val) := by
         rw [lintegral_subtype_comap (measurableSet_singleton _).compl, restrict_compl_singleton]
-    _ = ∫⁻ x : ({(0 : 𝔼)}ᶜ : Set 𝔼), g (polarMap (homeomorphUnitSphereProd 𝔼 x))
+    _ = ∫⁻ x : ({(0 : 𝔼)}ᶜ : Set 𝔼), g (sphPolarMap (homeomorphUnitSphereProd 𝔼 x))
           ∂((volume : Measure 𝔼).comap Subtype.val) := by
         congr 1
         funext x
-        rw [polarMap_eq, Homeomorph.symm_apply_apply]
-    _ = ∫⁻ p, g (polarMap p) ∂polarMeasure d :=
-        hmp.lintegral_comp_emb (Homeomorph.measurableEmbedding _) (fun p => g (polarMap p))
+        rw [sphPolarMap_eq, Homeomorph.symm_apply_apply]
+    _ = ∫⁻ p, g (sphPolarMap p) ∂polarMeasure d :=
+        hmp.lintegral_comp_emb (Homeomorph.measurableEmbedding _) (fun p => g (sphPolarMap p))
 
-theorem polarMap_homeomorph (x : ({(0 : 𝔼)}ᶜ : Set 𝔼)) :
-    polarMap (homeomorphUnitSphereProd 𝔼 x) = x := by
-  rw [polarMap_eq, Homeomorph.symm_apply_apply]
+theorem sphPolarMap_homeomorph (x : ({(0 : 𝔼)}ᶜ : Set 𝔼)) :
+    sphPolarMap (homeomorphUnitSphereProd 𝔼 x) = x := by
+  rw [sphPolarMap_eq, Homeomorph.symm_apply_apply]
 
 /-- Integrability in polar coordinates. -/
 theorem integrable_polar_iff {G : Type*} [NormedAddCommGroup G] (g : 𝔼 → G) :
-    Integrable g ↔ Integrable (fun p => g (polarMap p)) (polarMeasure d) := by
+    Integrable g ↔ Integrable (fun p => g (sphPolarMap p)) (polarMeasure d) := by
   have hmp := (volume : Measure 𝔼).measurePreserving_homeomorphUnitSphereProd
   rw [finrank_euclidean] at hmp
   rw [← hmp.integrable_comp_emb (Homeomorph.measurableEmbedding _)]
-  have h1 : ((fun p => g (polarMap p)) ∘ homeomorphUnitSphereProd 𝔼) =
+  have h1 : ((fun p => g (sphPolarMap p)) ∘ homeomorphUnitSphereProd 𝔼) =
       fun x : ({(0 : 𝔼)}ᶜ : Set 𝔼) => g x := by
     funext x
-    simp only [Function.comp_apply, polarMap_homeomorph]
+    simp only [Function.comp_apply, sphPolarMap_homeomorph]
   rw [h1, show (fun x : ({(0 : 𝔼)}ᶜ : Set 𝔼) => g x) = g ∘ Subtype.val from rfl,
     ← integrableOn_iff_comap_subtypeVal (measurableSet_singleton _).compl,
     IntegrableOn, restrict_compl_singleton]
@@ -153,12 +153,12 @@ theorem continuousOn_sphProj : ContinuousOn (sphProj (d := d)) {0}ᶜ := by
   rw [this]
   exact (homeomorphUnitSphereProd 𝔼).continuous.fst
 
-theorem sphProj_polarMap (p : Sph d × Ioi (0 : ℝ)) : sphProj (polarMap p) = p.1 := by
-  have h0 : polarMap p ≠ 0 := by
-    rw [← norm_ne_zero_iff, norm_polarMap]
+theorem sphProj_sphPolarMap (p : Sph d × Ioi (0 : ℝ)) : sphProj (sphPolarMap p) = p.1 := by
+  have h0 : sphPolarMap p ≠ 0 := by
+    rw [← norm_ne_zero_iff, norm_sphPolarMap]
     exact p.2.2.ne'
   apply Subtype.ext
-  rw [sphProj_coe h0, norm_polarMap, polarMap, smul_smul, inv_mul_cancel₀ p.2.2.ne', one_smul]
+  rw [sphProj_coe h0, norm_sphPolarMap, sphPolarMap, smul_smul, inv_mul_cancel₀ p.2.2.ne', one_smul]
 
 theorem sphProj_smul {t : ℝ} (ht : 0 < t) (x : 𝔼) : sphProj (t • x) = sphProj x := by
   by_cases hx : x = 0
@@ -174,9 +174,9 @@ theorem norm_smul_sphProj {x : 𝔼} : ‖x‖ • (sphProj x : 𝔼) = x := by
   · simp [hx]
   rw [sphProj_coe hx, smul_smul, mul_inv_cancel₀ (norm_ne_zero_iff.mpr hx), one_smul]
 
-theorem polarMap_sphProj {x : 𝔼} (hx : x ≠ 0) :
-    polarMap (sphProj x, ⟨‖x‖, norm_pos_iff.mpr hx⟩) = x := by
-  simp [polarMap, norm_smul_sphProj]
+theorem sphPolarMap_sphProj {x : 𝔼} (hx : x ≠ 0) :
+    sphPolarMap (sphProj x, ⟨‖x‖, norm_pos_iff.mpr hx⟩) = x := by
+  simp [sphPolarMap, norm_smul_sphProj]
 
 /-! ### The radial measure -/
 
@@ -259,9 +259,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 `x ↦ |x|^k Ψ(x/|x|)`. For `k = 0` this is the `0`-homogeneous extension. -/
 def homFun (k : ℝ) (Ψ : Sph d → E) (x : 𝔼) : E := ‖x‖ ^ k • Ψ (sphProj x)
 
-theorem homFun_polarMap (k : ℝ) (Ψ : Sph d → E) (p : Sph d × Ioi (0 : ℝ)) :
-    homFun k Ψ (polarMap p) = (p.2 : ℝ) ^ k • Ψ p.1 := by
-  rw [homFun, norm_polarMap, sphProj_polarMap]
+theorem homFun_sphPolarMap (k : ℝ) (Ψ : Sph d → E) (p : Sph d × Ioi (0 : ℝ)) :
+    homFun k Ψ (sphPolarMap p) = (p.2 : ℝ) ^ k • Ψ p.1 := by
+  rw [homFun, norm_sphPolarMap, sphProj_sphPolarMap]
 
 theorem homFun_smul (k : ℝ) (Ψ : Sph d → E) {t : ℝ} (ht : 0 < t) (x : 𝔼) :
     homFun k Ψ (t • x) = t ^ k • homFun k Ψ x := by
@@ -301,15 +301,15 @@ theorem lintegral_shell_homFun (k : ℝ) {Ψ : Sph d → E}
       (∫⁻ w, ‖Ψ w‖ₑ ^ 2 ∂(sphMeasure d)) * shellWeight d k a b := by
   rw [← lintegral_indicator (measurableSet_shell a b), lintegral_polar]
   have hfun : ∀ p : Sph d × Ioi (0 : ℝ),
-      {x : 𝔼 | ‖x‖ ∈ Ioo a b}.indicator (fun x => ‖homFun k Ψ x‖ₑ ^ 2) (polarMap p) =
+      {x : 𝔼 | ‖x‖ ∈ Ioo a b}.indicator (fun x => ‖homFun k Ψ x‖ₑ ^ 2) (sphPolarMap p) =
         ‖Ψ p.1‖ₑ ^ 2 * (Ioo a b).indicator (fun r => ENNReal.ofReal ((r ^ k) ^ 2)) (p.2 : ℝ) := by
     intro p
     by_cases hp : (p.2 : ℝ) ∈ Ioo a b
-    · rw [indicator_of_mem (show polarMap p ∈ {x : 𝔼 | ‖x‖ ∈ Ioo a b} by
-          simpa [norm_polarMap] using hp), indicator_of_mem hp, homFun_polarMap,
+    · rw [indicator_of_mem (show sphPolarMap p ∈ {x : 𝔼 | ‖x‖ ∈ Ioo a b} by
+          simpa [norm_sphPolarMap] using hp), indicator_of_mem hp, homFun_sphPolarMap,
         enorm_rpow_smul_sq p.2.2, mul_comm]
-    · rw [indicator_of_notMem (show polarMap p ∉ {x : 𝔼 | ‖x‖ ∈ Ioo a b} by
-          simpa [norm_polarMap] using hp), indicator_of_notMem hp, mul_zero]
+    · rw [indicator_of_notMem (show sphPolarMap p ∉ {x : 𝔼 | ‖x‖ ∈ Ioo a b} by
+          simpa [norm_sphPolarMap] using hp), indicator_of_notMem hp, mul_zero]
   simp_rw [hfun]
   have hg : Measurable fun r : ℝ => (Ioo a b).indicator (fun r => ENNReal.ofReal ((r ^ k) ^ 2)) r :=
     (by fun_prop : Measurable fun r : ℝ => ENNReal.ofReal ((r ^ k) ^ 2)).indicator measurableSet_Ioo

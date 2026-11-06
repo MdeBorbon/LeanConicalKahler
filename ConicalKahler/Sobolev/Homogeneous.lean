@@ -135,7 +135,7 @@ theorem fderiv_radAvg_apply (hϑ : IsTestFn U ϑ) (k : ℝ) {r₀ r₁ : ℝ} (h
     fderiv ℝ (radAvg k r₀ r₁ ϑ) x v = ∫ r in r₀..r₁, r ^ k * r * fderiv ℝ ϑ (r • x) v := by
   rw [(hasFDerivAt_radAvg hϑ k hr₀ hr x).fderiv, radAvgD]
   rw [ContinuousLinearMap.intervalIntegral_apply]
-  · simp only [ContinuousLinearMap.smul_apply, smul_eq_mul]
+  · simp only [smul_apply, smul_eq_mul]
   · obtain ⟨C, hC⟩ := exists_bound_rpow_mul (k := k) (r₁ := r₁) hr₀
     refine ContinuousOn.intervalIntegrable fun r hr' => ?_
     have hr0 : r ≠ 0 := by
@@ -205,7 +205,7 @@ theorem exists_shell_of_isTestFn {ϑ : 𝔼 → ℝ} (hϑ : IsTestFn {0}ᶜ ϑ) 
   · have := mem_closedBall_zero_iff.mp (hR hx)
     linarith [le_max_left R ε]
 
-theorem rpow_sub_one_eq_pow {r : ℝ} (hr : 0 < r) : r ^ ((d : ℝ) - 1) = r ^ (d - 1) := by
+theorem rpow_sub_one_eq_pow {r : ℝ} : r ^ ((d : ℝ) - 1) = r ^ (d - 1) := by
   rw [← Real.rpow_natCast, Nat.cast_pred (Nat.pos_of_ne_zero (NeZero.ne d))]
 
 /-- **Polar coordinates for a function supported in a shell**:
@@ -244,7 +244,7 @@ theorem linkPair_integral {v : LinkPair d} (hv : v ∈ linkW12 d) {ϑ : 𝔼 →
   have h := integral_fst_mul_fderiv hv' hϑΩ e
   have hout : ∀ x ∉ shell d a b, x ∉ tsupport ϑ := fun x hx h => hx (hsupp h)
   have z1 : ∀ x ∉ shell d a b, homFun 0 v.fst x * fderiv ℝ ϑ x e = 0 := fun x hx => by
-    rw [fderiv_eq_zero_of_notMem_tsupport (hout x hx), ContinuousLinearMap.zero_apply, mul_zero]
+    rw [fderiv_eq_zero_of_notMem_tsupport (hout x hx), zero_apply, mul_zero]
   have z2 : ∀ x ∉ shell d a b, ϑ x * ⟪homFun (-1) v.snd x, e⟫_ℝ = 0 := fun x hx => by
     rw [image_eq_zero_of_notMem_tsupport (hout x hx), zero_mul]
   have e1 : ∫ x in shell d a b, (linkEmb ha (subset_refl (shell d a b)) v).fst x *
@@ -265,7 +265,7 @@ theorem linkPair_integral {v : LinkPair d} (hv : v ∈ linkW12 d) {ϑ : 𝔼 →
 theorem homFun_smul_sph {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (k : ℝ)
     (Ψ : Sph d → E) {r : ℝ} (hr : 0 < r) (w : Sph d) :
     homFun k Ψ (r • (w : 𝔼)) = r ^ k • Ψ w :=
-  homFun_polarMap k Ψ (w, ⟨r, hr⟩)
+  homFun_sphPolarMap k Ψ (w, ⟨r, hr⟩)
 
 theorem isFiniteMeasure_shell (a b : ℝ) : IsFiniteMeasure (volume.restrict (shell d a b)) :=
   isFiniteMeasure_restrict.mpr (isBounded_shell a b).measure_lt_top.ne
@@ -369,7 +369,7 @@ theorem ae_inner_linkSnd_eq_zero {v : LinkPair d} (hv : v ∈ linkW12 d) :
               norm_inner_le_norm _ _
           _ ≤ Mk := by simpa using hMk x
       · rw [fderiv_eq_zero_of_notMem_tsupport fun h => hout x hx
-          (tsupport_mul_subset_right h), ContinuousLinearMap.zero_apply]
+          (tsupport_mul_subset_right h), zero_apply]
     have hinner : ∀ (e : 𝔼) x, ⟪homFun (-1) (fun w => v.snd w) x, e⟫_ℝ =
         homFun (-1) (fun w => ⟪v.snd w, e⟫_ℝ) x := fun e x => by
       simp [homFun, real_inner_smul_left]
@@ -451,7 +451,7 @@ theorem ae_inner_linkSnd_eq_zero {v : LinkPair d} (hv : v ∈ linkW12 d) :
         rw [uIcc_of_le hab.le] at hr
         have hr0 : 0 < r := ha.trans_le hr.1
         rw [homFun_smul_sph 0 _ hr0, Real.rpow_zero, one_smul, map_smul, smul_eq_mul,
-          ← rpow_sub_one_eq_pow hr0]
+          ← rpow_sub_one_eq_pow]
         have : r ^ (d : ℝ) = r ^ ((d : ℝ) - 1) * r := by
           rw [← Real.rpow_add_one hr0.ne', sub_add_cancel]
         rw [this]
@@ -517,7 +517,7 @@ theorem IsTestFn.contDiffOn_mul {U : Set 𝔼} (hU : IsOpen U) {ϑ ψ : 𝔼 →
     filter_upwards [(isClosed_tsupport ϑ).isOpen_compl.mem_nhds hx] with y hy
     rw [image_eq_zero_of_notMem_tsupport hy, mul_zero]
 
-theorem contDiffOn_norm_rpow (δ : ℝ) : ContDiffOn ℝ ∞ (fun x : 𝔼 => ‖x‖ ^ δ) {0}ᶜ := fun x hx =>
+theorem contDiffOn_norm_rpow (δ : ℝ) : ContDiffOn ℝ ∞ (fun x : 𝔼 => ‖x‖ ^ δ) {0}ᶜ := fun _ hx =>
   ((contDiffAt_norm ℝ hx).rpow_const_of_ne (norm_ne_zero_iff.mpr hx)).contDiffWithinAt
 
 theorem fderiv_norm_rpow {x : 𝔼} (hx : x ≠ 0) (δ : ℝ) (e : 𝔼) :
@@ -555,7 +555,7 @@ theorem inner_homG {δ : ℝ} {v : LinkPair d} {x : 𝔼} (hx : x ≠ 0) (e : �
       ‖x‖ ^ δ * ⟪homFun (-1) (fun w => v.snd w) x, e⟫_ℝ := by
   have hn : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx
   simp only [homG, homFun, homGradProfile, Real.rpow_zero, one_smul, Real.rpow_neg_one,
-    inner_add_left, real_inner_smul_left, sphProj_coe hx, inner_smul_left, RCLike.conj_to_real]
+    inner_add_left, sphProj_coe hx, inner_smul_left, RCLike.conj_to_real]
   have h1 : ‖x‖ ^ (δ - 1) = ‖x‖ ^ (δ - 2) * ‖x‖ := by
     rw [← Real.rpow_add_one hn]
     ring_nf
@@ -583,7 +583,7 @@ theorem homP_integral {v : LinkPair d} (hv : v ∈ linkW12 d) (δ : ℝ) {ϑ : �
         one_ne_zero).hasFDerivAt
     rw [show (fun y : 𝔼 => ‖y‖ ^ δ * ϑ y) = (fun y : 𝔼 => ‖y‖ ^ δ) * ϑ from rfl,
       (h1.mul (hϑ.differentiable x).hasFDerivAt).fderiv]
-    simp only [ContinuousLinearMap.add_apply, ContinuousLinearMap.smul_apply, smul_eq_mul]
+    simp only [add_apply, smul_apply, smul_eq_mul]
     rw [fderiv_norm_rpow hx]
   -- bounds on the shell
   obtain ⟨C₀, hC₀⟩ := exists_bound_norm_rpow_on_shell (d := d) ha (b := b) δ
@@ -599,7 +599,7 @@ theorem homP_integral {v : LinkPair d} (hv : v ∈ linkW12 d) (δ : ℝ) {ϑ : �
     · rw [← Real.norm_eq_abs, ← inner_gradient]
       exact (norm_inner_le_norm _ _).trans (by gcongr; exact hMg' x)
     · rw [fderiv_eq_zero_of_notMem_tsupport fun h => hout x hx
-        (tsupport_mul_subset_right h), ContinuousLinearMap.zero_apply]
+        (tsupport_mul_subset_right h), zero_apply]
   have hg2 : Integrable fun x => homFun 0 (fun w => v.fst w) x *
       (ϑ x * (δ * ‖x‖ ^ (δ - 2) * ⟪x, e⟫_ℝ)) := by
     refine integrable_homFun_mul' 0 (Lp.memLp v.fst)
@@ -624,7 +624,7 @@ theorem homP_integral {v : LinkPair d} (hv : v ∈ linkW12 d) (δ : ℝ) {ϑ : �
         rw [← Real.norm_eq_abs, ← inner_gradient]
         exact (norm_inner_le_norm _ _).trans (by gcongr; exact hMg x)
       exact mul_le_mul (hC₀ x hx) h1 (abs_nonneg _) ((abs_nonneg _).trans (hC₀ x hx))
-    · rw [fderiv_eq_zero_of_notMem_tsupport (hout x hx), ContinuousLinearMap.zero_apply,
+    · rw [fderiv_eq_zero_of_notMem_tsupport (hout x hx), zero_apply,
         mul_zero]
   -- the vector field term
   have hmemLp_e : MemLp (fun w => ⟪v.snd w, e⟫_ℝ) 2 (sphMeasure d) :=
@@ -648,7 +648,7 @@ theorem homP_integral {v : LinkPair d} (hv : v ∈ linkW12 d) (δ : ℝ) {ϑ : �
       ∫ x, homFun 0 (fun w => v.fst w) x * (‖x‖ ^ δ * fderiv ℝ ϑ x e) := by
     congr 1
     funext x
-    simp only [homP, homFun, Real.rpow_zero, one_smul, smul_eq_mul]
+    simp only [homP, homFun, Real.rpow_zero, smul_eq_mul]
     ring
   have h13 : ∫ x, homFun 0 (fun w => v.fst w) x * (‖x‖ ^ δ * fderiv ℝ ϑ x e) =
       (∫ x, homFun 0 (fun w => v.fst w) x * fderiv ℝ (fun y => ‖y‖ ^ δ * ϑ y) x e) -
@@ -677,7 +677,7 @@ variable {c : CoeffField (EuclideanSpace ℝ (Fin d)) volume}
 
 theorem rpow_mul_rpow_eq {r : ℝ} (hr : 0 < r) (δ : ℝ) :
     r ^ (d - 1) * r ^ (δ - 1) = r ^ (δ + d - 3) * r := by
-  rw [← rpow_sub_one_eq_pow hr, ← Real.rpow_add hr, ← Real.rpow_add_one hr.ne']
+  rw [← rpow_sub_one_eq_pow, ← Real.rpow_add hr, ← Real.rpow_add_one hr.ne']
   ring_nf
 
 /-- **The ray integral in the weak equation.** For `w` on the sphere with `⟨Γ(w), w⟩ = 0`, the

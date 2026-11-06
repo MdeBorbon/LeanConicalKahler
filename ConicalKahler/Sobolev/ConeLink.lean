@@ -57,7 +57,7 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin d)
 /-- **`g⁻¹(x) x = x`**: the radial vector field is fixed by the inverse cone metric. -/
 theorem coneCoeffA_self (β : κ → ConeAngle) (e : RealConeIndex κ ι ≃ Fin d) (x : 𝔼) :
     coneCoeffA β e x x = x := by
-  simp only [coneCoeffA, ContinuousLinearMap.coe_comp', Function.comp_apply,
+  simp only [coneCoeffA, ContinuousLinearMap.coe_comp, Function.comp_apply,
     ContinuousLinearEquiv.coe_coe, LinearIsometryEquiv.coe_toContinuousLinearEquiv,
     coneInvOp_self, LinearIsometryEquiv.apply_symm_apply]
 

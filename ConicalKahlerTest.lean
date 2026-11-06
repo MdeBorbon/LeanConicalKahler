@@ -12,3 +12,4 @@ public import ConicalKahlerTest.PaperChecks
 public import ConicalKahlerTest.Sobolev
 public import ConicalKahlerTest.Compactness
 public import ConicalKahlerTest.WeakHarmonic
+public import ConicalKahlerTest.LinkExpansion

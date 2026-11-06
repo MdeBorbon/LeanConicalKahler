@@ -98,15 +98,15 @@ theorem lintegral_shell_polar {F : 𝔼 → ℝ≥0∞} (hF : Measurable F) {a b
     Measurable.lintegral_prod_right (f := fun r (w : Sph d) => F (r • (w : 𝔼)))
       (hF.comp (measurable_fst.smul (measurable_subtype_coe.comp measurable_snd)))
   rw [← lintegral_indicator (isOpen_shell (d := d) a b).measurableSet, lintegral_polar]
-  have hpt : ∀ p : Sph d × Ioi (0 : ℝ), (shell d a b).indicator F (polarMap p) =
+  have hpt : ∀ p : Sph d × Ioi (0 : ℝ), (shell d a b).indicator F (sphPolarMap p) =
       (Ioo a b).indicator (fun r => F (r • (p.1 : 𝔼))) (p.2 : ℝ) := by
     intro p
     by_cases hp : (p.2 : ℝ) ∈ Ioo a b
-    · rw [indicator_of_mem (show polarMap p ∈ shell d a b by
-          simpa [shell, norm_polarMap] using hp), indicator_of_mem hp]
+    · rw [indicator_of_mem (show sphPolarMap p ∈ shell d a b by
+          simpa [shell, norm_sphPolarMap] using hp), indicator_of_mem hp]
       rfl
-    · rw [indicator_of_notMem (show polarMap p ∉ shell d a b by
-          simpa [shell, norm_polarMap] using hp), indicator_of_notMem hp]
+    · rw [indicator_of_notMem (show sphPolarMap p ∉ shell d a b by
+          simpa [shell, norm_sphPolarMap] using hp), indicator_of_notMem hp]
   simp_rw [hpt]
   have hmeasP : Measurable fun p : Sph d × Ioi (0 : ℝ) =>
       (Ioo a b).indicator (fun r => F (r • (p.1 : 𝔼))) (p.2 : ℝ) := by
@@ -142,7 +142,7 @@ theorem lintegral_shell_polar {F : 𝔼 → ℝ≥0∞} (hF : Measurable F) {a b
   by_cases hr : r ∈ Ioo a b
   · have hr0 : r ∈ Ioi (0 : ℝ) := ha.trans_lt hr.1
     simp only [indicator_of_mem hr0, indicator_of_mem hr]
-  · simp only [indicator_of_notMem hr, mul_zero, indicator_zero', Pi.zero_apply]
+  · simp only [indicator_of_notMem hr]
     by_cases hr0 : r ∈ Ioi (0 : ℝ)
     · simp [indicator_of_mem hr0, indicator_of_notMem hr]
     · simp [indicator_of_notMem hr0]
@@ -451,7 +451,7 @@ theorem rayCoeff_eq (hd : 2 ≤ d) (hc : c.IsConical) {lam δ : ℝ} {v : LinkPa
         (Real.hasDerivAt_rpow_const (x := r) (p := -q) (Or.inl hr0.ne'))
       exact h1.deriv
     simp only [g]
-    rw [hfd, ← rpow_sub_one_eq_pow hr0]
+    rw [hfd, ← rpow_sub_one_eq_pow]
     have e1 : r ^ (-q) / r = r ^ (-q - 1) := by rw [Real.rpow_sub_one hr0.ne']
     have e2 : r ^ ((d : ℝ) - 1) * r ^ δ * r ^ (-q) = r ^ (-δ) := by
       rw [← Real.rpow_add hr0, ← Real.rpow_add hr0]
@@ -635,7 +635,7 @@ theorem lintegral_sq_of_ae_eq_rpow {f : ℝ → ℝ} {a δ : ℝ} (hδ : 0 ≤ �
         refine lintegral_congr_ae ?_
         filter_upwards [hf, ae_restrict_mem measurableSet_Ioo] with r hr hr01
         have hr0 : 0 < r := hr01.1
-        have h1 : r ^ (d - 1) = r ^ ((d : ℝ) - 1) := (rpow_sub_one_eq_pow hr0).symm
+        have h1 : r ^ (d - 1) = r ^ ((d : ℝ) - 1) := (rpow_sub_one_eq_pow).symm
         have h2 : (r ^ δ) ^ 2 = r ^ (2 * δ) := by
           rw [← Real.rpow_natCast, ← Real.rpow_mul hr0.le]
           ring_nf
@@ -667,7 +667,7 @@ theorem indicialRoot_nonneg (hd : 2 ≤ d) {lam : ℝ} (hlam : 0 ≤ lam) : 0 �
   unfold indicialRoot
   linarith
 
-theorem indicialRoot_spec (lam : ℝ) (hlam : 0 ≤ lam) (hd : 2 ≤ d) :
+theorem indicialRoot_spec (lam : ℝ) (hlam : 0 ≤ lam) :
     lam = indicialRoot d lam * (indicialRoot d lam + d - 2) := by
   have hpos : 0 ≤ ((d : ℝ) - 2) ^ 2 + 4 * lam := by positivity
   have hs := Real.sq_sqrt hpos
@@ -703,7 +703,7 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
   set v : s → LinkPair d := fun i => WithLp.toLp 2 ((i : Lp ℝ 2 (sphMeasure d)), Γ i)
   set δ : s → ℝ := fun i => indicialRoot d (lam i)
   have hδ0 : ∀ i, 0 ≤ δ i := fun i => indicialRoot_nonneg hd (heig i).1
-  have hroot : ∀ i, lam i = δ i * (δ i + d - 2) := fun i => indicialRoot_spec _ (heig i).1 hd
+  have hroot : ∀ i, lam i = δ i * (δ i + d - 2) := fun i => indicialRoot_spec _ (heig i).1
   have hdpos : (2 : ℝ) ≤ d := by exact_mod_cast hd
   have hP : ∀ i, MemLp (homP (δ i) (v i)) 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i =>
     memLp_homFun_ball (δ i) (Lp.memLp (v i).fst) 1 (by linarith [hδ0 i])
@@ -746,7 +746,7 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
       refine integral_congr_ae ?_
       filter_upwards [ha i, ae_restrict_mem measurableSet_Ioo] with r hr hr01
       have hr0 : 0 < r := hr01.1
-      rw [hr, ← rpow_sub_one_eq_pow hr0]
+      rw [hr, ← rpow_sub_one_eq_pow]
       rw [show r ^ ((d : ℝ) - 1) * (r ^ δ i * (a i * r ^ δ i)) =
         a i * (r ^ ((d : ℝ) - 1) * r ^ δ i * r ^ δ i) by ring, ← Real.rpow_add hr0,
         ← Real.rpow_add hr0]
@@ -782,7 +782,7 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
           r ^ (δ i + δ j + d - 1) := by
       refine setIntegral_congr_fun measurableSet_Ioo fun r hr01 => ?_
       have hr0 : 0 < r := hr01.1
-      rw [hray r hr0, ← rpow_sub_one_eq_pow hr0]
+      rw [hray r hr0, ← rpow_sub_one_eq_pow]
       rw [show r ^ ((d : ℝ) - 1) * (r ^ δ j * (r ^ δ i *
         ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ)) =
         ⟪(i : Lp ℝ 2 (sphMeasure d)), (j : Lp ℝ 2 (sphMeasure d))⟫_ℝ *
@@ -793,9 +793,9 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
     rw [e2, integral_const_mul, integral_Ioo_rpow (by linarith [hδ0 i, hδ0 j])]
     by_cases hij : i = j
     · subst hij
-      rw [if_pos rfl, real_inner_self_eq_norm_sq, hon.1 i]
+      rw [ite_eq_left rfl, real_inner_self_eq_norm_sq, hon.1 i]
       ring_nf
-    · rw [if_neg hij, hon.2 hij, zero_mul]
+    · rw [ite_eq_right hij, hon.2 hij, zero_mul]
   -- (C) Parseval for `u`
   set cf : s → ℝ := fun i => a i ^ 2 / (2 * δ i + d)
   have hcf0 : ∀ i, 0 ≤ cf i := fun i => div_nonneg (sq_nonneg _) (hden i).le
@@ -825,9 +825,9 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
       rw [sum_inner]
       refine Finset.sum_congr rfl fun i hi => ?_
       rw [inner_sum, Finset.sum_eq_single i (fun j _ hji => by
-          rw [real_inner_smul_left, real_inner_smul_right, hB', if_neg (Ne.symm hji),
+          rw [real_inner_smul_left, real_inner_smul_right, hB', ite_eq_right (Ne.symm hji),
             mul_zero, mul_zero]) (fun h => (h hi).elim),
-        real_inner_smul_left, real_inner_smul_right, hB', if_pos rfl]
+        real_inner_smul_left, real_inner_smul_right, hB', ite_eq_left rfl]
       simp only [cf]
       ring
     rw [norm_sub_sq_real, hinner, ← real_inner_self_eq_norm_sq (∑ i ∈ F, a i • P i), hself]
@@ -835,7 +835,7 @@ theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 
   refine ⟨s, B, Γ, lam, δ, a, P, hB, fun i => ⟨hδ0 i, hroot i, (heig i).2, (hP i).coeFn_toLp,
     homPair (δ i) (v i) 1 (hP i) (hG i),
     homPair_isWeakSolution (hP i) (hG i) hd hc (heig i).2 (hroot i), rfl⟩,
-    fun i j hij => by rw [hB', if_neg hij], ?_⟩
+    fun i j hij => by rw [hB', ite_eq_right hij], ?_⟩
   -- the partial sums converge
   have hT : Tendsto (fun F : Finset s => ∑ i ∈ F, cf i) atTop (𝓝 (‖u.fst‖ ^ 2)) := hC
   change Tendsto (fun F : Finset s => ∑ i ∈ F, a i • P i) atTop (𝓝 u.fst)
