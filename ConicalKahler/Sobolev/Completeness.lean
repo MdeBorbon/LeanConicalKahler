@@ -703,6 +703,24 @@ theorem cone_expansion_prop_3_4 (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : �
     have : (0 : ℝ) < δ i + δ i + d := by linarith
     exact absurd hint.symm (div_ne_zero one_ne_zero this.ne')
 
+/-- **Corollary 3.5 for `𝓗_{≤2}`** (now that Proposition 3.4 identifies `𝓗_{≤2}` with the span of
+the paper's list). For `0 < β_a < 1`, `d ≥ 2` and `D ∈ 𝒟₂` there is `C` such that every weakly
+harmonic `u ∈ W^{1,2}(B_1)`, homogeneous of degree `δ ≤ 2`, equals a.e. some `P ∈ explicitH2` with
+`D P = τ` constant on the regular part and `|τ| ≤ C ‖P‖_{L²(B_1)}`. -/
+theorem corollary_3_5_homogeneous (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) (D : D2Op β ι) :
+    ∃ C, ∀ {u : L2Pair volume (ball (0 : 𝔼) 1)}, (coneCoeff β e).IsWeakSolution 0 u →
+      ∀ {δ : ℝ}, 0 ≤ δ → δ ≤ 2 → ∀ {φ : Lp ℝ 2 (sphMeasure d)},
+      ((u.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] homFun δ fun w => φ w) →
+      ∃ P ∈ explicitH2 β,
+        ((u.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] fun x => P ((coordIso e).symm x)) ∧
+        ∃ τ : ℝ, (∀ c ∈ regularPolar κ ι, D.apply (fun c' => P c'.toModel) c = τ) ∧
+          |τ| ≤ C * Real.sqrt (∫ y in Metric.ball (0 : RealConeModel κ ι) 1, P y ^ 2) := by
+  obtain ⟨C, hC⟩ := corollary_3_5 (fun a => (hβ a).le) D
+  refine ⟨C, fun hu δ hδ h2 φ hφ => ?_⟩
+  obtain ⟨P, hP, hPe⟩ := (prop_3_4 hd β hβ e hu hδ hφ).1 h2
+  exact ⟨P, hP, hPe, hC P hP⟩
+
 end Prop34
 
 end ConicalKahler.Sobolev

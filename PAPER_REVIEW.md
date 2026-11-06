@@ -402,6 +402,16 @@ The proof of Lemma 2.7 is omitted, and its constant also depends on `m`. The Stu
 used in §3.3 (multiplicity one, nodal counts, completeness of the separated eigenfunctions) are
 invoked as "standard theory" without a reference.
 
+**Lean status (Milestone 13).** Proposition 3.4 is proved without these Sturm–Liouville facts
+(`prop_3_4`). Completeness of the separated eigenfunctions is replaced by completeness of an
+explicit family, the harmonic cone polynomials `∏ r_a^{k_a/β_a} T(k_a θ_a) h(r², s)`:
+- their restrictions to the link are dense (Fischer decomposition and Stone–Weierstrass);
+- homogeneous harmonic functions of different degrees are orthogonal on the link (from Lemma 3.3).
+
+So the degrees of homogeneous harmonic functions are exactly `∑_a k_a/β_a + m`, and the list of
+Prop. 3.4 and the gap `(2, 2 + μ)` follow by enumeration. Multiplicities and nodal counts are not
+needed. Lemma 2.7 is not addressed.
+
 ---
 
 ## C. Proposed repair of Proposition 2.5 (not established)

@@ -5,7 +5,7 @@ Last updated: 2026-11-06.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 2124
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 2318
 `ConicalKahler.*` declarations (library and tests) depend only on `propext`, `Classical.choice` and
 `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
@@ -485,7 +485,7 @@ tests in `ConicalKahlerTest/WeakHarmonic` (model `C(S¹_{4π/3}) × ℝ`, `β = 
 | **Fourier uniqueness**: `u` is determined by its modes (Mathlib's Parseval identity on `[0, 2π]`) | `eq_zero_of_fourier_real`, `eq_zero_of_modes_eq_zero`, `eq_zero_of_harmonic_modes_eq_zero` | `Sobolev/FourierModes` |
 
 **What is not claimed.**
-- **Proposition 3.4 (completeness) is not proved.** `explicitH2` is the span of the paper's list;
+- **Proposition 3.4 (completeness) is not proved** (proved in Milestone 13). `explicitH2` is the span of the paper's list;
   that it contains every homogeneous harmonic function of degree `≤ 2`, and that there is none of
   degree in `(2, 2 + μ)`, remains open. Corollary 3.5 is proved for `explicitH2`, so it becomes
   the paper's Corollary 3.5 once completeness is known.
@@ -575,7 +575,7 @@ constant (du Bois-Reymond). The second root `r^{2−d−δ}` never appears, beca
   eigenfunctions directly.
 - **Multiplicity one of `λ = 0`** (connectedness of the link, `PAPER_REVIEW.md` S6) is not proved.
   Lemma 3.3 does not need it.
-- **Proposition 3.4 (completeness of `𝓗_{≤2+α}`) is not proved.** Lemma 3.3 reduces it to the
+- **Proposition 3.4 (completeness of `𝓗_{≤2+α}`) is not proved** (proved in Milestone 13, without the join separation of variables). Lemma 3.3 reduces it to the
   identification of the link eigenfunctions with `λ ≤ (2 + μ)(2 + μ + d − 2)`. That needs the
   separation of variables on the join `S¹_{β_1} * ⋯ * S^{k−1}`, which is not formalised.
 - The eigenvalues are indexed by the Hilbert basis set `s ⊆ L²(S)`, not by `ℕ` in increasing
@@ -585,6 +585,82 @@ constant (du Bois-Reymond). The second root `r^{2−d−δ}` never appears, beca
   convergence are not proved.
 - `d ≥ 2` is assumed for vertex removability. The paper's models have `d = 2n + k ≥ 2`, except
   `ℝ¹`.
+
+## Milestone 13: completeness of `𝓗_{≤2+α}` (Proposition 3.4): COMPLETE
+
+All entries are kernel-checked. Files `Sobolev/ConePoly`, `Sobolev/ConePolyFn`,
+`Sobolev/ConePolyDense`, `Sobolev/Completeness`; tests in `ConicalKahlerTest/Completeness`
+(model `C(S¹_{4π/3}) × ℝ`, `β = 2/3`, `μ = 1/2`).
+
+The paper proves Prop. 3.4 by separation of variables, Sturm–Liouville and Frobenius theory on the
+join link (§§3.3–3.4). The formalisation **does not use ODE theory**. It shows instead that an
+explicit family of homogeneous harmonic functions, the **harmonic cone polynomials**, is complete,
+and then reads off their degrees:
+
+  `∏_a r_a^{k_a/β_a} (cos | sin)(k_a θ_a) · h(r_1², …, r_n², s)`,   degree `∑_a k_a/β_a + m`,
+
+with `h` a polynomial of weighted degree `m` (`r_a²` of weight 2, `s_i` of weight 1) killed by a
+formal Laplacian `L_q`.
+
+**1. Formal algebra and the Fischer decomposition** (`Sobolev/ConePoly`).
+
+| Statement | Lean declaration |
+|---|---|
+| the formal Laplacian `L_q = ∑_a (4 t_a ∂²_{t_a} + 4 q_a ∂_{t_a}) + ∑_i ∂²_{s_i}` (`q_a = 1 + k_a/β_a`) and `ρ² = ∑ t_a + ∑ s_i²` on `ℝ[t_a, s_i]` | `formalLap`, `rhoSq`, `polyWt` |
+| `L_q` lowers the weighted degree by `2`, and kills degrees `< 2` | `formalLap_isWeightedHomogeneous`, `formalLap_eq_zero_of_lt_two` |
+| **Fischer identity** `L_q(ρ² p) = ρ² L_q p + (4m + C₀) p` (Mathlib's weighted Euler identity) | `formalLap_rhoSq_mul`, `formalLap_rhoSq_pow_mul` |
+| **Fischer decomposition** `p = ∑_j ρ^{2j} h_j`, `L_q h_j = 0`; every polynomial is in the span of the `ρ^{2j} h` | `fischer`, `mem_span_harmonicGen` |
+
+**2. Cone polynomials as functions** (`Sobolev/ConePolyFn`).
+
+| Statement | Lean declaration |
+|---|---|
+| `conePoly β k ε p`; linear in `p`; `conePoly(ρ² p) = |y|² conePoly(p)` | `conePoly`, `conePolyL`, `conePoly_rhoSq_mul` |
+| **homogeneity** of degree `∑ k_a/β_a + m` | `conePoly_smul_point` |
+| the polar Laplacian of a product `∏_v u_v(c_v)` of one-variable functions (no hypotheses) | `prodFn`, `pd_prodFn`, `paperLaplacian_prodFn` |
+| **`Δ conePoly(p) = conePoly(L_q p)`** at regular points (monomial computation) | `paperLaplacian_monoU`, `formalLap_monomial`, `paperLaplacian_conePoly` |
+| **harmonic cone polynomials are classically, hence weakly, harmonic** (`β_a ≤ 1`) | `IsRegBounded`, `isClassicalHarmonic_conePoly` |
+
+**3. Density on the link** (`Sobolev/ConePolyDense`).
+
+| Statement | Lean declaration |
+|---|---|
+| products of angular modes in one factor: `T(k)T'(k') = c₁ T(k+k') + c₂ T(k-k') (r²)^{min(k,k')/β}` | `modeFn_mul`, `exists_modeFn_mul` |
+| the closure `W` of the span of the restrictions is stable under multiplication by `G(r_a²)` (univariate Weierstrass) and under products | `mul_comp_tA_mem`, `linkPoly_mul_mem`, `closure_mul_mem` |
+| `w ↦ |w|^{1/β - 1} w` is injective, so the restrictions separate points | `injective_zetaMap`, `linkPolyAlg_separatesPoints` |
+| **cone polynomials are dense in `C(S)` and in `L²(S)`** (Stone–Weierstrass) | `dense_linkPolySpan`, `dense_span_linkPolyLp` |
+
+**4. Completeness and Proposition 3.4** (`Sobolev/Completeness`).
+
+| Statement | Lean declaration |
+|---|---|
+| **different degrees are orthogonal**: the link function of a homogeneous harmonic `u` of degree `D` is orthogonal to every link eigenfunction of indicial root `≠ D` (radial ODE of Lemma 3.3, tested against `ρ^0 ψ` and `ρ^1 ψ`) | `inner_eq_zero_of_degree_ne` |
+| **abstract completeness**: a family of homogeneous harmonic functions with dense link span contains, degree by degree, every homogeneous harmonic function | `mem_span_of_harmonic` |
+| the harmonic cone polynomials have dense link span | `dense_span_harmConeLink` |
+| **every weakly harmonic `u ∈ W^{1,2}(B_1)` homogeneous of degree `δ` is a combination of harmonic cone polynomials of degree `δ`** (`β_a ≤ 1`) | `cone_link_mem_span`, `cone_homogeneous_mem_span` |
+| polynomials of weighted degree `0`, `1`, `2`; the angular degree is `0`, `1/β_a`, or `≥ 1/β_a + 1` | `eq_C_of_isWeightedHomogeneous_zero`, `eq_sum_of_isWeightedHomogeneous_one`, `eval_of_isWeightedHomogeneous_two`, `modeDeg_cases` |
+| **Proposition 3.4** (`0 < β_a < 1`): degree `δ ≤ 2` ⇒ `u ∈ explicitH2`; no `u ≠ 0` with `2 < δ < 2 + μ` | `harmConePolys_le_explicitH2`, `harmConePolys_eq_empty`, `prop_3_4` |
+| **Lemma 3.3 with the gap**: every term of the expansion has `δ_i ≤ 2` (in `explicitH2`) or `δ_i ≥ 2 + μ` | `cone_expansion_prop_3_4` |
+| **Corollary 3.5 for `𝓗_{≤2}`**: `D u` is constant with `|τ| ≤ C ‖P‖_{L²(B_1)}` for homogeneous harmonic `u` of degree `≤ 2` | `corollary_3_5_homogeneous` |
+
+Supporting changes in `Sobolev/HarmonicExpansion`:
+- `integral_ball_mul_homP_of_rayCoeff'` allows different exponents;
+- `memLp_homG_of_isLinkEigen` was extracted from the proof of `expansion`.
+
+**What is not claimed.**
+- **Hypotheses.** `μ` enters as a hypothesis: `μ ≤ 1` and `μ ≤ holderExponentBound β_a` for every
+  `a`, which is eq. (1.1). Prop. 3.4 assumes `0 < β_a < 1`, the paper's range. For `β_a = 1` there
+  are more functions of degree `≤ 2`, such as `x_a² − y_a²`.
+- **Form of homogeneity.** Homogeneity is stated as `u = |x|^δ φ(x/|x|)` a.e. on `B_1` with
+  `φ ∈ L²(S)`. The equivalent scaling form `u(tx) = t^δ u(x)` is not restated.
+- **Eigenfunctions not identified.** The link eigenfunctions themselves are not identified one by
+  one. What is proved is that every one is a finite combination of restrictions of harmonic cone
+  polynomials of its degree (inside the proof of `mem_span_of_harmonic`). Multiplicities and the
+  explicit form `cos^{δ₁} sin^{δ₂} · Jacobi` of §3.4 are not formalised.
+- **Fourier modes.** Orthogonality and `L²` convergence of the Fourier modes in `θ_a` are still not
+  proved; they are not needed.
+- **Not done in this milestone.** Proposition 2.5 (the `L²` Hessian bound), the Campanato
+  iteration, and Theorem 1.1.
 
 ## Decisions affecting definitions
 
@@ -726,6 +802,13 @@ constant (du Bois-Reymond). The second root `r^{2−d−δ}` never appears, beca
   `A(x) x = x`. The second condition says that the radial vector is `g`-orthogonal to the link and
   `g`-unit; it makes the Laplacian split as `∂_r² + (d−1)/r ∂_r + r^{−2}Δ_ḡ`. Lemmas 3.1 and 3.3 are
   proved for this class.
+* **Cone polynomials (Milestone 13)** are parametrised by angular data `k : κ → ℕ`,
+  `ε : κ → Bool` (`cos`/`sin`) and a polynomial `p ∈ MvPolynomial (κ ⊕ ι) ℝ` in `t_a = r_a²`
+  (weight `2`) and `s_i` (weight `1`). The angular factor is written without angles:
+  `|w|^{k/β − k} Re(w^k)` (`harmCosC`). The Laplacian is computed formally on the polynomial
+  factor (`formalLap`), and its agreement with `paperLaplacian` is proved, not assumed.
+* **Proposition 3.4** is stated for `u ∈ W^{1,2}(B_1)` weakly harmonic with `u = |x|^δ φ(x/|x|)` a.e.
+  The gap is stated for every `μ` satisfying eq. (1.1) (`μ ≤ 1`, `μ ≤ holderExponentBound β_a`).
 * **Lemma 3.3's output** is a `HasSum` in `L²(B_1)` over the Hilbert-basis index set (unconditional
   convergence). Each `P_i` is given as an `L²` class together with a weak solution `Q` with
   `Q.fst = P_i` and the formula `P_i = ρ^{δ_i} φ_i` almost everywhere.
@@ -741,7 +824,8 @@ Done since the first review: agreement with `metricInChart` (Milestone 4), `Divi
 the real cone geometry with `𝒟₂` (Milestone 8), Sobolev spaces and weak solutions
 (Milestone 9), compactness, harmonic approximation, scaling and the Dirichlet spectral
 theorem (Milestone 10), and weak harmonic functions on the models with Corollary 3.5 for the
-paper's list (Milestone 11), and the link spectral theory with Lemma 3.3 (Milestone 12).
+paper's list (Milestone 11), the link spectral theory with Lemma 3.3 (Milestone 12), and
+Proposition 3.4 (Milestone 13).
 
 1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
@@ -768,8 +852,8 @@ paper's list (Milestone 11), and the link spectral theory with Lemma 3.3 (Milest
    spectral theorem (Milestone 10); classical ⇔ weak solutions, the explicit harmonic functions,
    Corollary 3.5 for the paper's list, energy uniqueness, rotations and Fourier modes in `θ_a`
    (Milestone 11); polar coordinates, the link Sobolev space and Lemma 3.1, homogeneous harmonic
-   functions, vertex removability and Lemma 3.3 (Milestone 12). Next: the completeness of
-   `𝓗_{≤2+α}` (Prop. 3.4) by separation of variables on the join link, the `L²` Hessian bound (by
+   functions, vertex removability and Lemma 3.3 (Milestone 12); the completeness of `𝓗_{≤2+α}`
+   (Prop. 3.4) and Corollary 3.5 for `𝓗_{≤2}` (Milestone 13). Next: the `L²` Hessian bound (by
    the localised Bochner argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
    Smaller items:
    - interior regularity of weak solutions off `S` (Weyl lemma / Schauder for weak solutions);

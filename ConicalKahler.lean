@@ -61,3 +61,7 @@ public import ConicalKahler.Sobolev.Homogeneous
 public import ConicalKahler.Sobolev.Expansion
 public import ConicalKahler.Sobolev.HarmonicExpansion
 public import ConicalKahler.Sobolev.ConeLink
+public import ConicalKahler.Sobolev.ConePoly
+public import ConicalKahler.Sobolev.ConePolyFn
+public import ConicalKahler.Sobolev.ConePolyDense
+public import ConicalKahler.Sobolev.Completeness

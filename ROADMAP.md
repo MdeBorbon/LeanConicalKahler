@@ -45,6 +45,8 @@ The paper and this project normalise differently. Every entry below is backed by
 | `W^{1,2}(S)` and `-Δ_ḡ φ = λφ` (Lemma 3.1) | `linkW12 d` (pairs `(φ, Γ)`, `Γ` the tangential gradient, defined by homogeneous extension to shells), `IsLinkEigen hc λ (φ, Γ)` | `link_spectral`, `cone_link_spectral` |
 | `ρ^δ φ`, homogeneous harmonic of degree `δ` (§3.2) | `homP δ (φ, Γ)`, gradient `homG δ (φ, Γ)`, pair `homPair` on `B_R` | `homogeneous_harmonic`, `homPair_isWeakSolution` |
 | the expansion `u = ∑ a_i ρ^{δ_i} φ_i` (Lemma 3.3) | `HasSum (fun i => a i • P i) u.fst` in `L²(B_1)` | `expansion`, `cone_expansion` |
+| homogeneous harmonic polynomials of the model (§3.4) | harmonic cone polynomials `conePoly β k ε h` with `formalLap (modeQ β k) h = 0`, degree `modeDeg β k + m` | `isClassicalHarmonic_conePoly`, `cone_homogeneous_mem_span` |
+| `𝓗_{≤2}` and the gap `(2, 2 + μ)` (Prop. 3.4) | `explicitH2 β`; `μ` as a hypothesis `μ ≤ 1`, `μ ≤ holderExponentBound β_a` | `prop_3_4`, `cone_expansion_prop_3_4` |
 | the terms of `μ` (eq. (1.1)) | `holderExponentBound β_a` (`1/β - 1` or `1/β - 2`) | `sharp_holderExponent` |
 | angles `0 < β_a < 1` | models for all `β > 0`; chart invariance for `β ≤ 1` | `IsQuasiIsometricSNCCone.forall_chart_of_le_one` |
 
@@ -120,13 +122,13 @@ omitted) and `[C]` (cited from the literature).
 | barrier `ε ∑_a log r_a` harmonic off `S` (Lemma 3.2) | **Proved**: `laplaceBeltrami_log_coordNormSq_eq_zero` |
 | pluriharmonic functions are harmonic for every Kähler form | **Proved**: `laplaceBeltrami_eq_zero_of_ddbar_eq_zero`, `laplaceBeltrami_re_eq_zero` |
 | the paper's list of Prop. 3.4 is weakly harmonic on every bounded open set | **Proved** (Milestone 11): `explicitH2`, `isWeakSolution_of_mem_explicitH2`; more generally `r^{k/β} cos kθ`, `r^{k/β} sin kθ` (`β ≤ k`) via `IsClassicalHarmonic.isWeakSolution` |
-| **completeness**: `𝓗_{≤2}` is *exactly* the list of Prop. 3.4, and there is no homogeneous harmonic function of degree in `(2, 2+μ)` | Planned. This is the hard part of §3. **Done:** the decomposition of weak solutions into Fourier modes in each `θ_a` (Milestone 11); Lemma 3.1 on the link and Lemma 3.3, which reduce completeness to the link eigenfunctions with `λ ≤ (2 + μ)(d + μ)` (Milestone 12, `link_spectral`, `expansion`). **Missing:** the separation of variables on the join link (Sturm–Liouville and Frobenius theory for (3.2), §§3.3–3.4) and induction on `n`. |
+| **completeness**: `𝓗_{≤2}` is *exactly* the list of Prop. 3.4, and there is no homogeneous harmonic function of degree in `(2, 2+μ)` | **Proved** (Milestone 13, `0 < β_a < 1`): `prop_3_4`, `cone_expansion_prop_3_4`. No Sturm–Liouville or Frobenius theory is used. Every homogeneous weakly harmonic `u ∈ W^{1,2}(B_1)` is a harmonic cone polynomial `∏ r_a^{k_a/β_a} T(k_aθ_a) h(r², s)` (`cone_homogeneous_mem_span`). The proof combines the Fischer decomposition, Stone–Weierstrass density on the link, and the orthogonality of different degrees given by Lemma 3.3. |
 | `𝒟₂` as coordinate operators (p. 2) | **Defined**: `D2Op`, `D2Op.apply`, `pd`, `coneLaplacian`, `paperLaplacian` |
 | harmonic examples in the paper's coordinates, including `r^{1/β} s cos θ` (p. 3) | **Proved**: `paperLaplacian_harmonicCos`, `paperLaplacian_mixedExample` |
 | optimality of the exponent (p. 3, items 1–2): `D u ~ r^{γ} cos θ` is not `α`-Hölder for `α > γ = holderExponentBound β` | **Proved**: `sharp_holderExponent`, `not_holderNearVertex_radialCosFn`; exclusion of pure conical operators for `β ≥ 1/2` (including `β = 1/2`): `not_holderNearVertex_pure_of_half_le` |
-| Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}`, with `|τ| ≤ C ‖P‖_{L²(B_1)}` (3.3) | **Proved for the span of the paper's list** (Milestone 11): `corollary_3_5_const`, `corollary_3_5` (`β_a ≤ 1`). It becomes the paper's statement once completeness (Prop. 3.4) is proved. |
+| Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}`, with `|τ| ≤ C ‖P‖_{L²(B_1)}` (3.3) | **Proved** for the span of the paper's list (Milestone 11: `corollary_3_5_const`, `corollary_3_5`), and for `𝓗_{≤2}` itself (Milestone 13: `corollary_3_5_homogeneous`, `0 < β_a < 1`). |
 | Lemma 2.2: log cut-off with small Dirichlet energy | Planned (explicit) |
-| Lemma 4.2, monotonicity at the vertex | Planned (elementary given the expansion) |
+| Lemma 4.2, monotonicity at the vertex | Planned. All ingredients are now proved: the expansion with the gap, `cone_expansion_prop_3_4` |
 
 ### 3.2 Metric geometry
 
@@ -238,17 +240,22 @@ No incompatible dependency has been added.
    Lemma 3.3 by the Wronskian identity, the radial ODE and Parseval. Not done: orthogonality and
    `L²` convergence of the Fourier modes in `θ_a` (no longer needed for Lemma 3.3), and the converse
    "homogeneous harmonic ⇒ link eigenfunction" beyond what Lemma 3.3 gives. See `STATUS.md`.
-6. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) by separation of variables on the join link
-   (§§3.3–3.4) (recommended Milestone 13). By Lemma 3.3 it is a statement about the link
-   eigenfunctions with `λ ≤ (2 + μ)(d + μ)`. Suggested order:
-   - the converse of §3.2: a homogeneous weakly harmonic `P ∈ W^{1,2}(B_1)` of degree `δ` is
-     `ρ^δ φ` with `φ` a link eigenfunction (from `rayCoeff_eq` and the uniqueness of the expansion);
-   - derivatives in the smooth directions `s_i` of a homogeneous harmonic function are homogeneous
-     harmonic of one degree less (translation invariance of `g⁻¹` in `s`);
-   - the rotations act on each (finite-dimensional) eigenspace, so eigenfunctions can be chosen as
-     Fourier modes `cos kθ_a`, `sin kθ_a`;
-   - the case of one cone factor `C(S¹_β) × ℝ^k` first (the join `S¹_β * S^{k−1}`, one
-     Sturm–Liouville problem), then induction on `n`.
+6. **Completeness of `𝓗_{≤2+α}`** (Prop. 3.4) (Milestone 13, **done**).
+   - The separation of variables on the join was replaced by a completeness argument for an
+     explicit family. Harmonic cone polynomials are weakly harmonic, and by the Fischer
+     decomposition and Stone–Weierstrass their link restrictions are dense.
+   - Homogeneous harmonic functions of different degrees are orthogonal on the link (from the
+     radial ODE of Lemma 3.3). So every homogeneous harmonic function is a harmonic cone
+     polynomial, and their degrees `∑ k_a/β_a + m` are explicit.
+   - Corollary 3.5 now holds for `𝓗_{≤2}`.
+   - See `STATUS.md`.
+6a. **Decay at the vertex** (recommended Milestone 14).
+   - The `L²(B_1)` projection `Π` onto `𝓗_{≤2}` and the decay
+     `‖u − Π u‖_{L²(B_ρ)} ≤ ρ^{2+μ} ‖u‖_{L²(B_1)}` (suitably normalised) for harmonic `u`, from
+     `cone_expansion_prop_3_4`.
+   - Lemma 4.2 (monotonicity at the vertex).
+   - Lemma 2.7 (summing increments over geometric scales).
+   - These are the vertex-centred inputs of the Campanato iteration. They do not need Prop. 2.5.
 7. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
    argument (`PAPER_REVIEW.md` §C, `research_notes/PROPOSITION_2_5_AUDIT.md`). This is not the
    arXiv proof, which has a false step (V9). Decide between formalising or assuming the Lipschitz
