@@ -36,6 +36,8 @@ open scoped ContDiff ENNReal
 
 namespace ConicalKahler.Sobolev
 
+open RealConeModel
+
 variable {d : ℕ} [NeZero d]
 
 local notation "𝔼" => EuclideanSpace ℝ (Fin d)
@@ -411,5 +413,138 @@ theorem cone_vertex_decay (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (
     rwa [hcongr ρ₁ (h12.trans h2), hcongr ρ₂ h2] at hdec
 
 end Cone
+
+/-! ### Balls of any radius -/
+
+section Scale
+
+variable {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq κ] [DecidableEq ι]
+
+/-- **`𝓗_{≤2}` is invariant under dilations**: `P ∈ explicitH2 ⇒ P(t ·) ∈ explicitH2`, `t > 0`. -/
+theorem comp_smul_mem_explicitH2 {β : κ → ConeAngle} {t : ℝ} (ht : 0 < t)
+    {P : RealConeModel κ ι → ℝ} (hP : P ∈ explicitH2 β) :
+    (fun y => P (t • y)) ∈ explicitH2 β := by
+  induction hP using Submodule.span_induction with
+  | mem P hP =>
+    rcases hP with ((rfl | ⟨i, rfl⟩) | ⟨a, ha, rfl | rfl⟩) | ⟨cc, Q, hcQ, rfl⟩
+    · exact one_mem_explicitH2
+    · have : (fun y : RealConeModel κ ι => (t • y).eucl i) = t • fun y => y.eucl i := by
+        funext y
+        simp
+      rw [this]
+      exact Submodule.smul_mem _ t (eucl_mem_explicitH2 i)
+    · have : (fun y : RealConeModel κ ι => harmCosFn (β a).beta 1 a (t • y)) =
+          t ^ ((1 : ℕ) / (β a).beta) • harmCosFn (ι := ι) (β a).beta 1 a := by
+        funext y
+        simp only [harmCosFn, cone_smul, Pi.smul_apply, smul_eq_mul]
+        rw [← Complex.real_smul, harmCosC_smul _ 1 ht]
+      rw [this]
+      exact Submodule.smul_mem _ _ (harmCos_mem_explicitH2 ha)
+    · have : (fun y : RealConeModel κ ι => harmSinFn (β a).beta 1 a (t • y)) =
+          t ^ ((1 : ℕ) / (β a).beta) • harmSinFn (ι := ι) (β a).beta 1 a := by
+        funext y
+        simp only [harmSinFn, cone_smul, Pi.smul_apply, smul_eq_mul]
+        rw [← Complex.real_smul, harmSinC_smul _ 1 ht]
+      rw [this]
+      exact Submodule.smul_mem _ _ (harmSin_mem_explicitH2 ha)
+    · have : (fun y : RealConeModel κ ι => quadFn cc Q (t • y)) = t ^ 2 • quadFn cc Q := by
+        funext y
+        simp only [quadFn, cone_smul, eucl_smul, Pi.smul_apply, smul_eq_mul, norm_mul,
+          Complex.norm_real, Real.norm_eq_abs, mul_pow, sq_abs]
+        rw [mul_add, Finset.mul_sum, Finset.mul_sum]
+        congr 1
+        · exact Finset.sum_congr rfl fun a _ => by ring
+        · refine Finset.sum_congr rfl fun i _ => ?_
+          rw [Finset.mul_sum]
+          exact Finset.sum_congr rfl fun j _ => by ring
+      rw [this]
+      exact Submodule.smul_mem _ _ (quadFn_mem_explicitH2 hcQ)
+  | zero => exact Submodule.zero_mem _
+  | add P Q _ _ hP hQ => exact Submodule.add_mem _ hP hQ
+  | smul r P _ hP => exact Submodule.smul_mem _ r hP
+
+theorem dilLp_zero {t : ℝ} (ht : 0 < t) {Ω : Set 𝔼} (hΩ : MeasurableSet Ω) :
+    dilLp ht hΩ (0 : Lp ℝ 2 (volume.restrict Ω)) = 0 := by
+  rw [Lp.eq_zero_iff_ae_eq_zero]
+  have h0 : ∀ᵐ y ∂(Measure.map (fun x : 𝔼 => t • x) (volume.restrict (dilDom t Ω))),
+      (0 : Lp ℝ 2 (volume.restrict Ω)) y = 0 := by
+    rw [map_smul_restrict ht hΩ]
+    exact Measure.ae_smul_measure (Lp.coeFn_zero ℝ 2 _) _
+  filter_upwards [dilLp_ae ht hΩ (0 : Lp ℝ 2 (volume.restrict Ω)),
+    ae_of_ae_map (measurable_const_smul t).aemeasurable h0] with x hx hx'
+  rw [hx, hx', Pi.zero_apply]
+
+theorem cone_vertex_monotone_of_eq (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {μ : ℝ} (hμ1 : μ ≤ 1)
+    (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {Ω : Set 𝔼} (hΩ : Ω = ball (0 : 𝔼) 1)
+    {u : L2Pair volume Ω} (hu : (coneCoeff β e).IsWeakSolution 0 u)
+    (horth : ∀ P ∈ explicitH2 β, ∫ x in Ω, u.fst x * P ((coordIso e).symm x) = 0)
+    {ρ₁ ρ₂ : ℝ} (h1 : 0 < ρ₁) (h12 : ρ₁ ≤ ρ₂) (h2 : ρ₂ ≤ 1) :
+    ∫ x in ball (0 : 𝔼) ρ₁, u.fst x ^ 2 ≤
+      (ρ₁ / ρ₂) ^ (2 * (2 + μ) + d) * ∫ x in ball (0 : 𝔼) ρ₂, u.fst x ^ 2 := by
+  subst hΩ
+  exact cone_vertex_monotone hd β hβ e hμ1 hμ hu horth h1 h12 h2
+
+/-- **Lemma 4.2 for the cone on `B_R`.** Let `u ∈ W^{1,2}(B_R)` be weakly harmonic and
+`L²(B_R)`-orthogonal to `𝓗_{≤2}`. Then `∫_{B_{ρ₁}} u² ≤ (ρ₁/ρ₂)^{2(2+μ)+d} ∫_{B_{ρ₂}} u²` for
+`0 < ρ₁ ≤ ρ₂ ≤ R`. (Dilate to `B_1`; `𝓗_{≤2}` is dilation invariant.) -/
+theorem cone_vertex_monotone_ball (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {μ : ℝ} (hμ1 : μ ≤ 1)
+    (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {R : ℝ} (hR : 0 < R)
+    {u : L2Pair volume (ball (0 : 𝔼) R)} (hu : (coneCoeff β e).IsWeakSolution 0 u)
+    (horth : ∀ P ∈ explicitH2 β, ∫ x in ball (0 : 𝔼) R, u.fst x * P ((coordIso e).symm x) = 0)
+    {ρ₁ ρ₂ : ℝ} (h1 : 0 < ρ₁) (h12 : ρ₁ ≤ ρ₂) (h2 : ρ₂ ≤ R) :
+    ∫ x in ball (0 : 𝔼) ρ₁, u.fst x ^ 2 ≤
+      (ρ₁ / ρ₂) ^ (2 * (2 + μ) + d) * ∫ x in ball (0 : 𝔼) ρ₂, u.fst x ^ 2 := by
+  have hmeas : MeasurableSet (ball (0 : 𝔼) R) := measurableSet_ball
+  have hdom : dilDom R (ball (0 : 𝔼) R) = ball (0 : 𝔼) 1 := by
+    have := dilDom_ball hR (0 : 𝔼) 1
+    rwa [mul_one, smul_zero] at this
+  set v := Sobolev.dilate hR hmeas u
+  have hv : (coneCoeff β e).IsWeakSolution 0 v := by
+    have := hu.dilate hR (fun x => coneCoeffA_smul β e hR.ne' x) hmeas
+    rwa [dilLp_zero hR hmeas, smul_zero] at this
+  have hvfst : (v.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (dilDom R (ball (0 : 𝔼) R))]
+      fun x => u.fst (R • x) := dilLp_ae hR hmeas u.fst
+  -- orthogonality after dilation
+  have hvorth : ∀ P ∈ explicitH2 β, ∫ x in dilDom R (ball (0 : 𝔼) R),
+      v.fst x * P ((coordIso e).symm x) = 0 := by
+    intro P hP
+    have hP' := comp_smul_mem_explicitH2 (inv_pos.mpr hR) hP
+    calc ∫ x in dilDom R (ball (0 : 𝔼) R), v.fst x * P ((coordIso e).symm x)
+        = ∫ x in dilDom R (ball (0 : 𝔼) R), (fun y => u.fst y * P (R⁻¹ • (coordIso e).symm y))
+            (R • x) := by
+          refine integral_congr_ae ?_
+          filter_upwards [hvfst] with x hx
+          rw [hx, map_smul, smul_smul, inv_mul_cancel₀ hR.ne', one_smul]
+      _ = (R ^ d)⁻¹ • ∫ y in ball (0 : 𝔼) R, u.fst y * P (R⁻¹ • (coordIso e).symm y) := by
+          convert setIntegral_comp_smul_dilDom hR hmeas
+            (fun y => u.fst y * P (R⁻¹ • (coordIso e).symm y)) using 1
+      _ = 0 := by rw [horth _ hP', smul_zero]
+  have hρ : ∀ ρ, 0 < ρ → ρ ≤ R → ∫ x in ball (0 : 𝔼) (ρ / R), v.fst x ^ 2 =
+      (R ^ d)⁻¹ * ∫ x in ball (0 : 𝔼) ρ, u.fst x ^ 2 := by
+    intro ρ hρ0 hρR
+    have hsub : ball (0 : 𝔼) (ρ / R) ⊆ dilDom R (ball (0 : 𝔼) R) := by
+      rw [hdom]
+      exact ball_subset_ball ((div_le_one hR).mpr hρR)
+    calc ∫ x in ball (0 : 𝔼) (ρ / R), v.fst x ^ 2
+        = ∫ x in ball (R⁻¹ • (0 : 𝔼)) (ρ / R), (fun y => u.fst y ^ 2) (R • x) := by
+          rw [smul_zero]
+          refine integral_congr_ae ?_
+          filter_upwards [ae_restrict_of_ae_restrict_of_subset hsub hvfst] with x hx
+          rw [hx]
+      _ = (R ^ d)⁻¹ • ∫ y in ball (0 : 𝔼) (R * (ρ / R)), u.fst y ^ 2 := by
+          convert setIntegral_ball_dilate hR (0 : 𝔼) (ρ / R) (fun y => u.fst y ^ 2) using 1
+      _ = (R ^ d)⁻¹ * ∫ x in ball (0 : 𝔼) ρ, u.fst x ^ 2 := by
+          rw [mul_div_cancel₀ _ hR.ne', smul_eq_mul]
+  have hmain := cone_vertex_monotone_of_eq hd β hβ e hμ1 hμ hdom hv hvorth
+    (div_pos h1 hR) (div_le_div_of_nonneg_right h12 hR.le) ((div_le_one hR).mpr h2)
+  rw [hρ ρ₁ h1 (h12.trans h2), hρ ρ₂ (h1.trans_le h12) h2,
+    div_div_div_cancel_right₀ hR.ne'] at hmain
+  have hRd : 0 < (R ^ d)⁻¹ := inv_pos.mpr (pow_pos hR d)
+  rw [mul_left_comm] at hmain
+  exact le_of_mul_le_mul_left hmain hRd
+
+end Scale
 
 end ConicalKahler.Sobolev
