@@ -561,4 +561,42 @@ theorem lintegral_ball_eq_tsum {ι : Type*} [Countable ι]
   filter_upwards [hfin] with r hr
   rw [ENNReal.tsum_mul_left, lintegral_slice_eq_tsum B hf hr]
 
+/-- **Polar coordinates for `∫_{B_1} f P`**, `δ ≥ 0`:
+`∫_{B_1} f(x) |x|^δ φ(x/|x|) dx = ∫_0^1 r^{d-1} r^δ f_φ(r) dr`. -/
+theorem integral_ball_mul_homP {f : 𝔼 → ℝ} (hf2 : MemLp f 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    {δ : ℝ} (hδ : 0 ≤ δ) (v : LinkPair d) :
+    ∫ x in ball (0 : 𝔼) 1, f x * homP δ v x =
+      ∫ r in Ioo (0 : ℝ) 1, r ^ (d - 1) * (r ^ δ * rayCoeff f (fun w => v.fst w) r) := by
+  have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+  have hP2 := memLp_homFun_ball δ (Lp.memLp v.fst) 1 (by linarith)
+  have hint : IntegrableOn (fun x => f x * homP δ v x) (ball (0 : 𝔼) 1) :=
+    integrable_mul_of_memLp_two hf2 hP2
+  rw [← integral_indicator measurableSet_ball,
+    integral_polar_iter_symm (hint.integrable_indicator measurableSet_ball)]
+  have hin : ∀ r ∈ Ioi (0 : ℝ), r ^ (d - 1) • ∫ w, (ball (0 : 𝔼) 1).indicator
+      (fun x => f x * homP δ v x) (r • (w : 𝔼)) ∂(sphMeasure d) =
+      (Iio (1 : ℝ)).indicator (fun r => r ^ (d - 1) * (r ^ δ *
+        rayCoeff f (fun w => v.fst w) r)) r := by
+    intro r hr
+    have hr0 : (0 : ℝ) < r := hr
+    have hn : ∀ w : Sph d, ‖r • (w : 𝔼)‖ = r := fun w => by
+      rw [norm_smul, norm_eq_of_mem_sphere w, mul_one, Real.norm_eq_abs, abs_of_pos hr0]
+    by_cases hr1 : r < 1
+    · have e : ∫ w, (ball (0 : 𝔼) 1).indicator (fun x => f x * homP δ v x) (r • (w : 𝔼))
+          ∂(sphMeasure d) = r ^ δ * rayCoeff f (fun w => v.fst w) r := by
+        rw [rayCoeff, ← integral_const_mul]
+        refine integral_congr_ae (Eventually.of_forall fun w => ?_)
+        simp only
+        rw [indicator_of_mem (mem_ball_zero_iff.mpr (by rw [hn w]; exact hr1)), homP,
+          homFun_smul_sph δ _ hr0, smul_eq_mul]
+        ring
+      rw [indicator_of_mem (show r ∈ Iio (1 : ℝ) from hr1), smul_eq_mul, e]
+    · rw [indicator_of_notMem (show r ∉ Iio (1 : ℝ) from hr1)]
+      have : ∀ w : Sph d, (ball (0 : 𝔼) 1).indicator (fun x => f x * homP δ v x)
+          (r • (w : 𝔼)) = 0 := fun w =>
+        indicator_of_notMem (fun h => hr1 (by rw [← hn w]; exact mem_ball_zero_iff.mp h)) _
+      simp [this]
+  rw [setIntegral_congr_fun (measurableSet_Ioi (a := (0 : ℝ))) hin,
+    setIntegral_indicator (measurableSet_Iio (a := (1 : ℝ))), Ioi_inter_Iio]
+
 end ConicalKahler.Sobolev
