@@ -232,4 +232,130 @@ theorem homPair_isWeakSolution (hd : 2 ≤ d) {c : CoeffField 𝔼 volume} (hc :
 
 end HomPair
 
+/-! ### Products with test functions and the `W^{1,2}`–`W^{1,2}_0` duality -/
+
+section Products
+
+variable {Ω : Set (EuclideanSpace ℝ (Fin d))}
+
+/-- **Integration by parts between `W^{1,2}(Ω)` and `W^{1,2}_0(Ω)`**:
+`∫ u ⟨∇ζ, e⟩ = -∫ ζ ⟨∇u, e⟩` for `u ∈ W^{1,2}(Ω)` and `ζ ∈ W^{1,2}_0(Ω)`. -/
+theorem integral_mul_inner_of_mem_H01 {u ζ : L2Pair volume Ω} (hu : u ∈ W12 volume Ω)
+    (hζ : ζ ∈ H01 volume Ω) (e : 𝔼) :
+    ∫ x in Ω, u.fst x * ⟪ζ.snd x, e⟫_ℝ = -∫ x in Ω, ζ.fst x * ⟪u.snd x, e⟫_ℝ := by
+  set L₁ : Lp 𝔼 2 (volume.restrict Ω) →L[ℝ] Lp ℝ 2 (volume.restrict Ω) :=
+    (innerSL ℝ e).compLpL 2 _
+  set L₂ : Lp ℝ 2 (volume.restrict Ω) →L[ℝ] Lp 𝔼 2 (volume.restrict Ω) :=
+    ((ContinuousLinearMap.id ℝ ℝ).smulRight e).compLpL 2 _
+  have hfst : Continuous fun ψ : L2Pair volume Ω => ψ.fst :=
+    continuous_fst.comp (WithLp.prodContinuousLinearEquiv 2 ℝ _ _).continuous
+  have hsnd : Continuous fun ψ : L2Pair volume Ω => ψ.snd :=
+    continuous_snd.comp (WithLp.prodContinuousLinearEquiv 2 ℝ _ _).continuous
+  have hclosed : IsClosed {ψ : L2Pair volume Ω |
+      ⟪u.fst, L₁ ψ.snd⟫_ℝ = -⟪u.snd, L₂ ψ.fst⟫_ℝ} :=
+    isClosed_eq (continuous_const.inner (L₁.continuous.comp hsnd))
+      (continuous_const.inner (L₂.continuous.comp hfst)).neg
+  have hsub : (testSubmodule volume Ω Ω : Set (L2Pair volume Ω)) ⊆
+      {ψ : L2Pair volume Ω | ⟪u.fst, L₁ ψ.snd⟫_ℝ = -⟪u.snd, L₂ ψ.fst⟫_ℝ} := by
+    rintro _ ⟨ψ, hψ, rfl⟩
+    change ⟪u.fst, (innerSL ℝ e).compLp (graph volume Ω hψ).snd⟫_ℝ =
+      -⟪u.snd, ((ContinuousLinearMap.id ℝ ℝ).smulRight e).compLp (graph volume Ω hψ).fst⟫_ℝ
+    rw [compLp_graph_snd, compLp_graph_fst]
+    exact hu ψ hψ e
+  have hmem : ζ ∈ closure (testSubmodule volume Ω Ω : Set (L2Pair volume Ω)) := by
+    rwa [H01, ← SetLike.mem_coe, Submodule.topologicalClosure_coe] at hζ
+  have h := closure_minimal hsub hclosed hmem
+  simp only [mem_setOf_eq] at h
+  rw [L2.inner_def, L2.inner_def] at h
+  have e1 : ∫ x in Ω, ⟪u.fst x, (L₁ ζ.snd) x⟫_ℝ = ∫ x in Ω, u.fst x * ⟪ζ.snd x, e⟫_ℝ := by
+    refine integral_congr_ae ?_
+    filter_upwards [(innerSL ℝ e).coeFn_compLp ζ.snd] with x hx
+    change ⟪u.fst x, ((innerSL ℝ e).compLp ζ.snd) x⟫_ℝ = _
+    rw [hx, innerSL_apply_apply, real_inner_comm e]
+    simp [mul_comm]
+  have e2 : ∫ x in Ω, ⟪u.snd x, (L₂ ζ.fst) x⟫_ℝ = ∫ x in Ω, ζ.fst x * ⟪u.snd x, e⟫_ℝ := by
+    refine integral_congr_ae ?_
+    filter_upwards [((ContinuousLinearMap.id ℝ ℝ).smulRight e).coeFn_compLp ζ.fst] with x hx
+    change ⟪u.snd x, (((ContinuousLinearMap.id ℝ ℝ).smulRight e).compLp ζ.fst) x⟫_ℝ = _
+    rw [hx, ContinuousLinearMap.smulRight_apply, ContinuousLinearMap.id_apply,
+      real_inner_smul_right]
+  rw [e1, e2] at h
+  exact h
+
+theorem gradient_eq_zero_of_eventuallyEq_const {f : 𝔼 → ℝ} {x : 𝔼} {a : ℝ}
+    (h : f =ᶠ[𝓝 x] fun _ => a) : gradient f x = 0 := by
+  rw [gradient, h.fderiv_eq, fderiv_const_apply, map_zero]
+
+/-- **Products with test functions lie in `W^{1,2}_0`.** For `v = (u, G) ∈ W^{1,2}(Ω)` and a test
+function `η` on the open set `Ω`, there is `ζ ∈ W^{1,2}_0(Ω)` with `ζ = (η u, η G + u ∇η)`
+almost everywhere. Proof: polarise the cut-off `cutPair` (which multiplies by squares), using
+`η = ((χ + η)/2)² - ((χ - η)/2)²` for a cut-off `χ = 1` near the support of `η`. -/
+theorem exists_smulPair_mem_H01 (hΩ : IsOpen Ω) {v : L2Pair volume Ω} (hv : v ∈ W12 volume Ω)
+    {η : 𝔼 → ℝ} (hη : IsTestFn Ω η) :
+    ∃ ζ ∈ H01 volume Ω, (ζ.fst : 𝔼 → ℝ) =ᵐ[volume.restrict Ω] (fun x => η x * v.fst x) ∧
+      (ζ.snd : 𝔼 → 𝔼) =ᵐ[volume.restrict Ω]
+        (fun x => η x • v.snd x + v.fst x • gradient η x) := by
+  obtain ⟨L, hL, hηL, hLΩ⟩ := exists_compact_between hη.hasCompactSupport.isCompact hΩ
+    hη.tsupport_subset
+  obtain ⟨χ, hχ, -, hχ1⟩ := exists_cutoff hL hΩ hLΩ
+  have hg₁ : IsTestFn Ω (fun x => (χ x + η x) / 2) := by
+    have := (hχ.add hη).const_smul (1 / 2 : ℝ)
+    convert this using 1
+    funext x
+    simp [div_eq_inv_mul]
+  have hg₂ : IsTestFn Ω (fun x => (χ x - η x) / 2) := by
+    have := (hχ.add (hη.const_smul (-1 : ℝ))).const_smul (1 / 2 : ℝ)
+    convert this using 1
+    funext x
+    simp only [Pi.smul_apply, Pi.add_apply, smul_eq_mul]
+    ring
+  refine ⟨cutPair hg₁ v - cutPair hg₂ v,
+    (H01 volume Ω).sub_mem (cutPair_mem_H01 hΩ hv hg₁) (cutPair_mem_H01 hΩ hv hg₂), ?_, ?_⟩
+  · filter_upwards [Lp.coeFn_sub (cutPair hg₁ v).fst (cutPair hg₂ v).fst,
+      (memLp_cutFst (v := v) hg₁).coeFn_toLp, (memLp_cutFst (v := v) hg₂).coeFn_toLp] with x h h1 h2
+    rw [WithLp.sub_fst, h, Pi.sub_apply, cutPair_fst, cutPair_fst, h1, h2, cutFst, cutFst]
+    by_cases hx : x ∈ tsupport η
+    · rw [hχ1 x (interior_subset (hηL hx))]
+      ring
+    · rw [image_eq_zero_of_notMem_tsupport hx]
+      ring
+  · filter_upwards [Lp.coeFn_sub (cutPair hg₁ v).snd (cutPair hg₂ v).snd,
+      (memLp_cutSnd (v := v) hg₁).coeFn_toLp, (memLp_cutSnd (v := v) hg₂).coeFn_toLp] with x h h1 h2
+    rw [WithLp.sub_snd, h, Pi.sub_apply, cutPair_snd, cutPair_snd, h1, h2, cutSnd, cutSnd]
+    have e1 : (fun y => (χ y + η y) / 2) = (1 / 2 : ℝ) • (χ + η) := by
+      funext y
+      simp only [Pi.smul_apply, Pi.add_apply, smul_eq_mul]
+      ring
+    have e2 : (fun y => (χ y - η y) / 2) = (1 / 2 : ℝ) • (χ + (-1 : ℝ) • η) := by
+      funext y
+      simp only [Pi.smul_apply, Pi.add_apply, smul_eq_mul]
+      ring
+    have hdχ := hχ.differentiable
+    have hdη := hη.differentiable
+    have hG1 : gradient (fun y => (χ y + η y) / 2) x =
+        (1 / 2 : ℝ) • (gradient χ x + gradient η x) := by
+      rw [e1, gradient_const_smul (hdχ.add hdη), gradient_add hdχ hdη]
+    have hG2 : gradient (fun y => (χ y - η y) / 2) x =
+        (1 / 2 : ℝ) • (gradient χ x - gradient η x) := by
+      rw [e2, gradient_const_smul (hdχ.add (hdη.const_smul _)),
+        gradient_add hdχ (hdη.const_smul _), gradient_const_smul hdη, neg_one_smul,
+        ← sub_eq_add_neg]
+    rw [hG1, hG2]
+    by_cases hx : x ∈ tsupport η
+    · have hx' : x ∈ interior L := hηL hx
+      have hχx : χ =ᶠ[𝓝 x] fun _ => (1 : ℝ) := by
+        filter_upwards [isOpen_interior.mem_nhds hx'] with y hy
+        exact hχ1 y (interior_subset hy)
+      rw [gradient_eq_zero_of_eventuallyEq_const hχx, hχ1 x (interior_subset hx')]
+      simp only [zero_add, zero_sub, smul_neg, smul_smul, smul_add, smul_sub]
+      module
+    · have hηx : η =ᶠ[𝓝 x] fun _ => (0 : ℝ) := by
+        filter_upwards [(isClosed_tsupport η).isOpen_compl.mem_nhds hx] with y hy
+        exact image_eq_zero_of_notMem_tsupport hy
+      rw [gradient_eq_zero_of_eventuallyEq_const hηx, image_eq_zero_of_notMem_tsupport hx]
+      simp only [add_zero, sub_zero, smul_smul, zero_smul, smul_zero]
+      module
+
+end Products
+
 end ConicalKahler.Sobolev
