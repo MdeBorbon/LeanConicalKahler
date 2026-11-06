@@ -88,6 +88,121 @@ theorem integral_ball_homP_eq (u : Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)
   rw [homP, homFun_smul_sph δ _ hr0, hn, smul_eq_mul]
   ring
 
+/-- **Polar coordinates on a shell**, Lebesgue integral version:
+`∫_{a<|x|<b} F = ∫_a^b r^{d-1} ∫_S F(r w) dσ dr`. -/
+theorem lintegral_shell_polar {F : 𝔼 → ℝ≥0∞} (hF : Measurable F) {a b : ℝ} (ha : 0 ≤ a) :
+    ∫⁻ x in shell d a b, F x =
+      ∫⁻ r in Ioo a b, ENNReal.ofReal (r ^ (d - 1)) * ∫⁻ w, F (r • (w : 𝔼)) ∂(sphMeasure d) := by
+  have hmeas : Measurable fun r : ℝ => ∫⁻ w, F (r • (w : 𝔼)) ∂(sphMeasure d) :=
+    Measurable.lintegral_prod_right (f := fun r (w : Sph d) => F (r • (w : 𝔼)))
+      (hF.comp (measurable_fst.smul (measurable_subtype_coe.comp measurable_snd)))
+  rw [← lintegral_indicator (isOpen_shell (d := d) a b).measurableSet, lintegral_polar]
+  have hpt : ∀ p : Sph d × Ioi (0 : ℝ), (shell d a b).indicator F (polarMap p) =
+      (Ioo a b).indicator (fun r => F (r • (p.1 : 𝔼))) (p.2 : ℝ) := by
+    intro p
+    by_cases hp : (p.2 : ℝ) ∈ Ioo a b
+    · rw [indicator_of_mem (show polarMap p ∈ shell d a b by
+          simpa [shell, norm_polarMap] using hp), indicator_of_mem hp]
+      rfl
+    · rw [indicator_of_notMem (show polarMap p ∉ shell d a b by
+          simpa [shell, norm_polarMap] using hp), indicator_of_notMem hp]
+  simp_rw [hpt]
+  have hmeasP : Measurable fun p : Sph d × Ioi (0 : ℝ) =>
+      (Ioo a b).indicator (fun r => F (r • (p.1 : 𝔼))) (p.2 : ℝ) := by
+    have h1 : Measurable fun p : Sph d × Ioi (0 : ℝ) => F ((p.2 : ℝ) • (p.1 : 𝔼)) :=
+      hF.comp ((measurable_subtype_coe.comp measurable_snd).smul
+        (measurable_subtype_coe.comp measurable_fst))
+    have h2 : MeasurableSet {p : Sph d × Ioi (0 : ℝ) | (p.2 : ℝ) ∈ Ioo a b} :=
+      measurableSet_Ioo.preimage (measurable_subtype_coe.comp measurable_snd)
+    have : (fun p : Sph d × Ioi (0 : ℝ) => (Ioo a b).indicator (fun r => F (r • (p.1 : 𝔼)))
+        (p.2 : ℝ)) = {p : Sph d × Ioi (0 : ℝ) | (p.2 : ℝ) ∈ Ioo a b}.indicator
+          fun p => F ((p.2 : ℝ) • (p.1 : 𝔼)) := by
+      funext p
+      by_cases hp : (p.2 : ℝ) ∈ Ioo a b
+      · rw [indicator_of_mem hp, indicator_of_mem (show p ∈ {p : Sph d × Ioi (0 : ℝ) |
+          (p.2 : ℝ) ∈ Ioo a b} from hp)]
+      · rw [indicator_of_notMem hp, indicator_of_notMem (show p ∉ {p : Sph d × Ioi (0 : ℝ) |
+          (p.2 : ℝ) ∈ Ioo a b} from hp)]
+    rw [this]
+    exact h1.indicator h2
+  rw [lintegral_prod_symm _ hmeasP.aemeasurable]
+  have hin : ∀ r : Ioi (0 : ℝ), ∫⁻ w, (Ioo a b).indicator (fun r => F (r • (w : 𝔼))) (r : ℝ)
+      ∂(sphMeasure d) = (Ioo a b).indicator (fun r => ∫⁻ w, F (r • (w : 𝔼)) ∂(sphMeasure d))
+        (r : ℝ) := by
+    intro r
+    by_cases hr : (r : ℝ) ∈ Ioo a b
+    · simp only [indicator_of_mem hr]
+    · simp only [indicator_of_notMem hr, lintegral_zero]
+  simp_rw [hin]
+  rw [lintegral_radMeasure _ (hmeas.indicator measurableSet_Ioo),
+    ← lintegral_indicator measurableSet_Ioi, ← lintegral_indicator measurableSet_Ioo]
+  congr 1
+  funext r
+  by_cases hr : r ∈ Ioo a b
+  · have hr0 : r ∈ Ioi (0 : ℝ) := ha.trans_lt hr.1
+    simp only [indicator_of_mem hr0, indicator_of_mem hr]
+  · simp only [indicator_of_notMem hr, mul_zero, indicator_zero', Pi.zero_apply]
+    by_cases hr0 : r ∈ Ioi (0 : ℝ)
+    · simp [indicator_of_mem hr0, indicator_of_notMem hr]
+    · simp [indicator_of_notMem hr0]
+
+theorem measurable_homFun_real {Ψ : Sph d → ℝ} (hΨ : Measurable Ψ) (k : ℝ) :
+    Measurable (homFun k Ψ) :=
+  (measurable_norm.pow_const k).smul (hΨ.comp measurable_sphProj)
+
+/-- **Ray coefficients are integrable on subintervals `(a, b)`, `0 < a`, `b ≤ 1`.** -/
+theorem integrableOn_rayCoeff (u : Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    (φ : Lp ℝ 2 (sphMeasure d)) {a b : ℝ} (ha : 0 < a) (hb : b ≤ 1) :
+    IntegrableOn (rayCoeff u φ) (Ioo a b) := by
+  have hshell : shell d a b ⊆ ball (0 : 𝔼) 1 := fun x hx =>
+    mem_ball_zero_iff.mpr (hx.2.trans_le hb)
+  have := isFiniteMeasure_shell (d := d) a b
+  have hu2 : MemLp (fun x => u x) 2 (volume.restrict (shell d a b)) :=
+    (Lp.memLp u).mono_measure (Measure.restrict_mono hshell le_rfl)
+  have hφ2 : MemLp (homFun 0 fun w => φ w) 2 (volume.restrict (shell d a b)) :=
+    memLp_homFun 0 (Lp.memLp φ) ha.le (subset_refl _) (shellWeight_ne_top ha b 0)
+  have hfin : ∫⁻ x in shell d a b, ‖u x‖ₑ * ‖homFun 0 (fun w => φ w) x‖ₑ < ⊤ := by
+    have := (integrable_mul_of_memLp_two hu2 hφ2).2
+    rw [HasFiniteIntegral] at this
+    simpa only [enorm_mul] using this
+  rw [lintegral_shell_polar (F := fun x => ‖u x‖ₑ * ‖homFun 0 (fun w => φ w) x‖ₑ)
+    ((Lp.stronglyMeasurable u).measurable.enorm.mul
+    (measurable_homFun_real (Lp.stronglyMeasurable φ).measurable 0).enorm) ha.le] at hfin
+  set L : ℝ → ℝ≥0∞ := fun r => ∫⁻ w, ‖u (r • (w : 𝔼)) * φ w‖ₑ ∂(sphMeasure d)
+  have hL : ∀ r ∈ Ioo a b, ∫⁻ w, ‖u (r • (w : 𝔼))‖ₑ * ‖homFun 0 (fun w => φ w) (r • (w : 𝔼))‖ₑ
+      ∂(sphMeasure d) = L r := fun r hr => by
+    refine lintegral_congr fun w => ?_
+    rw [homFun_smul_sph 0 _ (ha.trans hr.1), Real.rpow_zero, one_smul, enorm_mul]
+  rw [setLIntegral_congr_fun measurableSet_Ioo fun r hr => by rw [hL r hr] ] at hfin
+  have ha0 : ENNReal.ofReal (a ^ (d - 1)) ≠ 0 := by
+    rw [ne_eq, ENNReal.ofReal_eq_zero, not_le]
+    positivity
+  have hLfin : ∫⁻ r in Ioo a b, L r < ⊤ := by
+    have hle : ENNReal.ofReal (a ^ (d - 1)) * ∫⁻ r in Ioo a b, L r ≤
+        ∫⁻ r in Ioo a b, ENNReal.ofReal (r ^ (d - 1)) * L r := by
+      rw [← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+      refine setLIntegral_mono' measurableSet_Ioo fun r hr => ?_
+      gcongr
+      exact hr.1.le
+    have h2 := hle.trans_lt hfin
+    rcases ENNReal.mul_lt_top_iff.mp h2 with h | h | h
+    · exact h.2
+    · exact (ha0 h).elim
+    · rw [h]
+      exact ENNReal.zero_lt_top
+  refine ⟨(stronglyMeasurable_rayCoeff (Lp.stronglyMeasurable u)
+    (Lp.stronglyMeasurable φ)).aestronglyMeasurable, ?_⟩
+  refine lt_of_le_of_lt (lintegral_mono fun r => ?_) hLfin
+  exact enorm_integral_le_lintegral_enorm _
+
+/-- Ray coefficients are locally integrable on `(0, 1)`. -/
+theorem locallyIntegrableOn_rayCoeff (u : Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    (φ : Lp ℝ 2 (sphMeasure d)) : LocallyIntegrableOn (rayCoeff u φ) (Ioo 0 1) := by
+  intro t ht
+  refine ⟨Ioo (t / 2) ((t + 1) / 2), mem_nhdsWithin_of_mem_nhds (isOpen_Ioo.mem_nhds
+    ⟨by linarith [ht.1], by linarith [ht.2]⟩), integrableOn_rayCoeff u φ (by linarith [ht.1])
+      (by linarith [ht.2])⟩
+
 /-! ### The du Bois-Reymond lemma -/
 
 theorem exists_Ioo_of_tsupport {g : ℝ → ℝ} (hg : HasCompactSupport g)
