@@ -2,6 +2,7 @@ module
 
 public import ConicalKahler.Sobolev.Expansion
 public import Mathlib.Analysis.Calculus.BumpFunction.Normed
+public import Mathlib.MeasureTheory.Measure.SeparableMeasure
 
 /-!
 # Lemma 3.3: the expansion of harmonic functions
@@ -598,5 +599,97 @@ theorem integral_ball_mul_homP {f : 𝔼 → ℝ} (hf2 : MemLp f 2 (volume.restr
       simp [this]
   rw [setIntegral_congr_fun (measurableSet_Ioi (a := (0 : ℝ))) hin,
     setIntegral_indicator (measurableSet_Iio (a := (1 : ℝ))), Ioi_inter_Iio]
+
+theorem integral_Ioo_rpow {p : ℝ} (hp : -1 < p) : ∫ r in Ioo (0 : ℝ) 1, r ^ p = 1 / (p + 1) := by
+  rw [← integral_Ioc_eq_integral_Ioo, ← intervalIntegral.integral_of_le zero_le_one,
+    integral_rpow (Or.inl hp), Real.one_rpow, Real.zero_rpow (by linarith), sub_zero]
+
+/-! ### Lemma 3.3 -/
+
+/-- `L²(S)` is separable (the instance search exceeds its default size limit, so it is built by
+hand). -/
+theorem separableSpace_sph : TopologicalSpace.SeparableSpace (Lp ℝ 2 (sphMeasure d)) := by
+  have : Fact ((2 : ℝ≥0∞) ≠ ⊤) := ⟨by norm_num⟩
+  have h1 : IsSeparable (sphMeasure d) := instIsSeparableOfCountablyGeneratedOfSFinite _
+  have h2 : SecondCountableTopology (Lp ℝ 2 (sphMeasure d)) :=
+    MeasureTheory.Lp.SecondCountableTopology
+  exact TopologicalSpace.SecondCountableTopology.to_separableSpace
+
+section Lemma33
+
+variable {c : CoeffField (EuclideanSpace ℝ (Fin d)) volume}
+
+/-- The nonnegative indicial root `δ ≥ 0` of `δ (δ + d - 2) = λ`. -/
+def indicialRoot (d : ℕ) (lam : ℝ) : ℝ := (-((d : ℝ) - 2) + √(((d : ℝ) - 2) ^ 2 + 4 * lam)) / 2
+
+theorem indicialRoot_nonneg (hd : 2 ≤ d) {lam : ℝ} (hlam : 0 ≤ lam) : 0 ≤ indicialRoot d lam := by
+  have hd' : (0 : ℝ) ≤ (d : ℝ) - 2 := by
+    have : (2 : ℝ) ≤ d := by exact_mod_cast hd
+    linarith
+  have h : (d : ℝ) - 2 ≤ √(((d : ℝ) - 2) ^ 2 + 4 * lam) :=
+    Real.le_sqrt_of_sq_le (by linarith)
+  unfold indicialRoot
+  linarith
+
+theorem indicialRoot_spec (lam : ℝ) (hlam : 0 ≤ lam) (hd : 2 ≤ d) :
+    lam = indicialRoot d lam * (indicialRoot d lam + d - 2) := by
+  have hpos : 0 ≤ ((d : ℝ) - 2) ^ 2 + 4 * lam := by positivity
+  have hs := Real.sq_sqrt hpos
+  unfold indicialRoot
+  nlinarith [hs]
+
+/-- **Lemma 3.3 (expansion of harmonic functions).** Let `c` be conical, `d ≥ 2`, and let
+`u ∈ W^{1,2}(B_1)` be weakly harmonic. Then there are a Hilbert basis `{φ_i}` of `L²(S)` of link
+eigenfunctions (eigenvalues `λ_i = δ_i (δ_i + d - 2)`, `δ_i ≥ 0`), and coefficients `a_i`, such that
+with `P_i = |x|^{δ_i} φ_i(x/|x|)` (weakly harmonic on `B_1`, mutually orthogonal in `L²(B_1)`)
+
+  `u = ∑_i a_i P_i` in `L²(B_1)` (unconditional convergence). -/
+theorem expansion (hd : 2 ≤ d) (hc : c.IsConical) {u : L2Pair volume (ball (0 : 𝔼) 1)}
+    (hu : c.IsWeakSolution 0 u) :
+    ∃ (s : Set (Lp ℝ 2 (sphMeasure d))) (B : HilbertBasis s ℝ (Lp ℝ 2 (sphMeasure d)))
+      (Γ : s → Lp 𝔼 2 (sphMeasure d)) (lam δ a : s → ℝ)
+      (P : s → Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1))),
+      ⇑B = ((↑) : s → Lp ℝ 2 (sphMeasure d)) ∧
+      (∀ i, 0 ≤ δ i ∧ lam i = δ i * (δ i + d - 2) ∧
+        IsLinkEigen hc (lam i) (WithLp.toLp 2 ((i : Lp ℝ 2 (sphMeasure d)), Γ i)) ∧
+        (P i : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+          homP (δ i) (WithLp.toLp 2 ((i : Lp ℝ 2 (sphMeasure d)), Γ i)) ∧
+        ∃ Q : L2Pair volume (ball (0 : 𝔼) 1), c.IsWeakSolution 0 Q ∧ Q.fst = P i) ∧
+      (∀ i j, i ≠ j → ⟪P i, P j⟫_ℝ = 0) ∧
+      HasSum (fun i => a i • P i) u.fst := by
+  obtain ⟨s, B, Γ, lam, hB, heig, -⟩ := link_spectral hc
+  have := separableSpace_sph (d := d)
+  have hcount : Countable s :=
+    Orthonormal.countable_of_separable
+      (hB ▸ B.orthonormal : Orthonormal ℝ (Subtype.val : s → Lp ℝ 2 (sphMeasure d)))
+  set v : s → LinkPair d := fun i => WithLp.toLp 2 ((i : Lp ℝ 2 (sphMeasure d)), Γ i)
+  set δ : s → ℝ := fun i => indicialRoot d (lam i)
+  have hδ0 : ∀ i, 0 ≤ δ i := fun i => indicialRoot_nonneg hd (heig i).1
+  have hroot : ∀ i, lam i = δ i * (δ i + d - 2) := fun i => indicialRoot_spec _ (heig i).1 hd
+  have hdpos : (2 : ℝ) ≤ d := by exact_mod_cast hd
+  have hP : ∀ i, MemLp (homP (δ i) (v i)) 2 (volume.restrict (ball (0 : 𝔼) 1)) := fun i =>
+    memLp_homFun_ball (δ i) (Lp.memLp (v i).fst) 1 (by linarith [hδ0 i])
+  have hG : ∀ i, MemLp (homG (δ i) (v i)) 2 (volume.restrict (ball (0 : 𝔼) 1)) := by
+    intro i
+    by_cases h : 0 < 2 * (δ i - 1) + d
+    · exact memLp_homFun_ball (δ i - 1) (memLp_homGradProfile _ _) 1 h
+    · have hδi : δ i = 0 := by linarith [hδ0 i, not_lt.mp h]
+      have hlam0 : lam i = 0 := by rw [hroot i, hδi, zero_mul]
+      have hE := (heig i).2
+      rw [hlam0] at hE
+      have hsnd : (v i).snd = 0 := hE.snd_eq_zero
+      have hprof : homGradProfile (δ i) (v i) =ᵐ[sphMeasure d] 0 := by
+        filter_upwards [Lp.coeFn_zero 𝔼 2 (sphMeasure d)] with w hw
+        rw [homGradProfile, hδi, zero_mul, zero_smul, zero_add, hsnd, hw, Pi.zero_apply]
+      have hz : homG (δ i) (v i) =ᵐ[volume] 0 := by
+        filter_upwards [homFun_congr_ae hprof (δ i - 1)] with x hx
+        rw [homG, hx]
+        simp [homFun]
+      exact (MemLp.zero : MemLp (0 : 𝔼 → 𝔼) 2 (volume.restrict (ball (0 : 𝔼) 1))).ae_eq
+        (Filter.EventuallyEq.symm (ae_restrict_of_ae hz))
+  choose a ha using fun i => rayCoeff_eq hd hc (heig i).2 (hroot i) (hP i) (hG i) hu
+  sorry
+
+end Lemma33
 
 end ConicalKahler.Sobolev
