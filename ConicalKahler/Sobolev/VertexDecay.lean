@@ -545,6 +545,103 @@ theorem cone_vertex_monotone_ball (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : 
   rw [mul_left_comm] at hmain
   exact le_of_mul_le_mul_left hmain hRd
 
+/-- **Lemma 4.3 (monotonicity near the vertex).** Let `0 < β_a < 1`, `μ` as in eq. (1.1),
+`0 ≤ α < μ` and `0 < q < 1`. There is `ε₀ > 0` such that the following holds for `0 ≤ ε < ε₀`. Let
+`u ∈ W^{1,2}(Ω)` be weakly harmonic with `B_{1−ε} ⊆ Ω`, and `L²(B_{1−ε})`-orthogonal to `𝓗_{≤2}`.
+For every `U ⊆ B_{q+ε}`,
+
+  `q^{-d} ∫_U u² ≤ q^{2(2+α)} ∫_Ω u²`.
+
+In the paper `Ω = B(x, 1)` and `U = B(x, q)` with `|x| < ε` (geodesic or Euclidean balls), and the
+conclusion reads `‖u‖_{B(x,q)} ≤ q^{2+α} ‖u‖_{B(x,1)}`. The paper states a strict inequality,
+which fails for `u = 0`. -/
+theorem cone_decay_near_vertex (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {μ : ℝ} (hμ1 : μ ≤ 1)
+    (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {α q : ℝ} (hα0 : 0 ≤ α) (hα : α < μ)
+    (hq0 : 0 < q) (hq1 : q < 1) :
+    ∃ ε₀ > 0, ∀ ε, 0 ≤ ε → ε < ε₀ → ∀ {Ω U : Set 𝔼} {u : L2Pair volume Ω},
+      (coneCoeff β e).IsWeakSolution 0 u → ball (0 : 𝔼) (1 - ε) ⊆ Ω →
+      (∀ P ∈ explicitH2 β, ∫ x in ball (0 : 𝔼) (1 - ε), u.fst x * P ((coordIso e).symm x) = 0) →
+      U ⊆ ball (0 : 𝔼) (q + ε) →
+      (q ^ d)⁻¹ * ∫ x in U, u.fst x ^ 2 ≤ q ^ (2 * (2 + α)) * ∫ x in Ω, u.fst x ^ 2 := by
+  set p : ℝ := 2 * (2 + μ) + d
+  set p' : ℝ := 2 * (2 + α) + d
+  have hdpos : (0 : ℝ) ≤ d := Nat.cast_nonneg d
+  have hp : 0 ≤ p := by
+    simp only [p]
+    linarith
+  -- the function `g(ε) = ((q + ε)/(1 − ε))^p` is continuous at `0`
+  set g : ℝ → ℝ := fun ε => ((q + ε) / (1 - ε)) ^ p
+  have hg0 : g 0 < q ^ p' := by
+    simp only [g, add_zero, sub_zero, div_one]
+    exact Real.rpow_lt_rpow_of_exponent_gt hq0 hq1 (by simp only [p, p']; linarith)
+  have hgc : ContinuousAt g 0 := by
+    refine ContinuousAt.rpow_const ((continuousAt_const.add continuousAt_id).div
+      (continuousAt_const.sub continuousAt_id) (by norm_num)) (Or.inr hp)
+  obtain ⟨δ, hδ, hδg⟩ := Metric.eventually_nhds_iff.mp
+    (hgc.eventually_lt continuousAt_const hg0)
+  refine ⟨min δ ((1 - q) / 2), lt_min hδ (by linarith), fun ε hε0 hε Ω U u hu hsub horth hU => ?_⟩
+  have hεδ : ε < δ := lt_of_lt_of_le hε (min_le_left _ _)
+  have hεq : ε < (1 - q) / 2 := lt_of_lt_of_le hε (min_le_right _ _)
+  have hR : 0 < 1 - ε := by linarith
+  have hle : q + ε ≤ 1 - ε := by linarith
+  have hgε : g ε < q ^ p' := hδg (by rwa [Real.dist_eq, sub_zero, abs_of_nonneg hε0])
+  -- restrict to `B_{1 − ε}`
+  set ur := L2Pair.restrict hsub u
+  have hur : (coneCoeff β e).IsWeakSolution 0 ur := by
+    have := hu.restrict hsub
+    rwa [map_zero] at this
+  have hurfst : (ur.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) (1 - ε))] u.fst := by
+    rw [L2Pair.restrict_fst]
+    exact restrictLp_ae hsub u.fst
+  have hurorth : ∀ P ∈ explicitH2 β, ∫ x in ball (0 : 𝔼) (1 - ε),
+      ur.fst x * P ((coordIso e).symm x) = 0 := by
+    intro P hP
+    rw [← horth P hP]
+    refine integral_congr_ae ?_
+    filter_upwards [hurfst] with x hx
+    rw [hx]
+  have hmono := cone_vertex_monotone_ball hd β hβ e hμ1 hμ hR hur hurorth
+    (by linarith : 0 < q + ε) hle le_rfl
+  have hcong : ∀ ρ, ρ ≤ 1 - ε → ∫ x in ball (0 : 𝔼) ρ, ur.fst x ^ 2 =
+      ∫ x in ball (0 : 𝔼) ρ, u.fst x ^ 2 := fun ρ hρ =>
+    integral_congr_ae (by
+      filter_upwards [ae_restrict_of_ae_restrict_of_subset (ball_subset_ball hρ) hurfst]
+        with x hx
+      rw [hx])
+  rw [hcong _ hle, hcong _ le_rfl] at hmono
+  -- comparisons of the domains
+  have hint : Integrable (fun x => u.fst x ^ 2) (volume.restrict Ω) :=
+    (Lp.memLp u.fst).integrable_sq
+  have hnn : 0 ≤ᵐ[volume.restrict Ω] fun x => u.fst x ^ 2 :=
+    Eventually.of_forall fun x => sq_nonneg _
+  have hBΩ : ball (0 : 𝔼) (q + ε) ⊆ Ω := (ball_subset_ball hle).trans hsub
+  have h1 : ∫ x in U, u.fst x ^ 2 ≤ ∫ x in ball (0 : 𝔼) (q + ε), u.fst x ^ 2 :=
+    setIntegral_mono_set (hint.mono_measure (Measure.restrict_mono hBΩ le_rfl))
+      (Eventually.of_forall fun x => sq_nonneg _) (Eventually.of_forall hU)
+  have h2 : ∫ x in ball (0 : 𝔼) (1 - ε), u.fst x ^ 2 ≤ ∫ x in Ω, u.fst x ^ 2 := by
+    have := setIntegral_mono_set (s := ball (0 : 𝔼) (1 - ε)) (t := Ω) (μ := volume)
+      (f := fun x => u.fst x ^ 2) (by simpa [IntegrableOn] using hint) hnn
+      (Eventually.of_forall hsub)
+    simpa using this
+  have hΩnn : 0 ≤ ∫ x in Ω, u.fst x ^ 2 := integral_nonneg fun x => sq_nonneg _
+  have hBnn : 0 ≤ ∫ x in ball (0 : 𝔼) (1 - ε), u.fst x ^ 2 :=
+    integral_nonneg fun x => sq_nonneg _
+  have hgnn : 0 ≤ g ε := Real.rpow_nonneg (div_nonneg (by linarith) hR.le) _
+  have hqd : 0 < q ^ d := pow_pos hq0 d
+  have hp' : q ^ p' = q ^ (2 * (2 + α)) * q ^ d := by
+    simp only [p']
+    rw [Real.rpow_add hq0, Real.rpow_natCast]
+  calc (q ^ d)⁻¹ * ∫ x in U, u.fst x ^ 2
+      ≤ (q ^ d)⁻¹ * (g ε * ∫ x in ball (0 : 𝔼) (1 - ε), u.fst x ^ 2) :=
+        mul_le_mul_of_nonneg_left (h1.trans hmono) (inv_nonneg.mpr hqd.le)
+    _ ≤ (q ^ d)⁻¹ * (q ^ p' * ∫ x in Ω, u.fst x ^ 2) := by
+        refine mul_le_mul_of_nonneg_left ?_ (inv_nonneg.mpr hqd.le)
+        exact mul_le_mul hgε.le h2 hBnn (Real.rpow_nonneg hq0.le _)
+    _ = q ^ (2 * (2 + α)) * ∫ x in Ω, u.fst x ^ 2 := by
+        rw [hp']
+        field_simp
+
 end Scale
 
 end ConicalKahler.Sobolev
