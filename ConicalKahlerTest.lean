@@ -14,3 +14,4 @@ public import ConicalKahlerTest.Compactness
 public import ConicalKahlerTest.WeakHarmonic
 public import ConicalKahlerTest.LinkExpansion
 public import ConicalKahlerTest.Completeness
+public import ConicalKahlerTest.VertexDecay

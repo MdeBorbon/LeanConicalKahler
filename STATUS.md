@@ -5,7 +5,7 @@ Last updated: 2026-11-06.
 Pins: Lean `v4.34.1`, Mathlib `v4.34.1` (`d13f23b7`), `calabiyau` at
 `91b1ddf000c7028bc42ae6102eba0e2042eb37ff`. Upstream is used unmodified.
 
-Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 2318
+Every completed result below is kernel-checked. `scripts/AxiomAudit.lean` confirms that all 2365
 `ConicalKahler.*` declarations (library and tests) depend only on `propext`, `Classical.choice` and
 `Quot.sound`.
 The sources contain no `sorry`, `admit`, `axiom` or `opaque`, and the build has no warnings.
@@ -662,6 +662,40 @@ Supporting changes in `Sobolev/HarmonicExpansion`:
 - **Not done in this milestone.** Proposition 2.5 (the `L²` Hessian bound), the Campanato
   iteration, and Theorem 1.1.
 
+## Milestone 14: decay at the vertex (Lemmas 4.2, 4.3, 2.7): COMPLETE
+
+All entries are kernel-checked. Files `Sobolev/VertexDecay`, `Sobolev/Campanato`; tests in
+`ConicalKahlerTest/VertexDecay` (model `C(S¹_{4π/3}) × ℝ`, `μ = 1/2`). Scaled norms are
+`‖u‖_{B_ρ} = (ρ^{-d} ∫_{B_ρ} u²)^{1/2}`; the inequalities are stated for `∫ u²`.
+
+| Statement | Lean declaration | File |
+|---|---|---|
+| Parseval on balls of any radius: `∫_{B_R} u² = ∑_i ∫_0^R r^{d-1} u_{φ_i}(r)² dr` | `lintegral_ballR_eq_tsum`, `lintegral_Ioo_sq_of_ae_eq_rpow` | `Sobolev/VertexDecay` |
+| **Lemma 4.2 (monotonicity at the vertex)**, any conical field: if `u` is weakly harmonic on `B_1` and orthogonal to all `ρ^{δ'}ψ` with `δ' < D`, then `∫_{B_{ρ₁}} u² ≤ (ρ₁/ρ₂)^{2D+d} ∫_{B_{ρ₂}} u²` | `vertex_monotone_lintegral`, `vertex_monotone` | `Sobolev/VertexDecay` |
+| **for the cone** (`0 < β_a < 1`, `μ` as in (1.1)): orthogonal to `𝓗_{≤2}` ⇒ `‖u‖_{B_{ρ₁}} ≤ (ρ₁/ρ₂)^{2+μ} ‖u‖_{B_{ρ₂}}` (uses the gap of Prop. 3.4) | `cone_vertex_monotone` | `Sobolev/VertexDecay` |
+| **projection onto `𝓗_{≤2}` and decay**: for weakly harmonic `h`, `P = Π_{𝓗_{≤2}} h` (in `L²(B_1)`) has `h − P ⊥ 𝓗_{≤2}`, `‖h − P‖ ≤ ‖h‖` and `‖h − P‖_{B_ρ} ≤ ρ^{2+μ} ‖h − P‖_{B_1}` | `h2ToLp`, `cone_vertex_decay` | `Sobolev/VertexDecay` |
+| `𝓗_{≤2}` is dilation invariant; vertex monotonicity on `B_R` for every `R > 0` | `comp_smul_mem_explicitH2`, `dilLp_zero`, `cone_vertex_monotone_ball` | `Sobolev/VertexDecay` |
+| **Lemma 4.3 (monotonicity near the vertex)**: for `0 ≤ α < μ`, `0 < q < 1` there is `ε₀` such that if `B_{1−ε} ⊆ Ω`, `u` harmonic on `Ω` and orthogonal to `𝓗_{≤2}` on `B_{1−ε}`, then `q^{-d} ∫_U u² ≤ q^{2(2+α)} ∫_Ω u²` for all `U ⊆ B_{q+ε}`, `ε < ε₀` | `cone_decay_near_vertex` | `Sobolev/VertexDecay` |
+| `L²` norms on sets, scaled norms, abstract ball families (`v₀ρ^m ≤ μ(Bρ) ≤ v₁ρ^m`) | `l2On`, `scaledL2`, `BallFamily` | `Sobolev/Campanato` |
+| **Lemma 2.7 (summing increments over geometric scales)**, with explicit constant | `sum_increments`, `incrementConst` | `Sobolev/Campanato` |
+| Euclidean balls form a ball family | `ballFamily_euclidean` | `Sobolev/VertexDecay` |
+
+**What is not claimed.**
+- **Lemma 4.2.** The equality case is not formalised. Orthogonality is stated against every homogeneous
+  harmonic function of degree `< D` (general conical field), or against `𝓗_{≤2}` (cone).
+- **Lemma 4.3** is stated for arbitrary sets `U ⊆ B_{q+ε}` and domains `Ω ⊇ B_{1−ε}`. This covers
+  `U = B(x, q)`, `Ω = B(x, 1)` with `|x| < ε` for Euclidean or geodesic balls, but the geodesic case
+  is not instantiated. The paper's strict inequality is replaced by `≤`, because strictness fails
+  for `u = 0`. `0 ≤ α` is assumed (the paper has `0 < α`).
+- **Lemma 2.7** is proved for abstract ball families. It is instantiated for Euclidean balls only;
+  geodesic balls of the cone need the volume bounds `v₀ρ^m ≤ Vol(B(x,ρ)) ≤ v₁ρ^m`, which follow from
+  (2.1) but are not formalised.
+- **Not done in this milestone:**
+  - Lemma 4.1 (finitely many bad scales);
+  - Lemma 2.6 (Campanato ⇒ Hölder);
+  - Prop. 5.1 and the iteration;
+  - Prop. 2.5.
+
 ## Decisions affecting definitions
 
 * **Coordinates are 0-indexed.** The singular coordinate of the single-divisor model is `z 0`
@@ -809,6 +843,10 @@ Supporting changes in `Sobolev/HarmonicExpansion`:
   factor (`formalLap`), and its agreement with `paperLaplacian` is proved, not assumed.
 * **Proposition 3.4** is stated for `u ∈ W^{1,2}(B_1)` weakly harmonic with `u = |x|^δ φ(x/|x|)` a.e.
   The gap is stated for every `μ` satisfying eq. (1.1) (`μ ≤ 1`, `μ ≤ holderExponentBound β_a`).
+* **Scaled norms (Milestone 14)** are kept as `ρ^{-d} ∫_{B_ρ} u²` (squared) in the cone results, and
+  as `scaledL2 = (ρ^{-m} ∫_{B ρ} g²)^{1/2}` (via `eLpNorm`) in the abstract Lemma 2.7. Lemma 2.7's
+  partial sums are indexed from `0` (`τ_0 + ⋯ + τ_{k−1}` at scale `q^k`); this fixes the index
+  mismatch of the paper's statement.
 * **Lemma 3.3's output** is a `HasSum` in `L²(B_1)` over the Hilbert-basis index set (unconditional
   convergence). Each `P_i` is given as an `L²` class together with a weak solution `Q` with
   `Q.fst = P_i` and the formula `P_i = ρ^{δ_i} φ_i` almost everywhere.
@@ -824,8 +862,8 @@ Done since the first review: agreement with `metricInChart` (Milestone 4), `Divi
 the real cone geometry with `𝒟₂` (Milestone 8), Sobolev spaces and weak solutions
 (Milestone 9), compactness, harmonic approximation, scaling and the Dirichlet spectral
 theorem (Milestone 10), and weak harmonic functions on the models with Corollary 3.5 for the
-paper's list (Milestone 11), the link spectral theory with Lemma 3.3 (Milestone 12), and
-Proposition 3.4 (Milestone 13).
+paper's list (Milestone 11), the link spectral theory with Lemma 3.3 (Milestone 12),
+Proposition 3.4 (Milestone 13), and decay at the vertex with Lemmas 4.2, 4.3, 2.7 (Milestone 14).
 
 1. **General restriction and transport of Kähler forms** to open subsets (`KahlerForm n M →
    KahlerForm n U`), and restriction of `ConeKahlerForm` to neighbourhoods. The model has this via
@@ -853,8 +891,9 @@ Proposition 3.4 (Milestone 13).
    Corollary 3.5 for the paper's list, energy uniqueness, rotations and Fourier modes in `θ_a`
    (Milestone 11); polar coordinates, the link Sobolev space and Lemma 3.1, homogeneous harmonic
    functions, vertex removability and Lemma 3.3 (Milestone 12); the completeness of `𝓗_{≤2+α}`
-   (Prop. 3.4) and Corollary 3.5 for `𝓗_{≤2}` (Milestone 13). Next: the `L²` Hessian bound (by
-   the localised Bochner argument, `PAPER_REVIEW.md` §C), and the Campanato iteration.
+   (Prop. 3.4) and Corollary 3.5 for `𝓗_{≤2}` (Milestone 13); decay at the vertex, Lemmas 4.2,
+   4.3 and 2.7 (Milestone 14). Next: the `L²` Hessian bound (Prop. 2.5, by the localised Bochner
+   argument, `PAPER_REVIEW.md` §C), Lemmas 4.1 and 2.6, and the iteration of §5.
    Smaller items:
    - interior regularity of weak solutions off `S` (Weyl lemma / Schauder for weak solutions);
    - orthogonality and `L²` convergence of the Fourier modes in `θ_a` (Parseval for `u`); not

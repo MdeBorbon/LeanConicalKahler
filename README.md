@@ -273,6 +273,17 @@ These results hold for every **conical** coefficient field on `ℝ^d` (`A(tx) = 
   - Corollary 3.5 holds for `𝓗_{≤2}` (`corollary_3_5_homogeneous`).
 - No Sturm–Liouville or Frobenius theory is used (`PAPER_REVIEW.md` S7).
 
+### Decay at the vertex (Lemmas 4.2, 4.3, 2.7)
+
+- **Lemma 4.2** (`vertex_monotone`, `cone_vertex_monotone`). A weakly harmonic function orthogonal
+  to the homogeneous harmonic functions of degree `< D` satisfies
+  `‖u‖_{B_{ρ₁}} ≤ (ρ₁/ρ₂)^D ‖u‖_{B_{ρ₂}}`. For the cone, orthogonality to `𝓗_{≤2}` gives
+  `D = 2 + μ`.
+- **Projection onto `𝓗_{≤2}`** (`cone_vertex_decay`): `‖h − Πh‖_{B_ρ} ≤ ρ^{2+μ} ‖h‖_{B_1}`.
+- **Lemma 4.3** near the vertex (`cone_decay_near_vertex`), via dilation invariance of `𝓗_{≤2}`
+  and vertex monotonicity on every `B_R`.
+- **Lemma 2.7** for abstract ball families (`sum_increments`), instantiated for Euclidean balls.
+
 ## Normalisation conventions
 
 We use the upstream conventions without change.
@@ -365,6 +376,8 @@ We use the upstream conventions without change.
 | `ConicalKahler/Sobolev/ConePolyFn.lean` | cone polynomials as functions: homogeneity, polar Laplacian of products, harmonicity |
 | `ConicalKahler/Sobolev/ConePolyDense.lean` | products of angular modes, density of cone polynomials on the link (Stone–Weierstrass) |
 | `ConicalKahler/Sobolev/Completeness.lean` | orthogonality of degrees, completeness, Proposition 3.4, Corollary 3.5 for `𝓗_{≤2}` |
+| `ConicalKahler/Sobolev/Campanato.lean` | `L²` norms on sets, scaled norms, ball families, Lemma 2.7 |
+| `ConicalKahler/Sobolev/VertexDecay.lean` | Parseval on balls, Lemma 4.2, the projection onto `𝓗_{≤2}`, scaling, Lemma 4.3 |
 | `ConicalKahlerTest/Model.lean` | the specification's concrete tests (`n = 1`, `β = 1`, `n = 2`, SNC) |
 | `ConicalKahlerTest/Divisor.lean` | divisor and cone-condition tests; `z₀ ↦ z₀²` is not an adapted chart |
 | `ConicalKahlerTest/Geometry.lean` | flat-cone isometry, angles `π`, `4π`, holonomy, QI ≠ model |
@@ -377,6 +390,7 @@ We use the upstream conventions without change.
 | `ConicalKahlerTest/Compactness.lean` | Rellich, Lemma 2.4, divergence identity, scaling and the spectral theorem on `C(S¹_π) × ℝ` |
 | `ConicalKahlerTest/WeakHarmonic.lean` | classical ⇔ weak, explicit harmonic functions, Corollary 3.5, rotations and Fourier modes on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/LinkExpansion.lean` | polar coordinates, Lemma 3.1, indicial roots, homogeneous harmonic functions, radial ODE, Lemma 3.3 on `C(S¹_{4π/3}) × ℝ` |
+| `ConicalKahlerTest/VertexDecay.lean` | decay at the vertex, Lemma 4.3 and Lemma 2.7 on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/Completeness.lean` | Fischer identity, density, Proposition 3.4 with `μ = 1/2`, the expansion with the gap, Corollary 3.5 on `C(S¹_{4π/3}) × ℝ` |
 | `ConicalKahlerTest/PaperChecks.lean` | Lean checks of the verified items of `PAPER_REVIEW.md` |
 | `scripts/AxiomAudit.lean` | fails unless every declaration uses only the standard axioms |
