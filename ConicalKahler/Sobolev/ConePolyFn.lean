@@ -549,4 +549,104 @@ theorem paperLaplacian_conePoly (β : κ → ConeAngle) (k : κ → ℕ) (ε : �
     rw [← hcp, conePoly_monomial, Pi.smul_apply, smul_eq_mul,
       conePoly_monomial_toModel β k ε _ hc]
 
+/-! ### Harmonic cone polynomials are classically harmonic -/
+
+/-- Functions of the real model that are `C²` on the regular part, continuous, with gradient
+bounded on the bounded parts of the regular set. -/
+structure IsRegBounded (P : RealConeModel κ ι → ℝ) : Prop where
+  contDiffOn : ContDiffOn ℝ 2 P (regularModel κ ι)
+  continuous : Continuous P
+  fderiv_bounded : ∀ R, ∃ C, ∀ y ∈ regularModel κ ι, ‖y‖ ≤ R → ‖fderiv ℝ P y‖ ≤ C
+
+theorem exists_bound_of_continuous {P : RealConeModel κ ι → ℝ} (hP : Continuous P) (R : ℝ) :
+    ∃ C, ∀ y : RealConeModel κ ι, ‖y‖ ≤ R → |P y| ≤ C := by
+  obtain ⟨C, hC⟩ := (isCompact_closedBall (0 : RealConeModel κ ι) R).exists_bound_of_continuousOn
+    hP.continuousOn
+  exact ⟨C, fun y hy => by simpa [Real.norm_eq_abs] using hC y (mem_closedBall_zero_iff.mpr hy)⟩
+
+namespace IsRegBounded
+
+variable {P Q : RealConeModel κ ι → ℝ}
+
+theorem differentiableAt (hP : IsRegBounded P) {y : RealConeModel κ ι}
+    (hy : y ∈ regularModel κ ι) : DifferentiableAt ℝ P y :=
+  (hP.contDiffOn.contDiffAt (isOpen_regularModel.mem_nhds hy)).differentiableAt (by norm_num)
+
+theorem of_contDiff (hP : ContDiff ℝ 2 P) : IsRegBounded P where
+  contDiffOn := hP.contDiffOn
+  continuous := hP.continuous
+  fderiv_bounded R := by
+    obtain ⟨C, hC⟩ := (isCompact_closedBall (0 : RealConeModel κ ι) R).exists_bound_of_continuousOn
+      (hP.continuous_fderiv (by norm_num)).continuousOn
+    exact ⟨C, fun y _ hy => hC y (mem_closedBall_zero_iff.mpr hy)⟩
+
+theorem mul (hP : IsRegBounded P) (hQ : IsRegBounded Q) : IsRegBounded fun y => P y * Q y where
+  contDiffOn := hP.contDiffOn.mul hQ.contDiffOn
+  continuous := hP.continuous.mul hQ.continuous
+  fderiv_bounded R := by
+    obtain ⟨A, hA⟩ := exists_bound_of_continuous hP.continuous R
+    obtain ⟨B, hB⟩ := exists_bound_of_continuous hQ.continuous R
+    obtain ⟨C, hC⟩ := hP.fderiv_bounded R
+    obtain ⟨D, hD⟩ := hQ.fderiv_bounded R
+    refine ⟨A * D + B * C, fun y hy hR => ?_⟩
+    rw [show (fun y => P y * Q y) = P * Q from rfl,
+      fderiv_mul (hP.differentiableAt hy) (hQ.differentiableAt hy)]
+    refine (norm_add_le _ _).trans (add_le_add ?_ ?_)
+    · rw [norm_smul, Real.norm_eq_abs]
+      exact mul_le_mul (hA y hR) (hD y hy hR) (norm_nonneg _) ((abs_nonneg _).trans (hA y hR))
+    · rw [norm_smul, Real.norm_eq_abs]
+      exact mul_le_mul (hB y hR) (hC y hy hR) (norm_nonneg _) ((abs_nonneg _).trans (hB y hR))
+
+theorem finset_prod {α : Type*} (s : Finset α) {f : α → RealConeModel κ ι → ℝ}
+    (hf : ∀ a ∈ s, IsRegBounded (f a)) : IsRegBounded fun y => ∏ a ∈ s, f a y := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simpa using of_contDiff (contDiff_const (c := (1 : ℝ)))
+  | insert a s ha ih =>
+    simp_rw [Finset.prod_insert ha]
+    exact (hf a (Finset.mem_insert_self a s)).mul
+      (ih fun b hb => hf b (Finset.mem_insert_of_mem hb))
+
+end IsRegBounded
+
+theorem modeFn_zero (b : ℝ) (ε : Bool) (w : ℂ) : modeFn b 0 ε w = bif ε then 1 else 0 := by
+  cases ε <;> simp [modeFn, harmCosC, harmSinC]
+
+theorem isRegBounded_modeFn {b : ℝ} (hb : 0 < b) (hb1 : b ≤ 1) (k : ℕ) (ε : Bool) (a : κ) :
+    IsRegBounded fun y : RealConeModel κ ι => modeFn b k ε (y.cone a) := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · simp_rw [modeFn_zero]
+    exact IsRegBounded.of_contDiff contDiff_const
+  have hbk : b ≤ k := hb1.trans (by exact_mod_cast hk)
+  have hd : ContDiffOn ℝ 2 (modeFn b k ε) {0}ᶜ := by
+    cases ε
+    · exact contDiffOn_harmSinC b k
+    · exact contDiffOn_harmCosC b k
+  refine ⟨fun y hy => ((hd.contDiffAt (isOpen_compl_singleton.mem_nhds (hy a))).comp y
+      (coneProj (ι := ι) a).contDiff.contDiffAt).contDiffWithinAt,
+    (continuous_modeFn hb hb1 k ε).comp (continuous_cone a), fun R => ?_⟩
+  exact fderiv_bounded_harmC hb hbk a (fun t ht w => modeFn_smul b k ε ht w) hd R
+
+theorem isRegBounded_conePoly {β : κ → ConeAngle} (hβ : ∀ a, (β a).beta ≤ 1) (k : κ → ℕ)
+    (ε : κ → Bool) (p : MvPolynomial (κ ⊕ ι) ℝ) : IsRegBounded (conePoly β k ε p) :=
+  (IsRegBounded.finset_prod Finset.univ fun a _ =>
+    isRegBounded_modeFn (β a).pos (hβ a) (k a) (ε a) a).mul
+    (IsRegBounded.of_contDiff (contDiff_eval_polyArg p))
+
+/-- **Harmonic cone polynomials are classically harmonic**: if `L_q p = 0` (`q_a = 1 + k_a/β_a`)
+and `β_a ≤ 1`, then `conePoly β k ε p` is `IsClassicalHarmonic`, hence weakly harmonic on every
+bounded open set (`IsClassicalHarmonic.isWeakSolution`). -/
+theorem isClassicalHarmonic_conePoly {β : κ → ConeAngle} (hβ : ∀ a, (β a).beta ≤ 1)
+    (k : κ → ℕ) (ε : κ → Bool) {p : MvPolynomial (κ ⊕ ι) ℝ} (hp : formalLap (modeQ β k) p = 0) :
+    IsClassicalHarmonic β (conePoly β k ε p) := by
+  have h := isRegBounded_conePoly hβ k ε p
+  exact {
+    contDiffOn := h.contDiffOn
+    measurable := h.continuous.measurable
+    bounded := exists_bound_of_continuous h.continuous
+    fderiv_bounded := h.fderiv_bounded
+    harmonic := fun c hc => by
+      rw [paperLaplacian_conePoly β k ε p hc, hp]
+      simp [conePoly] }
+
 end ConicalKahler.Sobolev
