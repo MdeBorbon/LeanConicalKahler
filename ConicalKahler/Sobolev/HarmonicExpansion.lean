@@ -335,4 +335,139 @@ theorem ae_eq_const_of_integral_mul_deriv_eq_zero {W : ℝ → ℝ}
     ring
   rw [e2, hK]
 
+/-! ### The radial ODE: `u_φ(r) = C r^δ` -/
+
+theorem exists_bound_of_vanish {g : ℝ → ℝ} (hg : Continuous g) {a b : ℝ}
+    (hz : ∀ t, t ∉ Ioo a b → g t = 0) : ∃ C, ∀ t, |g t| ≤ C := by
+  obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn (hg.continuousOn (s := Icc a b))
+  refine ⟨max C 0, fun t => ?_⟩
+  by_cases ht : t ∈ Ioo a b
+  · exact ((Real.norm_eq_abs _).symm.trans_le (hC t (Ioo_subset_Icc_self ht))).trans
+      (le_max_left _ _)
+  · rw [hz t ht, abs_zero]
+    exact le_max_right _ _
+
+/-- `K(r) r^p` is smooth when `K` is smooth and vanishes on `(-∞, ε]`, `ε > 0`. -/
+theorem contDiff_mul_rpow {K : ℝ → ℝ} (hK : ContDiff ℝ ∞ K) {ε : ℝ} (hε : 0 < ε)
+    (hK0 : ∀ t, t ≤ ε → K t = 0) (p : ℝ) : ContDiff ℝ ∞ fun r => K r * r ^ p := by
+  refine contDiff_iff_contDiffAt.mpr fun x => ?_
+  by_cases hx : 0 < x
+  · exact hK.contDiffAt.mul (Real.contDiffAt_rpow_const_of_ne hx.ne')
+  · refine contDiffAt_const (c := (0 : ℝ)).congr_of_eventuallyEq ?_
+    filter_upwards [Iio_mem_nhds (show x < ε by linarith [not_lt.mp hx])] with y hy
+    rw [hK0 y hy.le, zero_mul]
+
+theorem locallyIntegrableOn_rpow_mul_rayCoeff (u : Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    (φ : Lp ℝ 2 (sphMeasure d)) (p : ℝ) :
+    LocallyIntegrableOn (fun r => r ^ p * rayCoeff u φ r) (Ioo 0 1) := by
+  intro t ht
+  set a := t / 2
+  set b := (t + 1) / 2
+  have ha : 0 < a := by simp only [a]; linarith [ht.1]
+  have hb : b ≤ 1 := by simp only [b]; linarith [ht.2]
+  refine ⟨Ioo a b, mem_nhdsWithin_of_mem_nhds (isOpen_Ioo.mem_nhds
+    ⟨by simp only [a]; linarith [ht.1], by simp only [b]; linarith [ht.2]⟩), ?_⟩
+  have hcont : ContinuousOn (fun r : ℝ => r ^ p) (Icc a b) := fun r hr =>
+    (Real.continuousAt_rpow_const r p (Or.inl (ha.trans_le hr.1).ne')).continuousWithinAt
+  obtain ⟨C, hC⟩ := isCompact_Icc.exists_bound_of_continuousOn hcont
+  exact (integrableOn_rayCoeff u φ ha hb).bdd_mul
+    ((measurable_id.pow_const p).aestronglyMeasurable) (c := C) (by
+      filter_upwards [ae_restrict_mem measurableSet_Ioo] with r hr
+      exact hC r (Ioo_subset_Icc_self hr))
+
+variable {c : CoeffField (EuclideanSpace ℝ (Fin d)) volume}
+
+/-- **The radial ODE** (separation of variables in Lemma 3.3). Let `u ∈ W^{1,2}(B_1)` be weakly
+harmonic, and `(φ, Γ)` a link eigenfunction with eigenvalue `λ = δ(δ + d - 2)`. Then the ray
+coefficient is `u_φ(r) = C r^δ` for almost every `r ∈ (0, 1)`. -/
+theorem rayCoeff_eq (hd : 2 ≤ d) (hc : c.IsConical) {lam δ : ℝ} {v : LinkPair d}
+    (hE : IsLinkEigen hc lam v) (hlam : lam = δ * (δ + d - 2))
+    (hP : MemLp (homP δ v) 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    (hG : MemLp (homG δ v) 2 (volume.restrict (ball (0 : 𝔼) 1)))
+    {u : L2Pair volume (ball (0 : 𝔼) 1)} (hu : c.IsWeakSolution 0 u) :
+    ∃ C, ∀ᵐ r ∂(volume.restrict (Ioo (0 : ℝ) 1)),
+      rayCoeff u.fst (fun w => v.fst w) r = C * r ^ δ := by
+  set U := rayCoeff u.fst (fun w => v.fst w)
+  set q := 2 * δ + d - 1
+  -- the identity `∫ r^{-δ} U K' = 0`
+  have hid : ∀ K : ℝ → ℝ, ContDiff ℝ ∞ K → ∀ ε ρ : ℝ, 0 < ε → ρ < 1 →
+      (∀ t, t ∉ Ioo ε ρ → K t = 0) → ∫ r, r ^ (-δ) * U r * deriv K r = 0 := by
+    intro K hK ε ρ hε hρ hKz
+    have hK0 : ∀ t, t ≤ ε → K t = 0 := fun t ht => hKz t fun h => by linarith [h.1]
+    set f : ℝ → ℝ := fun r => K r * r ^ (-q)
+    have hf : ContDiff ℝ ∞ f := contDiff_mul_rpow hK hε hK0 (-q)
+    have hfz : ∀ t, t ∉ Ioo ε ρ → f t = 0 := fun t ht => by simp only [f, hKz t ht, zero_mul]
+    have key := key_identity hd hc hE hlam hP hG hu hf hε hρ hfz
+    set g : ℝ → ℝ := fun r => deriv f r + (2 * δ + d - 1) * (f r / r)
+    -- `g` vanishes outside `(ε/2, (ρ+1)/2)`
+    have hfz' : ∀ t, t ∉ Ioo (ε / 2) ((ρ + 1) / 2) → deriv f t = 0 := by
+      intro t ht
+      have hloc : f =ᶠ[𝓝 t] fun _ => (0 : ℝ) := by
+        rcases not_and_or.mp ht with h1 | h1
+        · filter_upwards [Iio_mem_nhds (show t < ε by linarith [not_lt.mp h1])] with s hs
+          exact hfz s fun h => by linarith [h.1, mem_Iio.mp hs]
+        · filter_upwards [Ioi_mem_nhds (show ρ < t by linarith [not_lt.mp h1])] with s hs
+          exact hfz s fun h => by linarith [h.2, mem_Ioi.mp hs]
+      rw [hloc.deriv_eq, deriv_const]
+    have hgz : ∀ t, t ∉ Ioo (ε / 2) ((ρ + 1) / 2) → g t = 0 := fun t ht => by
+      have : t ∉ Ioo ε ρ := fun h => ht ⟨by linarith [h.1], by linarith [h.2]⟩
+      simp only [g, hfz' t ht, hfz t this, zero_div, mul_zero, add_zero]
+    have hdcont : Continuous (deriv f) := hf.continuous_deriv (by simp)
+    obtain ⟨M1, hM1⟩ := exists_bound_of_vanish hdcont hfz'
+    obtain ⟨M2, hM2⟩ := exists_bound_of_vanish hf.continuous hfz
+    have hgb : ∀ t, |g t| ≤ M1 + |2 * δ + d - 1| * (M2 / ε) := by
+      intro t
+      have hM2' : 0 ≤ M2 := (abs_nonneg _).trans (hM2 0)
+      have hdiv : |f t / t| ≤ M2 / ε := by
+        by_cases ht : t ∈ Ioo ε ρ
+        · rw [abs_div, abs_of_pos (hε.trans ht.1)]
+          exact div_le_div₀ hM2' (hM2 t) hε ht.1.le
+        · rw [hfz t ht, zero_div, abs_zero]
+          positivity
+      calc |g t| ≤ |deriv f t| + |2 * δ + d - 1| * |f t / t| := by
+            simp only [g]
+            rw [← abs_mul]
+            exact abs_add_le _ _
+        _ ≤ _ := by gcongr; exact hM1 t
+    have hgm : Measurable g :=
+      hdcont.measurable.add (measurable_const.mul (hf.continuous.measurable.div measurable_id))
+    have hpolar := integral_ball_homP_eq u.fst δ v hgm hgb (by linarith : (0 : ℝ) < ε / 2)
+      (by linarith : (ρ + 1) / 2 ≤ 1) hgz
+    rw [key] at hpolar
+    -- compare with `∫ r^{-δ} U K'`
+    have hKd0 : ∀ r, r ∉ Ioi (0 : ℝ) → r ^ (-δ) * U r * deriv K r = 0 := by
+      intro r hr
+      have hloc : K =ᶠ[𝓝 r] fun _ => (0 : ℝ) := by
+        filter_upwards [Iio_mem_nhds (show r < ε by linarith [not_lt.mp hr])] with s hs
+        exact hK0 s (mem_Iio.mp hs).le
+      rw [hloc.deriv_eq, deriv_const, mul_zero]
+    rw [← setIntegral_eq_integral_of_forall_compl_eq_zero hKd0]
+    refine Eq.trans ?_ hpolar.symm
+    refine setIntegral_congr_fun (measurableSet_Ioi (a := (0 : ℝ))) fun r hr => ?_
+    have hr0 : (0 : ℝ) < r := hr
+    have hfd : deriv f r = deriv K r * r ^ (-q) + K r * (-q * r ^ (-q - 1)) := by
+      have h1 := (hK.differentiable (by simp) r).hasDerivAt.mul
+        (Real.hasDerivAt_rpow_const (x := r) (p := -q) (Or.inl hr0.ne'))
+      exact h1.deriv
+    simp only [g]
+    rw [hfd, ← rpow_sub_one_eq_pow hr0]
+    have e1 : r ^ (-q) / r = r ^ (-q - 1) := by rw [Real.rpow_sub_one hr0.ne']
+    have e2 : r ^ ((d : ℝ) - 1) * r ^ δ * r ^ (-q) = r ^ (-δ) := by
+      rw [← Real.rpow_add hr0, ← Real.rpow_add hr0]
+      congr 1
+      simp only [q]
+      ring
+    simp only [f]
+    rw [show K r * r ^ (-q) / r = K r * (r ^ (-q) / r) by ring, e1]
+    rw [show r ^ ((d : ℝ) - 1) * (r ^ δ * (deriv K r * r ^ (-q) + K r * (-q * r ^ (-q - 1)) +
+        (2 * δ + d - 1) * (K r * r ^ (-q - 1))) * U r) =
+        (r ^ ((d : ℝ) - 1) * r ^ δ * r ^ (-q)) * U r * deriv K r by simp only [q]; ring, e2]
+  obtain ⟨C, hC⟩ := ae_eq_const_of_integral_mul_deriv_eq_zero
+    (locallyIntegrableOn_rpow_mul_rayCoeff u.fst v.fst (-δ)) hid
+  refine ⟨C, ?_⟩
+  filter_upwards [hC, ae_restrict_mem measurableSet_Ioo] with r hr hr01
+  have hr0 : 0 < r := hr01.1
+  rw [← hr, mul_comm, ← mul_assoc, ← Real.rpow_add hr0, add_neg_cancel, Real.rpow_zero]
+  simp [U]
+
 end ConicalKahler.Sobolev
