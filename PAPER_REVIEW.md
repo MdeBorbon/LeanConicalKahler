@@ -396,6 +396,19 @@ link to be connected (multiplicity one of the eigenvalue `0`). This holds here b
 bound, and constants have `λ = 0` (`linkEigen_const`). Multiplicity one of `λ = 0` is not proved,
 and Lemma 3.3 does not need it.
 
+### S8. Lemmas 2.7, 4.2, 4.3: indices and strictness (Verified (text), repaired in Lean)
+
+- **Lemma 2.7.** The hypothesis uses `τ_1 + ⋯ + τ_k` at scale `λ^k` (an empty sum for `k = 0`),
+  while the conclusion sums from `k = 0`. In Lean the partial sums are `τ_0 + ⋯ + τ_{k−1}`
+  (`sum_increments`).
+- **Lemma 4.3.** The statement has a strict inequality, which fails for `u = 0`. The proof
+  gives `≤`, which is what is used. In the proof, the power `m` in `(1 − ε)^{-m}` should be `m/2`
+  for the scaled norm; this does not affect the argument. `B(1, x)` is a typo for `B(x, 1)`.
+- **Lemma 4.2** is used in Lemma 4.3 on balls of radius `1 − ε`, i.e. after a dilation. This is
+  formalised by dilation invariance of `𝓗_{≤2}` (`cone_vertex_monotone_ball`).
+
+*Effect:* none on the results.
+
 ### S7. Lemma 2.7 and §3.3
 
 The proof of Lemma 2.7 is omitted, and its constant also depends on `m`. The Sturm–Liouville facts
@@ -410,7 +423,7 @@ explicit family, the harmonic cone polynomials `∏ r_a^{k_a/β_a} T(k_a θ_a) h
 
 So the degrees of homogeneous harmonic functions are exactly `∑_a k_a/β_a + m`, and the list of
 Prop. 3.4 and the gap `(2, 2 + μ)` follow by enumeration. Multiplicities and nodal counts are not
-needed. Lemma 2.7 is not addressed.
+needed. Lemma 2.7 is proved in Milestone 14 (`sum_increments`).
 
 ---
 

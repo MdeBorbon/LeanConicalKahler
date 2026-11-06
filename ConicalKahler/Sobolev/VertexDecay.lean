@@ -1,6 +1,7 @@
 module
 
 public import ConicalKahler.Sobolev.Completeness
+public import ConicalKahler.Sobolev.Campanato
 
 /-!
 # Decay at the vertex (Lemma 4.2 and the projection onto `𝓗_{≤2}`)
@@ -152,6 +153,29 @@ theorem setIntegral_sq_eq_toReal {S : Set 𝔼} {f : 𝔼 → ℝ}
   simp_rw [enorm_sq_eq_ofReal]
   exact integral_eq_lintegral_of_nonneg_ae (Eventually.of_forall fun x => sq_nonneg _)
     (hf.pow 2)
+
+/-! ### Euclidean balls form a ball family (for Lemma 2.7) -/
+
+/-- **Euclidean balls `B(x, ρ)` form a `BallFamily`** with `μ(B(x,ρ)) = ω_d ρ^d`, so Lemma 2.7
+(`sum_increments`) applies to them. -/
+theorem ballFamily_euclidean (x : 𝔼) :
+    BallFamily (volume : Measure 𝔼) (fun ρ => ball x ρ) d
+      (volume (ball (0 : 𝔼) 1)).toReal (volume (ball (0 : 𝔼) 1)).toReal := by
+  have hvol : ∀ ρ, 0 < ρ → volume (ball x ρ) = ENNReal.ofReal (ρ ^ d) * volume (ball (0 : 𝔼) 1) :=
+    fun ρ hρ => by
+      rw [Measure.addHaar_ball_of_pos _ x hρ, finrank_euclidean]
+  have hfin : volume (ball (0 : 𝔼) 1) ≠ ⊤ := measure_ball_lt_top.ne
+  have hpos : 0 < (volume (ball (0 : 𝔼) 1)).toReal :=
+    ENNReal.toReal_pos (measure_ball_pos volume _ one_pos).ne' hfin
+  have hval : ∀ ρ, 0 < ρ → (volume (ball x ρ)).toReal = (volume (ball (0 : 𝔼) 1)).toReal * ρ ^ d :=
+    fun ρ hρ => by
+      rw [hvol ρ hρ, ENNReal.toReal_mul, ENNReal.toReal_ofReal (pow_nonneg hρ.le d), mul_comm]
+  exact {
+    mono := fun ρ ρ' _ h => ball_subset_ball h
+    lt_top := fun ρ _ _ => measure_ball_lt_top
+    lower := fun ρ hρ _ => (hval ρ hρ).ge
+    upper := fun ρ hρ _ => (hval ρ hρ).le
+    pos := hpos }
 
 /-! ### Lemma 4.2: monotonicity at the vertex -/
 

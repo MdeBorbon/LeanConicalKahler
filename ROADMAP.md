@@ -128,7 +128,7 @@ omitted) and `[C]` (cited from the literature).
 | optimality of the exponent (p. 3, items 1–2): `D u ~ r^{γ} cos θ` is not `α`-Hölder for `α > γ = holderExponentBound β` | **Proved**: `sharp_holderExponent`, `not_holderNearVertex_radialCosFn`; exclusion of pure conical operators for `β ≥ 1/2` (including `β = 1/2`): `not_holderNearVertex_pure_of_half_le` |
 | Corollary 3.5: `DP` is constant for `D ∈ 𝒟₂`, `P ∈ 𝓗_{≤2}`, with `|τ| ≤ C ‖P‖_{L²(B_1)}` (3.3) | **Proved** for the span of the paper's list (Milestone 11: `corollary_3_5_const`, `corollary_3_5`), and for `𝓗_{≤2}` itself (Milestone 13: `corollary_3_5_homogeneous`, `0 < β_a < 1`). |
 | Lemma 2.2: log cut-off with small Dirichlet energy | Planned (explicit) |
-| Lemma 4.2, monotonicity at the vertex | Planned. All ingredients are now proved: the expansion with the gap, `cone_expansion_prop_3_4` |
+| Lemma 4.2, monotonicity at the vertex | **Proved** (Milestone 14): `vertex_monotone` (any conical field), `cone_vertex_monotone`, `cone_vertex_monotone_ball`; the projection onto `𝓗_{≤2}` with decay `cone_vertex_decay` |
 
 ### 3.2 Metric geometry
 
@@ -166,8 +166,8 @@ omitted) and `[C]` (cited from the literature).
 | Ingredient | Status | Possible source |
 |---|---|---|
 | Lemma 2.6, Campanato ⇒ Hölder (uses doubling of `g`-balls) | Planned | EllipticPDE `Campanato.Haar.campanato_holderOnWith` (Euclidean balls). It needs transport to `d_g`-balls. |
-| Lemma 2.7, summing increments over geometric scales | Planned (elementary) | |
-| Lemma 4.3, monotonicity off the vertex | Planned | |
+| Lemma 2.7, summing increments over geometric scales | **Proved** (Milestone 14) for abstract ball families: `sum_increments`; Euclidean balls `ballFamily_euclidean` | |
+| Lemma 4.3, monotonicity near the vertex | **Proved** (Milestone 14): `cone_decay_near_vertex`, for arbitrary `U ⊆ B_{q+ε}`, `Ω ⊇ B_{1−ε}` | |
 | Prop. 5.1, key step; iteration of §5 | Planned | |
 
 ---
@@ -249,14 +249,15 @@ No incompatible dependency has been added.
      polynomial, and their degrees `∑ k_a/β_a + m` are explicit.
    - Corollary 3.5 now holds for `𝓗_{≤2}`.
    - See `STATUS.md`.
-6a. **Decay at the vertex** (recommended Milestone 14).
+6a. **Decay at the vertex** (Milestone 14, **done**: Lemmas 4.2, 4.3, 2.7, the projection onto
+   `𝓗_{≤2}`; see `STATUS.md`). Originally planned as:
    - The `L²(B_1)` projection `Π` onto `𝓗_{≤2}` and the decay
      `‖u − Π u‖_{L²(B_ρ)} ≤ ρ^{2+μ} ‖u‖_{L²(B_1)}` (suitably normalised) for harmonic `u`, from
      `cone_expansion_prop_3_4`.
    - Lemma 4.2 (monotonicity at the vertex).
    - Lemma 2.7 (summing increments over geometric scales).
    - These are the vertex-centred inputs of the Campanato iteration. They do not need Prop. 2.5.
-7. **The `L²` Hessian bound** (Prop. 2.5), for the **intrinsic** Hessian, by the localised Bochner
+7. **The `L²` Hessian bound** (Prop. 2.5) (recommended Milestone 15), for the **intrinsic** Hessian, by the localised Bochner
    argument (`PAPER_REVIEW.md` §C, `research_notes/PROPOSITION_2_5_AUDIT.md`). This is not the
    arXiv proof, which has a false step (V9). Decide between formalising or assuming the Lipschitz
    bound for eigenfunctions. State the passage to the operators of `𝒟₂` explicitly (two pure

@@ -65,3 +65,5 @@ public import ConicalKahler.Sobolev.ConePoly
 public import ConicalKahler.Sobolev.ConePolyFn
 public import ConicalKahler.Sobolev.ConePolyDense
 public import ConicalKahler.Sobolev.Completeness
+public import ConicalKahler.Sobolev.Campanato
+public import ConicalKahler.Sobolev.VertexDecay
