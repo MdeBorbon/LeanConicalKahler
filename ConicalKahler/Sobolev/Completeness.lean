@@ -2,6 +2,7 @@ module
 
 public import ConicalKahler.Sobolev.ConePolyDense
 public import ConicalKahler.Sobolev.ConeLink
+public import ConicalKahler.Sobolev.Corollary35
 
 /-!
 # Completeness of the explicit homogeneous harmonic functions (Proposition 3.4)
@@ -353,5 +354,295 @@ theorem cone_homogeneous_mem_span (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : 
   exact ⟨P, hP, hφ.trans (ae_restrict_of_ae hPe)⟩
 
 end Cone
+
+/-! ### Proposition 3.4 -/
+
+section Prop34
+
+variable {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq κ] [DecidableEq ι]
+
+/-! #### Polynomials of weighted degree `≤ 2` -/
+
+theorem eq_zero_of_weight_eq_zero {μ : κ ⊕ ι →₀ ℕ} (h : Finsupp.weight polyWt μ = 0) : μ = 0 := by
+  rw [Finsupp.weight_eq_sum, Finset.sum_eq_zero_iff] at h
+  ext v
+  have hv := h v (Finset.mem_univ v)
+  have hw : 1 ≤ polyWt (κ := κ) (ι := ι) v := by rcases v with a | i <;> simp
+  simp only [smul_eq_mul, mul_eq_zero] at hv
+  rcases hv with hv | hv
+  · simpa using hv
+  · omega
+
+/-- A polynomial of weighted degree `0` is constant. -/
+theorem eq_C_of_isWeightedHomogeneous_zero {h : MvPolynomial (κ ⊕ ι) ℝ}
+    (hh : IsWeightedHomogeneous polyWt h 0) : h = C (h.coeff 0) := by
+  ext μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp
+  · rw [coeff_C_of_ne_zero hμ]
+    by_contra hne
+    exact hμ (eq_zero_of_weight_eq_zero (hh hne))
+
+/-- A polynomial of weighted degree `1` is linear in the `s_i`. -/
+theorem eq_sum_of_isWeightedHomogeneous_one {h : MvPolynomial (κ ⊕ ι) ℝ}
+    (hh : IsWeightedHomogeneous polyWt h 1) :
+    h = ∑ i, C ((pderiv (Sum.inr i) h).coeff 0) * X (Sum.inr i) := by
+  have hE := hh.sum_weight_X_mul_pderiv
+  rw [Fintype.sum_sum_type] at hE
+  have ha : ∀ a : κ, pderiv (Sum.inl a) h = 0 := fun a =>
+    pderiv_eq_zero_of_lt hh (by simp)
+  have hi : ∀ i : ι, pderiv (Sum.inr i) h = C ((pderiv (Sum.inr i) h).coeff 0) := fun i =>
+    eq_C_of_isWeightedHomogeneous_zero (hh.pderiv (n' := 0) (by simp))
+  simp only [ha, mul_zero, smul_zero, Finset.sum_const_zero, zero_add, polyWt_inr, one_smul] at hE
+  conv_lhs => rw [← hE]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [mul_comm, ← hi i]
+
+/-- **A polynomial of weighted degree `2`, evaluated**: `∑_a c_a t_a + ∑_{i,j} (c_{ij}/2) s_i s_j`. -/
+theorem eval_of_isWeightedHomogeneous_two {h : MvPolynomial (κ ⊕ ι) ℝ}
+    (hh : IsWeightedHomogeneous polyWt h 2) (x : κ ⊕ ι → ℝ) :
+    eval x h = ∑ a, (pderiv (Sum.inl a) h).coeff 0 * x (Sum.inl a) +
+      ∑ i, ∑ j, (pderiv (Sum.inr j) (pderiv (Sum.inr i) h)).coeff 0 / 2 *
+        (x (Sum.inr i) * x (Sum.inr j)) := by
+  have hE := congrArg (eval x) hh.sum_weight_X_mul_pderiv
+  rw [Fintype.sum_sum_type] at hE
+  have ha : ∀ a : κ, pderiv (Sum.inl a) h = C ((pderiv (Sum.inl a) h).coeff 0) := fun a =>
+    eq_C_of_isWeightedHomogeneous_zero (hh.pderiv (n' := 0) (by simp))
+  have hi : ∀ i : ι, pderiv (Sum.inr i) h =
+      ∑ j, C ((pderiv (Sum.inr j) (pderiv (Sum.inr i) h)).coeff 0) * X (Sum.inr j) := fun i =>
+    eq_sum_of_isWeightedHomogeneous_one (hh.pderiv (n' := 1) (by simp))
+  have ha' : ∀ a : κ, eval x (pderiv (Sum.inl a) h) = (pderiv (Sum.inl a) h).coeff 0 := by
+    intro a
+    conv_lhs => rw [ha a]
+    exact eval_C _
+  have hi' : ∀ i : ι, eval x (pderiv (Sum.inr i) h) =
+      ∑ j, (pderiv (Sum.inr j) (pderiv (Sum.inr i) h)).coeff 0 * x (Sum.inr j) := by
+    intro i
+    conv_lhs => rw [hi i]
+    simp [map_sum, eval_C, eval_X]
+  simp only [map_add, map_sum, map_mul, eval_X, polyWt_inl, polyWt_inr, one_smul,
+    nsmul_eq_mul, Nat.cast_ofNat, map_ofNat, ha', hi'] at hE
+  simp_rw [Finset.mul_sum] at hE
+  rw [← Finset.mul_sum] at hE
+  have h2 : eval x h = (∑ a, x (Sum.inl a) * (pderiv (Sum.inl a) h).coeff 0) +
+      (1 / 2) * ∑ i, ∑ j, x (Sum.inr i) *
+        ((pderiv (Sum.inr j) (pderiv (Sum.inr i) h)).coeff 0 * x (Sum.inr j)) := by
+    linear_combination (-1 / 2) * hE
+  rw [h2, Finset.mul_sum]
+  congr 1
+  · exact Finset.sum_congr rfl fun a _ => mul_comm _ _
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  ring
+
+/-! #### Angular degrees -/
+
+theorem modeDeg_zero (β : κ → ConeAngle) : modeDeg β (0 : κ → ℕ) = 0 := by
+  simp [modeDeg]
+
+theorem modeDeg_single (β : κ → ConeAngle) (a : κ) :
+    modeDeg β (Pi.single a 1) = (β a).beta⁻¹ := by
+  rw [modeDeg, Finset.sum_eq_single a (fun b _ hb => by simp [Pi.single_eq_of_ne hb])
+    (fun h => (h (Finset.mem_univ a)).elim)]
+  simp
+
+/-- The angular degree is `0`, `1/β_a`, or at least `1/β_a + 1` (and then `> 2`). -/
+theorem modeDeg_cases (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1) (k : κ → ℕ) :
+    k = 0 ∨ (∃ a, k = Pi.single a 1) ∨
+      ∃ a, (β a).beta⁻¹ + 1 ≤ modeDeg β k ∧ 2 < modeDeg β k := by
+  have hinv : ∀ b, 1 < (β b).beta⁻¹ := fun b => (one_lt_inv₀ (β b).pos).mpr (hβ b)
+  by_cases hk0 : k = 0
+  · exact Or.inl hk0
+  obtain ⟨a, ha⟩ : ∃ a, k a ≠ 0 := by
+    by_contra! h
+    exact hk0 (funext h)
+  by_cases hs : k = Pi.single a 1
+  · exact Or.inr (Or.inl ⟨a, hs⟩)
+  refine Or.inr (Or.inr ⟨a, ?_⟩)
+  have hsplit : modeDeg β k = (k a : ℝ) / (β a).beta +
+      ∑ b ∈ Finset.univ.erase a, (k b : ℝ) / (β b).beta := by
+    rw [modeDeg, ← Finset.add_sum_erase _ _ (Finset.mem_univ a)]
+  have hrest : 0 ≤ ∑ b ∈ Finset.univ.erase a, (k b : ℝ) / (β b).beta :=
+    Finset.sum_nonneg fun b _ => div_nonneg (Nat.cast_nonneg _) (β b).pos.le
+  have hdiv : ∀ b, (k b : ℝ) / (β b).beta = k b * (β b).beta⁻¹ := fun b => div_eq_mul_inv _ _
+  rcases Nat.lt_or_ge (k a) 2 with h2 | h2
+  · have hka : k a = 1 := by omega
+    obtain ⟨b, hb, hkb⟩ : ∃ b, b ≠ a ∧ k b ≠ 0 := by
+      by_contra! h
+      refine hs (funext fun b => ?_)
+      by_cases hba : b = a
+      · subst hba
+        simp [hka]
+      · simp [Pi.single_eq_of_ne hba, h b hba]
+    have hkb' : (β b).beta⁻¹ ≤ ∑ c ∈ Finset.univ.erase a, (k c : ℝ) / (β c).beta := by
+      refine le_trans ?_ (Finset.single_le_sum (f := fun c => (k c : ℝ) / (β c).beta)
+        (fun c _ => div_nonneg (Nat.cast_nonneg _) (β c).pos.le) (Finset.mem_erase.mpr ⟨hb, Finset.mem_univ b⟩))
+      rw [hdiv]
+      have : (1 : ℝ) ≤ k b := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hkb
+      nlinarith [(inv_pos.mpr (β b).pos)]
+    rw [hsplit, hdiv a, hka, Nat.cast_one, one_mul]
+    constructor <;> linarith [hinv a, hinv b]
+  · have : (2 : ℝ) ≤ k a := by exact_mod_cast h2
+    rw [hsplit, hdiv a]
+    constructor <;> nlinarith [hinv a, inv_pos.mpr (β a).pos]
+
+theorem holderExponentBound_le (b : ℝ) : holderExponentBound b ≤ b⁻¹ - 1 := by
+  unfold holderExponentBound
+  split_ifs <;> linarith
+
+/-! #### The list of `𝓗_{≤2}` and the gap -/
+
+theorem modeProd_zero' (β : κ → ConeAngle) (ε : κ → Bool) (y : RealConeModel κ ι) :
+    modeProd β (0 : κ → ℕ) ε y = ∏ a, (bif ε a then (1 : ℝ) else 0) := by
+  simp [modeProd, modeFn_zero]
+
+theorem modeProd_single' (β : κ → ConeAngle) (a : κ) (ε : κ → Bool) (y : RealConeModel κ ι) :
+    modeProd β (Pi.single a 1) ε y = modeFn (β a).beta 1 (ε a) (y.cone a) *
+      ∏ b ∈ Finset.univ.erase a, (bif ε b then (1 : ℝ) else 0) := by
+  rw [modeProd, ← Finset.mul_prod_erase _ _ (Finset.mem_univ a), Pi.single_eq_same]
+  congr 1
+  refine Finset.prod_congr rfl fun b hb => ?_
+  rw [Pi.single_eq_of_ne (Finset.ne_of_mem_erase hb), modeFn_zero]
+
+/-- **The harmonic cone polynomials of degree `≤ 2` are in the paper's list** (`0 < β_a < 1`). -/
+theorem harmConePolys_le_explicitH2 (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1) {δ : ℝ}
+    (hδ : δ ≤ 2) : Submodule.span ℝ (harmConePolys (ι := ι) β δ) ≤ explicitH2 β := by
+  refine Submodule.span_le.mpr ?_
+  rintro _ ⟨k, ε, h, m, hL, hh, hD, rfl⟩
+  have hinv : ∀ b, 1 < (β b).beta⁻¹ := fun b => (one_lt_inv₀ (β b).pos).mpr (hβ b)
+  rcases modeDeg_cases β hβ k with rfl | ⟨a, rfl⟩ | ⟨a, -, h2⟩
+  · -- `k = 0`: polynomials in `r²` and `s`
+    rw [modeDeg_zero, zero_add] at hD
+    have hm : m ≤ 2 := by
+      have : (m : ℝ) ≤ 2 := hD ▸ hδ
+      exact_mod_cast this
+    set c₀ : ℝ := ∏ a, (bif ε a then (1 : ℝ) else 0)
+    have hP : conePoly β 0 ε h = c₀ • fun y => eval (polyArg y) h := by
+      funext y
+      simp only [conePoly, modeProd_zero', Pi.smul_apply, smul_eq_mul, c₀]
+    rw [SetLike.mem_coe, hP]
+    refine Submodule.smul_mem _ c₀ ?_
+    interval_cases m
+    · rw [show (fun y : RealConeModel κ ι => eval (polyArg y) h) =
+          (h.coeff 0) • fun _ => (1 : ℝ) by
+        funext y
+        conv_lhs => rw [eq_C_of_isWeightedHomogeneous_zero hh, eval_C]
+        simp]
+      exact Submodule.smul_mem _ _ one_mem_explicitH2
+    · rw [show (fun y : RealConeModel κ ι => eval (polyArg y) h) =
+          ∑ i, (pderiv (Sum.inr i) h).coeff 0 • fun y : RealConeModel κ ι => y.eucl i by
+        funext y
+        conv_lhs => rw [eq_sum_of_isWeightedHomogeneous_one hh]
+        simp [polyArg]]
+      exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (eucl_mem_explicitH2 i)
+    · set cc : κ → ℝ := fun a => (pderiv (Sum.inl a) h).coeff 0
+      set Q : ι → ι → ℝ := fun i j => (pderiv (Sum.inr j) (pderiv (Sum.inr i) h)).coeff 0 / 2
+      have hq : (fun y : RealConeModel κ ι => eval (polyArg y) h) = quadFn cc Q := by
+        funext y
+        rw [eval_of_isWeightedHomogeneous_two hh, quadFn]
+        simp [polyArg, cc, Q]
+      rw [hq]
+      refine quadFn_mem_explicitH2 ?_
+      -- the harmonic constraint, from the classical Laplacian at a regular point
+      have hH := isClassicalHarmonic_conePoly (ι := ι) (fun a => (hβ a).le) 0 (fun _ => true) hL
+      have hcp : conePoly β 0 (fun _ => true) h = quadFn cc Q := by
+        funext y
+        rw [conePoly, modeProd_zero', ← hq]
+        simp
+      have h0 := hH.harmonic _ basePolar_mem
+      rw [hcp, paperLaplacian_quadFn β cc Q basePolar_mem] at h0
+      linarith
+  · -- `k = e_a`: `r_a^{1/β_a} cos θ_a`, `r_a^{1/β_a} sin θ_a`
+    rw [modeDeg_single] at hD
+    have hm : m = 0 := by
+      have : (m : ℝ) < 1 := by linarith [hinv a]
+      exact_mod_cast Nat.lt_one_iff.mp (by exact_mod_cast this)
+    subst hm
+    simp only [Nat.cast_zero, add_zero] at hD
+    have hβa : 1 / 2 ≤ (β a).beta := by
+      have h1 : (β a).beta⁻¹ ≤ 2 := by simpa using hD ▸ hδ
+      rw [inv_le_comm₀ (β a).pos (by norm_num)] at h1
+      linarith
+    set c₁ : ℝ := h.coeff 0 * ∏ b ∈ Finset.univ.erase a, (bif ε b then (1 : ℝ) else 0)
+    have hP : conePoly β (Pi.single a 1) ε h =
+        c₁ • fun y : RealConeModel κ ι => modeFn (β a).beta 1 (ε a) (y.cone a) := by
+      funext y
+      rw [conePoly, modeProd_single', eq_C_of_isWeightedHomogeneous_zero hh, eval_C]
+      simp only [Pi.smul_apply, smul_eq_mul, c₁]
+      ring
+    rw [SetLike.mem_coe, hP]
+    refine Submodule.smul_mem _ c₁ ?_
+    cases hε : ε a
+    · exact harmSin_mem_explicitH2 hβa
+    · exact harmCos_mem_explicitH2 hβa
+  · -- otherwise the degree exceeds `2`
+    exfalso
+    have : (0 : ℝ) ≤ m := Nat.cast_nonneg m
+    linarith
+
+/-- **The gap**: there is no harmonic cone polynomial of degree in `(2, 2 + μ)` (`0 < β_a < 1`,
+`μ ≤ 1`, `μ ≤` the bound of eq. (1.1) for every `a`). -/
+theorem harmConePolys_eq_empty (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1) {μ : ℝ}
+    (hμ1 : μ ≤ 1) (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {δ : ℝ} (h2 : 2 < δ)
+    (h3 : δ < 2 + μ) : harmConePolys (ι := ι) β δ = ∅ := by
+  ext P
+  simp only [mem_empty_iff_false, iff_false]
+  rintro ⟨k, ε, h, m, -, -, hD, -⟩
+  have hinv : ∀ b, 1 < (β b).beta⁻¹ := fun b => (one_lt_inv₀ (β b).pos).mpr (hβ b)
+  have hm0 : (0 : ℝ) ≤ m := Nat.cast_nonneg m
+  rcases modeDeg_cases β hβ k with rfl | ⟨a, rfl⟩ | ⟨a, h1, -⟩
+  · rw [modeDeg_zero, zero_add] at hD
+    have hm3 : 3 ≤ m := by
+      have : (2 : ℝ) < m := hD ▸ h2
+      have : 2 < m := by exact_mod_cast this
+      omega
+    have : (3 : ℝ) ≤ m := by exact_mod_cast hm3
+    linarith
+  · rw [modeDeg_single] at hD
+    have hb := holderExponentBound_le (β a).beta
+    have hμa := hμ a
+    rcases Nat.eq_zero_or_pos m with hm | hm
+    · subst hm
+      simp only [Nat.cast_zero, add_zero] at hD
+      have hlt : (β a).beta < 1 / 2 := by
+        have : 2 < (β a).beta⁻¹ := hD ▸ h2
+        rw [lt_inv_comm₀ (by norm_num) (β a).pos] at this
+        linarith
+      have heq : holderExponentBound (β a).beta = (β a).beta⁻¹ - 2 := by
+        rw [holderExponentBound, ite_eq_left hlt]
+      linarith
+    · have : (1 : ℝ) ≤ m := by exact_mod_cast hm
+      linarith
+  · have hb := holderExponentBound_le (β a).beta
+    have hμa := hμ a
+    linarith
+
+/-- **Proposition 3.4** (de Borbon–Edwards). Let `0 < β_a < 1`, `d ≥ 2`, and let
+`u ∈ W^{1,2}(B_1)` be weakly harmonic for the cone Laplacian and homogeneous of degree `δ ≥ 0`
+(`u = |x|^δ φ(x/|x|)`). Then
+1. if `δ ≤ 2`, `u` is (a.e.) in the span of the paper's list `explicitH2`;
+2. if `μ ≤ 1`, `μ ≤ 1/β_a - 1` (`β_a ≥ 1/2`) and `μ ≤ 1/β_a - 2` (`β_a < 1/2`) for all `a`, there is
+   no such `u ≠ 0` with `2 < δ < 2 + μ`. -/
+theorem prop_3_4 (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {u : L2Pair volume (ball (0 : 𝔼) 1)}
+    (hu : (coneCoeff β e).IsWeakSolution 0 u) {δ : ℝ} (hδ : 0 ≤ δ) {φ : Lp ℝ 2 (sphMeasure d)}
+    (hφ : (u.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] homFun δ fun w => φ w) :
+    (δ ≤ 2 → ∃ P ∈ explicitH2 β,
+      (u.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] fun x => P ((coordIso e).symm x)) ∧
+    (∀ μ : ℝ, μ ≤ 1 → (∀ a, μ ≤ holderExponentBound (β a).beta) → 2 < δ → δ < 2 + μ →
+      u.fst = 0) := by
+  obtain ⟨P, hP, hPe⟩ := cone_homogeneous_mem_span hd β (fun a => (hβ a).le) e hu hδ hφ
+  refine ⟨fun h2 => ⟨P, harmConePolys_le_explicitH2 β hβ h2 hP, hPe⟩, ?_⟩
+  intro μ hμ1 hμ h2 h3
+  rw [harmConePolys_eq_empty β hβ hμ1 hμ h2 h3, Submodule.span_empty, Submodule.mem_bot] at hP
+  subst hP
+  rw [Lp.eq_zero_iff_ae_eq_zero]
+  filter_upwards [hPe] with x hx
+  rw [hx]
+  rfl
+
+end Prop34
 
 end ConicalKahler.Sobolev
