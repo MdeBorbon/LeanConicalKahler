@@ -480,4 +480,163 @@ theorem integral_mul_inner_vectorField (hΩ : IsOpen Ω) {u P : L2Pair volume Ω
 
 end Products
 
+/-! ### Radial test functions -/
+
+section Radial
+
+/-- A function smooth on `ℝ^d \ {0}` and constant near `0` is smooth. -/
+theorem contDiff_of_contDiffOn_compl_zero {g : 𝔼 → ℝ} (hg : ContDiffOn ℝ ∞ g {0}ᶜ)
+    (h0 : ∀ᶠ x in 𝓝 (0 : 𝔼), g x = g 0) : ContDiff ℝ ∞ g := by
+  refine contDiff_iff_contDiffAt.mpr fun x => ?_
+  by_cases hx : x = 0
+  · subst hx
+    exact contDiffAt_const.congr_of_eventuallyEq h0
+  · exact (hg x hx).contDiffAt (isOpen_compl_singleton.mem_nhds hx)
+
+theorem contDiffOn_norm_compl : ContDiffOn ℝ ∞ (fun x : 𝔼 => ‖x‖) {0}ᶜ := fun x hx =>
+  (contDiffAt_norm ℝ hx).contDiffWithinAt
+
+variable {f : ℝ → ℝ} {ε ρ : ℝ}
+
+/-- The radial primitive `F(r) = ∫_1^r f`. -/
+def radPrim (f : ℝ → ℝ) (r : ℝ) : ℝ := ∫ t in (1 : ℝ)..r, f t
+
+theorem hasDerivAt_radPrim (hf : Continuous f) (r : ℝ) : HasDerivAt (radPrim f) (f r) r :=
+  (hf.integral_hasStrictDerivAt 1 r).hasDerivAt
+
+theorem contDiff_radPrim (hf : ContDiff ℝ ∞ f) : ContDiff ℝ ∞ (radPrim f) := by
+  rw [contDiff_infty_iff_deriv]
+  refine ⟨fun r => (hasDerivAt_radPrim hf.continuous r).differentiableAt, ?_⟩
+  have : deriv (radPrim f) = f := funext fun r => (hasDerivAt_radPrim hf.continuous r).deriv
+  rw [this]
+  exact hf
+
+theorem radPrim_eq_zero (hf : Continuous f) (hρ : ρ ≤ 1)
+    (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) {r : ℝ} (hr : ρ ≤ r) : radPrim f r = 0 := by
+  rw [radPrim]
+  refine intervalIntegral.integral_zero_ae (Eventually.of_forall fun t ht => hsupp t ?_)
+  intro h
+  rcases le_total 1 r with h1 | h1
+  · rw [uIoc_of_le h1] at ht
+    linarith [ht.1, h.2]
+  · rw [uIoc_of_ge h1] at ht
+    linarith [ht.1, h.2]
+
+theorem radPrim_eq_of_le (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) (hf : Continuous f) (hε : 0 ≤ ε)
+    {r : ℝ} (hr : r ≤ ε) : radPrim f r = radPrim f 0 := by
+  have hzero : ∫ t in (0 : ℝ)..r, f t = 0 :=
+    intervalIntegral.integral_zero_ae (Eventually.of_forall fun t ht => hsupp t fun h => by
+      rcases le_total 0 r with h0 | h0
+      · rw [uIoc_of_le h0] at ht
+        linarith [ht.2, h.1]
+      · rw [uIoc_of_ge h0] at ht
+        linarith [ht.2, h.1, ht.1, hε])
+  rw [radPrim, radPrim, ← intervalIntegral.integral_add_adjacent_intervals
+    (b := 0) (hf.intervalIntegrable 1 0) (hf.intervalIntegrable 0 r), hzero, add_zero]
+
+/-- **The radial test function** `η(x) = F(|x|)`, `F' = f`, for `f` vanishing outside `(ε, ρ)`,
+`0 < ε`, `ρ < 1`. -/
+theorem isTestFn_radPrim (hf : ContDiff ℝ ∞ f) (hε : 0 < ε) (hρ : ρ < 1)
+    (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) :
+    IsTestFn (ball (0 : 𝔼) 1) (fun x => radPrim f ‖x‖) := by
+  have hzero : ∀ x : 𝔼, x ∉ closedBall (0 : 𝔼) ρ → radPrim f ‖x‖ = 0 := fun x hx =>
+    radPrim_eq_zero hf.continuous hρ.le hsupp (by
+      rw [mem_closedBall_zero_iff, not_le] at hx
+      exact hx.le)
+  refine ⟨contDiff_of_contDiffOn_compl_zero ((contDiff_radPrim hf).comp_contDiffOn
+    contDiffOn_norm_compl) ?_, HasCompactSupport.intro (isCompact_closedBall 0 ρ) hzero, ?_⟩
+  · filter_upwards [ball_mem_nhds (0 : 𝔼) hε] with x hx
+    simp only [norm_zero]
+    exact radPrim_eq_of_le hsupp hf.continuous hε.le (mem_ball_zero_iff.mp hx).le
+  · refine (closure_minimal (fun x hx => ?_) isClosed_closedBall).trans
+      (closedBall_subset_ball hρ)
+    by_contra h
+    exact hx (hzero x h)
+
+/-- **The radial vector field** `Y(x) = f(|x|) x / |x|`, the gradient of `F(|x|)`. -/
+def radField (f : ℝ → ℝ) (x : 𝔼) : 𝔼 := (f ‖x‖ * ‖x‖⁻¹) • x
+
+theorem gradient_radPrim (hf : ContDiff ℝ ∞ f) (hε : 0 < ε)
+    (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) (x : 𝔼) :
+    gradient (fun y : 𝔼 => radPrim f ‖y‖) x = radField f x := by
+  by_cases hx : x = 0
+  · subst hx
+    have h0 : (fun y : 𝔼 => radPrim f ‖y‖) =ᶠ[𝓝 0] fun _ => radPrim f 0 := by
+      filter_upwards [ball_mem_nhds (0 : 𝔼) hε] with y hy
+      exact radPrim_eq_of_le hsupp hf.continuous hε.le (mem_ball_zero_iff.mp hy).le
+    rw [gradient_eq_zero_of_eventuallyEq_const h0, radField, smul_zero]
+  · have h := (hasDerivAt_radPrim hf.continuous ‖x‖).comp_hasFDerivAt x
+      (hasFDerivAt_norm_of_ne hx)
+    rw [gradient, show (fun y : 𝔼 => radPrim f ‖y‖) = radPrim f ∘ fun y : 𝔼 => ‖y‖ from rfl,
+      h.fderiv]
+    apply (toDual ℝ 𝔼).injective
+    ext v
+    simp [radField, real_inner_smul_left, mul_assoc]
+
+theorem radField_eq_zero {x : 𝔼} (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) (hx : ‖x‖ ∉ Ioo ε ρ) :
+    radField f x = 0 := by
+  rw [radField, hsupp _ hx, zero_mul, zero_smul]
+
+theorem isTestFn_radField (hf : ContDiff ℝ ∞ f) (hε : 0 < ε) (hρ : ρ < 1)
+    (hsupp : ∀ t, t ∉ Ioo ε ρ → f t = 0) (k : Fin d) :
+    IsTestFn (ball (0 : 𝔼) 1) (fun x => radField f x k) := by
+  have hzero : ∀ x : 𝔼, x ∉ closedBall (0 : 𝔼) ρ → radField f x k = 0 := fun x hx => by
+    rw [radField_eq_zero hsupp fun h => hx (mem_closedBall_zero_iff.mpr h.2.le), PiLp.zero_apply]
+  refine ⟨contDiff_of_contDiffOn_compl_zero ?_ ?_, HasCompactSupport.intro
+    (isCompact_closedBall 0 ρ) hzero, ?_⟩
+  · have : (fun x : 𝔼 => radField f x k) = fun x => f ‖x‖ * ‖x‖⁻¹ * x k := by
+      funext x
+      simp [radField]
+    rw [this]
+    refine ((hf.comp_contDiffOn contDiffOn_norm_compl).mul
+      (contDiffOn_norm_compl.inv fun x hx => norm_ne_zero_iff.mpr hx)).mul ?_
+    exact (EuclideanSpace.proj k : 𝔼 →L[ℝ] ℝ).contDiff.contDiffOn
+  · filter_upwards [ball_mem_nhds (0 : 𝔼) hε] with x hx
+    have h1 : ‖x‖ ∉ Ioo ε ρ := fun h => by linarith [mem_ball_zero_iff.mp hx, h.1]
+    have h2 : ‖(0 : 𝔼)‖ ∉ Ioo ε ρ := fun h => by
+      rw [norm_zero] at h
+      linarith [h.1]
+    rw [radField_eq_zero hsupp h1, radField_eq_zero hsupp h2]
+  · refine (closure_minimal (fun x hx => ?_) isClosed_closedBall).trans
+      (closedBall_subset_ball hρ)
+    by_contra h
+    exact hx (hzero x h)
+
+/-- **The divergence of the radial field**: `div Y = f'(r) + (d - 1) f(r)/r`, `r = |x| ≠ 0`. -/
+theorem div_radField (hf : ContDiff ℝ ∞ f) {x : 𝔼} (hx : x ≠ 0) :
+    ∑ k, fderiv ℝ (fun y => radField f y k) x (EuclideanSpace.single k 1) =
+      deriv f ‖x‖ + (d - 1) * (f ‖x‖ / ‖x‖) := by
+  have hn : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx
+  -- `Y_k = h · x_k` with `h(y) = f(|y|)/|y|`
+  set g : ℝ → ℝ := fun t => f t * t⁻¹
+  have hg : HasDerivAt g (deriv f ‖x‖ * ‖x‖⁻¹ + f ‖x‖ * (-(‖x‖ ^ 2)⁻¹)) ‖x‖ :=
+    ((hf.differentiable (by simp) ‖x‖).hasDerivAt).mul (hasDerivAt_inv hn)
+  have hh : HasFDerivAt (fun y : 𝔼 => g ‖y‖)
+      ((deriv f ‖x‖ * ‖x‖⁻¹ + f ‖x‖ * (-(‖x‖ ^ 2)⁻¹)) • (‖x‖⁻¹ • innerSL ℝ x)) x :=
+    hg.comp_hasFDerivAt x (hasFDerivAt_norm_of_ne hx)
+  have hk : ∀ k : Fin d, fderiv ℝ (fun y => radField f y k) x (EuclideanSpace.single k 1) =
+      fderiv ℝ (fun y : 𝔼 => g ‖y‖) x (EuclideanSpace.single k 1) * x k + g ‖x‖ := by
+    intro k
+    have hp : HasFDerivAt (fun y : 𝔼 => y k) (EuclideanSpace.proj k : 𝔼 →L[ℝ] ℝ) x :=
+      (EuclideanSpace.proj k : 𝔼 →L[ℝ] ℝ).hasFDerivAt
+    have e : (fun y => radField f y k) = (fun y : 𝔼 => g ‖y‖) * fun y : 𝔼 => y k := by
+      funext y
+      simp [radField, g]
+    rw [e, (hh.mul hp).fderiv, hh.fderiv]
+    simp
+    ring
+  simp_rw [hk]
+  rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+  rw [show ∑ k : Fin d, fderiv ℝ (fun y : 𝔼 => g ‖y‖) x (EuclideanSpace.single k 1) * x k =
+      fderiv ℝ (fun y : 𝔼 => g ‖y‖) x x by
+    rw [fderiv_eq_sum_coord x x]
+    exact Finset.sum_congr rfl fun k _ => mul_comm _ _]
+  rw [hh.fderiv]
+  simp only [ContinuousLinearMap.smul_apply, innerSL_apply_apply, real_inner_self_eq_norm_sq,
+    smul_eq_mul, g]
+  field_simp
+  ring
+
+end Radial
+
 end ConicalKahler.Sobolev
