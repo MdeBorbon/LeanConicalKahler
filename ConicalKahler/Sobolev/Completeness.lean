@@ -643,6 +643,66 @@ theorem prop_3_4 (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).bet
   rw [hx]
   rfl
 
+/-- **Lemma 3.3 with Proposition 3.4.** For `0 < β_a < 1`, `d ≥ 2` and `μ` as in eq. (1.1)
+(`μ ≤ 1`, `μ ≤ 1/β_a - 1` or `1/β_a - 2`), every weakly harmonic `u ∈ W^{1,2}(B_1)` is the
+`L²(B_1)`-sum `∑_i a_i P_i` of mutually orthogonal homogeneous harmonic functions of degrees `δ_i`,
+where each term either has `δ_i ≤ 2` and lies in the span of the paper's list, or has
+`δ_i ≥ 2 + μ`. -/
+theorem cone_expansion_prop_3_4 (hd : 2 ≤ d) (β : κ → ConeAngle) (hβ : ∀ a, (β a).beta < 1)
+    (e : RealConeIndex κ ι ≃ Fin d) {μ : ℝ} (hμ1 : μ ≤ 1)
+    (hμ : ∀ a, μ ≤ holderExponentBound (β a).beta) {u : L2Pair volume (ball (0 : 𝔼) 1)}
+    (hu : (coneCoeff β e).IsWeakSolution 0 u) :
+    ∃ (s : Set (Lp ℝ 2 (sphMeasure d))) (δ a : s → ℝ)
+      (P : s → Lp ℝ 2 (volume.restrict (ball (0 : 𝔼) 1))),
+      (∀ i, 0 ≤ δ i ∧
+        (P i : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+          homFun (δ i) (fun w => (i : Lp ℝ 2 (sphMeasure d)) w) ∧
+        ∃ Q : L2Pair volume (ball (0 : 𝔼) 1), (coneCoeff β e).IsWeakSolution 0 Q ∧ Q.fst = P i) ∧
+      (∀ i, (δ i ≤ 2 ∧ ∃ Pe ∈ explicitH2 β, (P i : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+          fun x => Pe ((coordIso e).symm x)) ∨ 2 + μ ≤ δ i) ∧
+      (∀ i j, i ≠ j → ⟪P i, P j⟫_ℝ = 0) ∧
+      HasSum (fun i => a i • P i) u.fst := by
+  obtain ⟨s, B, Γ, lam, δ, a, P, hB, hi, horth, hsum⟩ := cone_expansion hd β e hu
+  have hnorm : ∀ i : s, ‖(i : Lp ℝ 2 (sphMeasure d))‖ = 1 := fun i => by
+    have := B.orthonormal.1 i
+    rwa [hB] at this
+  refine ⟨s, δ, a, P, fun i => ⟨(hi i).1, (hi i).2.2.2.1, (hi i).2.2.2.2⟩, fun i => ?_, horth, hsum⟩
+  obtain ⟨hδ0, -, hE, hPi, Q, hQ, hQP⟩ := hi i
+  have hQφ : (Q.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)]
+      homFun (δ i) fun w => (i : Lp ℝ 2 (sphMeasure d)) w := by
+    rw [hQP]
+    exact hPi
+  have h34 := prop_3_4 hd β hβ e hQ hδ0 hQφ
+  by_cases h2 : δ i ≤ 2
+  · obtain ⟨Pe, hPe, hPe'⟩ := h34.1 h2
+    exact Or.inl ⟨h2, Pe, hPe, hQP ▸ hPe'⟩
+  · refine Or.inr (not_lt.mp fun h3 => ?_)
+    have h0 := h34.2 μ hμ1 hμ (not_le.mp h2) h3
+    -- `P i = 0` contradicts `‖P i‖² = 1/(2δ_i + d)`
+    have hdpos : (0 : ℝ) < d := Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne d))
+    set v : LinkPair d := WithLp.toLp 2 ((i : Lp ℝ 2 (sphMeasure d)), 0)
+    have hint := integral_ball_homP_mul_homP hδ0 hδ0 v v
+    have hz : ∫ x in ball (0 : 𝔼) 1, homP (δ i) v x * homP (δ i) v x = 0 := by
+      refine integral_eq_zero_of_ae ?_
+      have hPz : (Q.fst : 𝔼 → ℝ) =ᵐ[volume.restrict (ball (0 : 𝔼) 1)] 0 := by
+        rw [h0]
+        exact Lp.coeFn_zero ℝ 2 _
+      filter_upwards [hQφ, hPz] with x hx hx'
+      have : homP (δ i) v x = 0 := by
+        have h1 : homFun (δ i) (fun w => ((i : Lp ℝ 2 (sphMeasure d)) : Sph d → ℝ) w) x = 0 := by
+          rw [← hx, hx']
+          rfl
+        exact h1
+      simp [this]
+    rw [hz] at hint
+    have hvv : ⟪v.fst, v.fst⟫_ℝ = 1 := by
+      rw [real_inner_self_eq_norm_sq]
+      show ‖(i : Lp ℝ 2 (sphMeasure d))‖ ^ 2 = 1
+      rw [hnorm i, one_pow]
+    rw [hvv] at hint
+    have : (0 : ℝ) < δ i + δ i + d := by linarith
+    exact absurd hint.symm (div_ne_zero one_ne_zero this.ne')
+
 end Prop34
 
 end ConicalKahler.Sobolev
