@@ -470,4 +470,40 @@ theorem rayCoeff_eq (hd : 2 ≤ d) (hc : c.IsConical) {lam δ : ℝ} {v : LinkPa
   rw [← hr, mul_comm, ← mul_assoc, ← Real.rpow_add hr0, add_neg_cancel, Real.rpow_zero]
   simp [U]
 
+/-! ### Parseval on spheres -/
+
+/-- **Parseval on a sphere.** If `w ↦ f(r w)` is square integrable on the sphere, its squared
+`L²` norm is the sum of the squares of the ray coefficients in a Hilbert basis. -/
+theorem lintegral_slice_eq_tsum {ι : Type*} (B : HilbertBasis ι ℝ (Lp ℝ 2 (sphMeasure d)))
+    {f : 𝔼 → ℝ} (hf : StronglyMeasurable f) {r : ℝ}
+    (hr : ∫⁻ w, ‖f (r • (w : 𝔼))‖ₑ ^ 2 ∂(sphMeasure d) < ⊤) :
+    ∫⁻ w, ‖f (r • (w : 𝔼))‖ₑ ^ 2 ∂(sphMeasure d) =
+      ∑' i, ENNReal.ofReal (rayCoeff f (fun w => B i w) r ^ 2) := by
+  have hmeas : AEStronglyMeasurable (fun w : Sph d => f (r • (w : 𝔼))) (sphMeasure d) :=
+    (hf.comp_measurable (g := fun w : Sph d => r • (w : 𝔼))
+      (measurable_subtype_coe.const_smul r)).aestronglyMeasurable
+  have hm : MemLp (fun w : Sph d => f (r • (w : 𝔼))) 2 (sphMeasure d) := by
+    change eLpNorm _ 2 _ < ⊤
+    rw [eLpNorm_two_eq hmeas]
+    exact ENNReal.rpow_lt_top_of_nonneg (by norm_num) hr.ne
+  set S := hm.toLp _
+  have hG : ∫⁻ w, ‖f (r • (w : 𝔼))‖ₑ ^ 2 ∂(sphMeasure d) = ENNReal.ofReal (‖S‖ ^ 2) := by
+    rw [norm_sq_eq_lintegral, ENNReal.ofReal_toReal]
+    · refine lintegral_congr_ae ?_
+      filter_upwards [hm.coeFn_toLp] with w hw
+      rw [hw]
+    · exact (lintegral_sq_lt_top S).ne
+  have hc : ∀ i, ⟪S, B i⟫_ℝ = rayCoeff f (fun w => B i w) r := fun i => by
+    rw [L2.inner_def, rayCoeff]
+    refine integral_congr_ae ?_
+    filter_upwards [hm.coeFn_toLp] with w hw
+    rw [hw, RCLike.inner_apply, conj_trivial, mul_comm]
+  have hsum := B.hasSum_inner_mul_inner S S
+  simp_rw [real_inner_comm S, hc, real_inner_self_eq_norm_sq] at hsum
+  rw [hG, ← hsum.tsum_eq, ENNReal.ofReal_tsum_of_nonneg (fun i => mul_self_nonneg _)
+    hsum.summable]
+  congr 1
+  funext i
+  rw [sq]
+
 end ConicalKahler.Sobolev
