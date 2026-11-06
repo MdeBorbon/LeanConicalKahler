@@ -315,6 +315,19 @@ and `C²` off the singular set, to a `W^{1,2}` function whose boundary trace is 
 Convergence of the series is not discussed. A proof by energy uniqueness in `W^{1,2}_0` plus
 separation of variables would avoid the issue.
 
+**Progress (Milestone 11, kernel-checked; Lemma 3.3 itself is not yet proved).**
+- The energy replacement of Lemma 3.2 is proved: a weakly harmonic function in `W^{1,2}_0(Ω)` on a
+  bounded `Ω` vanishes, and two weak solutions with the same right-hand side whose difference is in
+  `W^{1,2}_0` agree (`eq_zero_of_isWeakSolution_zero_of_mem_H01`,
+  `eq_of_isWeakSolution_of_sub_mem_H01`). No continuity up to the boundary is used.
+- Separation of variables in one angle `θ_a` is proved for weak solutions on rotation-invariant
+  domains: the Fourier modes are weak solutions, transform like `cos kθ_a` and `sin kθ_a`, and
+  determine the function (`isWeakSolution_angMode`, `rotLp_cosCoeff`, `eq_zero_of_modes_eq_zero`).
+- The explicit homogeneous harmonic functions used in §3 are weakly harmonic on every bounded open
+  set, including near the singular set (`IsClassicalHarmonic.isWeakSolution`).
+- Still missing for Lemma 3.3: the spectral theory of the link (Lemma 3.1), the radial ODE for the
+  coefficients and the convergence of the expansion.
+
 ### S3. Uniformity in Lemma 2.4 and Proposition 5.1 (resolved for Lemma 2.4, in Lean)
 
 Proposition 5.1 needs the harmonic approximation constant `δ` to be uniform over centres `x` with
@@ -418,7 +431,15 @@ recovered, but a complete repair has **not** been established.
   (`intrinsicNormSq_bounds`). The analogous assertion for `W^{2,2}` is false (V10).
 * **The divergence form of `Δ`.** On smooth functions away from the singular set, the operator
   `div(g⁻¹∇u)` of the weak formulation in the real coordinates is the paper's
-  `Δ = ∑_a Δ_{β_a} + Δ_s`. This is proved in Lean (`divergence_coneInvOp_gradient`).
+  `Δ = ∑_a Δ_{β_a} + Δ_s`. This is proved in Lean (`divergence_coneInvOp_gradient`). Moreover, a
+  function that is `C²` off the singular set with `u, ∇u ∈ L²` is a weak solution iff it is a
+  classical solution off the singular set (`cone_isWeakSolution_of_classical`,
+  `cone_classical_of_isWeakSolution`): the paper's tacit identification of the two notions is
+  justified for such functions.
+* **Corollary 3.5** ("immediate check inspection") is verified in Lean for every element of the
+  span of the paper's list in Proposition 3.4, including the bound (3.3) via finite
+  dimensionality (`corollary_3_5`). Its application to all of `𝓗_{≤2}` depends on the
+  completeness part of Proposition 3.4, which is not yet formalised.
 
 * **𝒟₂ and "entries of the Hessian".** The paper calls the operators of `𝒟₂` "entries of the
   Hessian", but defines them as **coordinate** operators (p. 2). They differ from the components
