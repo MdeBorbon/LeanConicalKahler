@@ -356,6 +356,128 @@ theorem exists_smulPair_mem_H01 (hΩ : IsOpen Ω) {v : L2Pair volume Ω} (hv : v
       simp only [add_zero, sub_zero, smul_smul, zero_smul, smul_zero]
       module
 
+/-- **The Wronskian identity.** If `u` and `P` are weakly harmonic on `Ω` and `η` is a test
+function on `Ω`, then `∫ P ⟨A ∇u, ∇η⟩ = ∫ u ⟨A ∇P, ∇η⟩`. -/
+theorem wronskian (c : CoeffField 𝔼 volume) (hΩ : IsOpen Ω) {u P : L2Pair volume Ω}
+    (hu : c.IsWeakSolution 0 u) (hP : c.IsWeakSolution 0 P) {η : 𝔼 → ℝ} (hη : IsTestFn Ω η) :
+    ∫ x in Ω, P.fst x * ⟪c.A x (u.snd x), gradient η x⟫_ℝ =
+      ∫ x in Ω, u.fst x * ⟪c.A x (P.snd x), gradient η x⟫_ℝ := by
+  obtain ⟨ζ₁, hζ₁, hζ₁f, hζ₁s⟩ := exists_smulPair_mem_H01 hΩ hP.1 hη
+  obtain ⟨ζ₂, hζ₂, hζ₂f, hζ₂s⟩ := exists_smulPair_mem_H01 hΩ hu.1 hη
+  have h1 := hu.forall_H01 hζ₁
+  have h2 := hP.forall_H01 hζ₂
+  rw [CoeffField.dirichletForm_apply, CoeffField.inner_mulOp, inner_zero_left] at h1 h2
+  obtain ⟨M, -, hMη, hMg⟩ := exists_bound_testFn hη
+  -- integrability of the four pieces
+  have hi : ∀ (a b : L2Pair volume Ω), Integrable (fun x => a.fst x * ⟪c.A x (b.snd x),
+      gradient η x⟫_ℝ) (volume.restrict Ω) := fun a b => by
+    have hAb : MemLp (fun x => c.A x (b.snd x)) 2 (volume.restrict Ω) := c.memLp_apply Ω b.snd
+    refine (integrable_mul_of_memLp_two (Lp.memLp a.fst)
+      (hAb.of_le_mul (c := M) ((hAb.aestronglyMeasurable).inner
+        hη.continuous_gradient.aestronglyMeasurable) (Eventually.of_forall fun x => ?_)))
+    rw [Real.norm_eq_abs, mul_comm]
+    exact (abs_real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_left (hMg x) (norm_nonneg _))
+  have hj : ∀ (a b : L2Pair volume Ω), Integrable (fun x => η x * ⟪c.A x (a.snd x),
+      b.snd x⟫_ℝ) (volume.restrict Ω) := fun a b => by
+    have := (L2.integrable_inner (c.mulOp Ω a.snd) b.snd).bdd_mul
+      (c := M) hη.continuous.aestronglyMeasurable (Eventually.of_forall fun x => by
+        rw [Real.norm_eq_abs]; exact hMη x)
+    refine this.congr ?_
+    filter_upwards [c.mulOp_ae Ω a.snd] with x hx
+    rw [hx]
+  have e1 : ∫ x in Ω, ⟪c.A x (u.snd x), ζ₁.snd x⟫_ℝ =
+      ∫ x in Ω, (η x * ⟪c.A x (u.snd x), P.snd x⟫_ℝ +
+        P.fst x * ⟪c.A x (u.snd x), gradient η x⟫_ℝ) := by
+    refine integral_congr_ae ?_
+    filter_upwards [hζ₁s] with x hx
+    rw [hx, inner_add_right, real_inner_smul_right, real_inner_smul_right]
+  have e2 : ∫ x in Ω, ⟪c.A x (P.snd x), ζ₂.snd x⟫_ℝ =
+      ∫ x in Ω, (η x * ⟪c.A x (u.snd x), P.snd x⟫_ℝ +
+        u.fst x * ⟪c.A x (P.snd x), gradient η x⟫_ℝ) := by
+    refine integral_congr_ae ?_
+    filter_upwards [hζ₂s] with x hx
+    rw [hx, inner_add_right, real_inner_smul_right, real_inner_smul_right, c.symm,
+      real_inner_comm]
+  have h1' : ∫ x in Ω, ⟪c.A x (u.snd x), ζ₁.snd x⟫_ℝ = 0 := h1
+  have h2' : ∫ x in Ω, ⟪c.A x (P.snd x), ζ₂.snd x⟫_ℝ = 0 := h2
+  rw [e1, integral_add (hj u P) (hi P u)] at h1'
+  rw [e2, integral_add (hj u P) (hi u P)] at h2'
+  linarith
+
+/-- **Integration by parts against a vector field times `P`.** For `u, P ∈ W^{1,2}(Ω)` and a
+vector field `Y` whose components are test functions on `Ω`,
+`∫ P ⟨∇u, Y⟩ = -∫ u (P div Y + ⟨∇P, Y⟩)`. -/
+theorem integral_mul_inner_vectorField (hΩ : IsOpen Ω) {u P : L2Pair volume Ω}
+    (hu : u ∈ W12 volume Ω) (hP : P ∈ W12 volume Ω) {Y : 𝔼 → 𝔼}
+    (hY : ∀ k, IsTestFn Ω fun x => Y x k) :
+    ∫ x in Ω, P.fst x * ⟪u.snd x, Y x⟫_ℝ =
+      -∫ x in Ω, u.fst x * (P.fst x * (∑ k, fderiv ℝ (fun y => Y y k) x
+        (EuclideanSpace.single k 1)) + ⟪P.snd x, Y x⟫_ℝ) := by
+  -- integrability: an `L²` product times a bounded continuous function
+  have hint : ∀ {f g : 𝔼 → ℝ} {m : 𝔼 → ℝ}, MemLp f 2 (volume.restrict Ω) →
+      MemLp g 2 (volume.restrict Ω) → Continuous m → (∃ C, ∀ x, |m x| ≤ C) →
+      Integrable (fun x => f x * g x * m x) (volume.restrict Ω) := by
+    intro f g m hf hg hm ⟨C, hC⟩
+    exact (integrable_mul_of_memLp_two hf hg).mul_bdd hm.aestronglyMeasurable
+      (c := C) (Eventually.of_forall fun x => by rw [Real.norm_eq_abs]; exact hC x)
+  have hYb : ∀ k, ∃ C, ∀ x, |Y x k| ≤ C := fun k =>
+    ⟨_, (exists_bound_testFn (hY k)).choose_spec.2.1⟩
+  have hDYb : ∀ k, ∃ C, ∀ x, |fderiv ℝ (fun y => Y y k) x (EuclideanSpace.single k 1)| ≤ C :=
+    fun k => by
+      obtain ⟨M, -, -, hM⟩ := exists_bound_testFn (hY k)
+      refine ⟨M, fun x => ?_⟩
+      rw [← Real.norm_eq_abs, ← inner_gradient]
+      exact (norm_inner_le_norm _ _).trans (by simpa using hM x)
+  -- one coordinate at a time
+  have hk : ∀ k : Fin d, ∫ x in Ω, P.fst x * u.snd x k * Y x k =
+      -∫ x in Ω, (u.fst x * P.snd x k * Y x k + u.fst x * P.fst x *
+        fderiv ℝ (fun y => Y y k) x (EuclideanSpace.single k 1)) := by
+    intro k
+    obtain ⟨ζ, hζ, hζf, hζs⟩ := exists_smulPair_mem_H01 hΩ hP (hY k)
+    have h := integral_mul_inner_of_mem_H01 hu hζ (EuclideanSpace.single k 1)
+    have e1 : ∫ x in Ω, u.fst x * ⟪ζ.snd x, EuclideanSpace.single k 1⟫_ℝ =
+        ∫ x in Ω, (u.fst x * P.snd x k * Y x k + u.fst x * P.fst x *
+          fderiv ℝ (fun y => Y y k) x (EuclideanSpace.single k 1)) := by
+      refine integral_congr_ae ?_
+      filter_upwards [hζs] with x hx
+      rw [hx, inner_add_left, real_inner_smul_left, real_inner_smul_left, ← snd_apply_eq_inner,
+        inner_gradient]
+      ring
+    have e2 : ∫ x in Ω, ζ.fst x * ⟪u.snd x, EuclideanSpace.single k 1⟫_ℝ =
+        ∫ x in Ω, P.fst x * u.snd x k * Y x k := by
+      refine integral_congr_ae ?_
+      filter_upwards [hζf] with x hx
+      rw [hx, ← snd_apply_eq_inner]
+      ring
+    rw [e1, e2] at h
+    linarith
+  have hsum1 : ∫ x in Ω, P.fst x * ⟪u.snd x, Y x⟫_ℝ =
+      ∑ k, ∫ x in Ω, P.fst x * u.snd x k * Y x k := by
+    rw [← integral_finsetSum _ fun k _ => hint (Lp.memLp P.fst) (memLp_snd_apply u k)
+      ((hY k).continuous) (hYb k)]
+    congr 1
+    funext x
+    rw [inner_eq_sum_coord, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    ring
+  have hsum2 : ∫ x in Ω, u.fst x * (P.fst x * (∑ k, fderiv ℝ (fun y => Y y k) x
+        (EuclideanSpace.single k 1)) + ⟪P.snd x, Y x⟫_ℝ) =
+      ∑ k, ∫ x in Ω, (u.fst x * P.snd x k * Y x k + u.fst x * P.fst x *
+        fderiv ℝ (fun y => Y y k) x (EuclideanSpace.single k 1)) := by
+    have hI := integral_finsetSum (μ := volume.restrict Ω) Finset.univ
+      (f := fun k x => u.fst x * P.snd x k * Y x k + u.fst x * P.fst x *
+        fderiv ℝ (fun y => Y y k) x (EuclideanSpace.single k 1)) fun k _ =>
+      (hint (Lp.memLp u.fst) (memLp_snd_apply P k) (hY k).continuous (hYb k)).add
+        (hint (Lp.memLp u.fst) (Lp.memLp P.fst) ((hY k).continuous_fderiv_apply _) (hDYb k))
+    rw [← hI]
+    congr 1
+    funext x
+    rw [inner_eq_sum_coord, Finset.mul_sum, ← Finset.sum_add_distrib, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    ring
+  rw [hsum1, hsum2, ← Finset.sum_neg_distrib]
+  exact Finset.sum_congr rfl fun k _ => hk k
+
 end Products
 
 end ConicalKahler.Sobolev
